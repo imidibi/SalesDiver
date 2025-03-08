@@ -18,6 +18,7 @@ class CompanyViewModel: ObservableObject {
 
     func fetchCompanies() {
         let request = NSFetchRequest<NSManagedObject>(entityName: "CompanyEntity")
+        request.sortDescriptors = [NSSortDescriptor(key: "name", ascending: true)]
         do {
             let fetchedCompanies = try context.fetch(request)
             self.companies = fetchedCompanies.map { CompanyWrapper(managedObject: $0) }
