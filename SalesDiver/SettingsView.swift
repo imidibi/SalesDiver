@@ -11,29 +11,45 @@ struct SettingsView: View {
     @State private var companyName: String = ""
     @State private var searchResults: [String] = []
     @State private var selectedCompanies: Set<String> = []
+    @State private var showAutotaskSettings = false
     
     var body: some View {
         NavigationStack {
             Form {
                 Section(header: Text("Autotask Integration")) {
                     Toggle("Enable Autotask API", isOn: $autotaskEnabled)
-                    
+                        .onChange(of: autotaskEnabled) { newValue in
+                            if newValue {
+                                showAutotaskSettings = true  // Show settings when enabling API
+                            }
+                        }
+
                     if autotaskEnabled {
-                        TextField("API Username", text: $apiUsername)
-                            .textContentType(.username)
-                            .autocapitalization(.none)
-                        
-                        SecureField("API Secret", text: $apiSecret)
-                            .textContentType(.password)
-                        
-                        TextField("Tracking Identifier", text: $apiTrackingID)
-                            .autocapitalization(.none)
-                        
+                        Toggle("Show Settings", isOn: $showAutotaskSettings)
+
+                        if showAutotaskSettings {
+                            TextField("API Username", text: $apiUsername)
+                                .textContentType(.username)
+                                .autocapitalization(.none)
+                            
+                            SecureField("API Secret", text: $apiSecret)
+                                .textContentType(.password)
+                            
+                            TextField("Tracking Identifier", text: $apiTrackingID)
+                                .autocapitalization(.none)
+                        }
+
                         Button(action: syncWithAutotask) {
                             if isTesting {
                                 ProgressView()
                             } else {
                                 Text("Sync with Autotask now")
+                                    .font(.headline)
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                                    .background(Color.blue)
+                                    .foregroundColor(.white)
+                                    .cornerRadius(10)
                             }
                         }
                         .disabled(isTesting)
@@ -42,9 +58,9 @@ struct SettingsView: View {
                 }
                 
                 if !testResult.isEmpty {
-                    Section(header: Text("Connection Test Result")) {
+                    Section(header: Text("Autotask Sync Status")) {
                         Text(testResult)
-                            .foregroundColor(testResult.contains("Success") ? .green : .red)
+                            .foregroundColor(testResult.contains("Failed") || testResult.contains("Error") || testResult.contains("No companies found") ? .red : .primary)
                     }
                 }
                 
@@ -57,6 +73,9 @@ struct SettingsView: View {
                         
                         List(searchResults, id: \.self, selection: $selectedCompanies) { company in
                             Text(company)
+                                .font(.body)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.vertical, 4)
                                 .onTapGesture {
                                     if selectedCompanies.contains(company) {
                                         selectedCompanies.remove(company)

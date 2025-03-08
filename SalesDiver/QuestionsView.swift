@@ -92,8 +92,8 @@ struct QuestionsView: View {
     }
     
     private func saveQuestion() {
-        if isEditing {
-            editingQuestion?.questionText = questionText
+        if let editingQuestion = editingQuestion, editingQuestion.managedObjectContext != nil {
+            editingQuestion.questionText = questionText
         } else {
             let newQuestion = BANTQuestion(context: CoreDataManager.shared.context)
             newQuestion.id = UUID()
