@@ -19,8 +19,6 @@ struct SecurityAssessmentView: View {
         ("Multi-Factor Authentication", "phone.fill"), ("Computer Updates", "icloud.and.arrow.down.fill"), ("Encryption", "sdcard.fill"), ("Cyber Insurance", "creditcard.fill")
     ]
 
-    let columns = [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]
-
     var body: some View {
         NavigationStack {
             GeometryReader { geometry in
@@ -57,40 +55,48 @@ struct SecurityAssessmentView: View {
                     }
 
                     // Security Assessment Grid
-                    LazyVGrid(columns: columns, spacing: 20) {
-                        ForEach(securityOptions, id: \.name) { option in
-                            Toggle(isOn: Binding(
-                                get: { selections[option.name] ?? false },
-                                set: { selections[option.name] = $0 }
-                            )) {
-                                VStack {
-                                    HStack {
-                                        Image(systemName: option.icon)
-                                            .resizable()
-                                            .scaledToFit()
-                                            .frame(width: 56, height: 56)
-                                            .foregroundColor(.blue)
+                    let columns = Array(repeating: GridItem(.flexible(minimum: 0)), count: 4) // Enforce 4 columns
+                    ScrollView { // Make grid vertically scrollable
+                        LazyVGrid(columns: columns, spacing: 20) {
+                            ForEach(securityOptions, id: \.name) { option in
+                                let itemWidth = (geometry.size.width / 4) - 30 // Calculate dynamic width for each item
+                                let iconSize = itemWidth * 0.25 // Scale icon size relative to item width
+                                let textSize = itemWidth * 0.1 // Scale text size relative to item width
+                                let checkboxSize = itemWidth * 0.3 // Scale checkbox size relative to item width
 
-                                        Spacer()
+                                Toggle(isOn: Binding(
+                                    get: { selections[option.name] ?? false },
+                                    set: { selections[option.name] = $0 }
+                                )) {
+                                    VStack {
+                                        HStack {
+                                            Image(systemName: option.icon)
+                                                .resizable()
+                                                .scaledToFit()
+                                                .frame(width: iconSize, height: iconSize)
+                                                .foregroundColor(.blue)
 
-                                        Image(systemName: selections[option.name] ?? false ? "checkmark.square.fill" : "square")
-                                            .foregroundColor(selections[option.name] ?? false ? .blue : .gray)
-                                            .font(.system(size: 60)) // Increased size for checkboxes
+                                            Spacer()
+
+                                            Image(systemName: selections[option.name] ?? false ? "checkmark.square.fill" : "square")
+                                                .foregroundColor(selections[option.name] ?? false ? .blue : .gray)
+                                                .font(.system(size: checkboxSize)) // Scale size for checkboxes
+                                        }
+                                        .padding(.top, 10)
+
+                                        Text(option.name)
+                                            .font(.system(size: textSize)) // Scale size for text
+                                            .multilineTextAlignment(.leading)
                                     }
-                                    .padding(.top, 10)
-
-                                    Text(option.name)
-                                        .font(.system(size: 19)) // Increased size by 60%
-                                        .multilineTextAlignment(.leading)
                                 }
+                                .toggleStyle(CustomCheckboxToggleStyle())
+                                .frame(width: itemWidth, height: itemWidth)
+                                .background(Color(.systemGray6))
+                                .cornerRadius(10)
                             }
-                            .toggleStyle(CustomCheckboxToggleStyle())
-                            .frame(width: 210, height: 210)
-                            .background(Color(.systemGray6))
-                            .cornerRadius(10)
                         }
+                        .padding()
                     }
-                    .padding()
                 }
             }
             .navigationTitle("Security Assessment")
