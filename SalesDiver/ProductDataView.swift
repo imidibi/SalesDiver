@@ -16,12 +16,25 @@ struct ProductDataView: View {
         NavigationStack {
             VStack {
                 // 🔍 Search Bar
-                TextField("Search products...", text: $viewModel.searchText)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .padding()
-                    .onChange(of: viewModel.searchText) {
-                        viewModel.fetchProducts()
+                HStack {
+                    TextField("Search products...", text: $viewModel.searchText)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .padding()
+                        .onChange(of: viewModel.searchText) {
+                            viewModel.fetchProducts()
+                        }
+
+                    if !viewModel.searchText.isEmpty {
+                        Button(action: {
+                            viewModel.searchText = ""
+                            viewModel.fetchProducts()
+                        }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.gray)
+                        }
+                        .padding(.trailing, 8)
                     }
+                }
                 // 🔀 Sorting Options
                 Picker("Sort by", selection: $viewModel.sortOption) {
                     ForEach(ProductSortOption.allCases, id: \.self) { option in
