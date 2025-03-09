@@ -62,19 +62,28 @@ struct SecurityAssessmentView: View {
                             set: { selections[option.name] = $0 }
                         )) {
                             VStack {
-                                Image(systemName: option.icon)
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 40, height: 40)
-                                    .foregroundColor(.blue)
+                                HStack {
+                                    Image(systemName: option.icon)
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(width: 56, height: 56)
+                                        .foregroundColor(.blue)
+
+                                    Spacer()
+
+                                    Image(systemName: selections[option.name] ?? false ? "checkmark.square.fill" : "square")
+                                        .foregroundColor(selections[option.name] ?? false ? .blue : .gray)
+                                        .font(.system(size: 60)) // Increased size for checkboxes
+                                }
+                                .padding(.top, 10)
 
                                 Text(option.name)
-                                    .font(.subheadline)
-                                    .multilineTextAlignment(.center)
+                                    .font(.system(size: 19)) // Increased size by 60%
+                                    .multilineTextAlignment(.leading)
                             }
                         }
                         .toggleStyle(CustomCheckboxToggleStyle())
-                        .frame(width: 150, height: 150)
+                        .frame(width: 210, height: 210)
                         .background(Color(.systemGray6))
                         .cornerRadius(10)
                     }
@@ -100,8 +109,6 @@ struct CustomCheckboxToggleStyle: ToggleStyle {
             HStack {
                 configuration.label
                 Spacer()
-                Image(systemName: configuration.isOn ? "checkmark.square.fill" : "square")
-                    .foregroundColor(configuration.isOn ? .blue : .gray)
             }
             .padding()
         }
