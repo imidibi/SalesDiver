@@ -18,7 +18,7 @@ struct SettingsView: View {
             Form {
                 Section(header: Text("Autotask Integration")) {
                     Toggle("Enable Autotask API", isOn: $autotaskEnabled)
-                        .onChange(of: autotaskEnabled) { newValue in
+                        .onChange(of: autotaskEnabled) { oldValue, newValue in
                             if newValue {
                                 showAutotaskSettings = true  // Show settings when enabling API
                             }

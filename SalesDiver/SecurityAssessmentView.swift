@@ -83,9 +83,9 @@ struct SecurityAssessmentView: View {
                     ScrollView { // Make grid vertically scrollable
                         LazyVGrid(columns: columns, spacing: 20) {
                             ForEach(securityOptions, id: \.name) { option in
-                                let itemWidth = (geometry.size.width / 4) - 30 // Calculate dynamic width for each item
-                                let iconSize = itemWidth * 0.25 // Scale icon size relative to item width
-                                let textSize = itemWidth * 0.1 // Scale text size relative to item width
+                                let itemWidth = max((geometry.size.width / 4) - 30, 0) // Calculate dynamic width for each item and ensure it's non-negative
+                                let iconSize = max(itemWidth * 0.25, 0) // Scale icon size relative to item width and ensure it's non-negative
+                                let textSize = max(itemWidth * 0.1, 0) // Scale text size relative to item width and ensure it's non-negative
 
                                 VStack {
                                     HStack {
