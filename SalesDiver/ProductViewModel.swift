@@ -52,19 +52,27 @@ class ProductViewModel: ObservableObject {
         }
     }
 
-    func addProduct(name: String, costPrice: Double, salePrice: Double) {
+    func addProduct(name: String, costPrice: Double, salePrice: Double, type: String, benefits: String, prodDescription: String, units: String) {
         let entity = NSEntityDescription.entity(forEntityName: "ProductEntity", in: context)!
         let newProduct = NSManagedObject(entity: entity, insertInto: context)
 
         newProduct.setValue(name, forKey: "name")
+        newProduct.setValue(type, forKey: "type")
+        newProduct.setValue(units, forKey: "units")
+        newProduct.setValue(benefits, forKey: "benefits")
+        newProduct.setValue(prodDescription, forKey: "prodDescription")
         newProduct.setValue(costPrice, forKey: "costPrice")
         newProduct.setValue(salePrice, forKey: "salePrice")
 
         saveData()
     }
 
-    func updateProduct(product: ProductWrapper, name: String, costPrice: Double, salePrice: Double) {
+    func updateProduct(product: ProductWrapper, name: String, costPrice: Double, salePrice: Double, type: String, benefits: String, prodDescription: String, units: String) {
         product.managedObject.setValue(name, forKey: "name")
+        product.managedObject.setValue(type, forKey: "type")
+        product.managedObject.setValue(units, forKey: "units")
+        product.managedObject.setValue(benefits, forKey: "benefits")
+        product.managedObject.setValue(prodDescription, forKey: "prodDescription")
         product.managedObject.setValue(costPrice, forKey: "costPrice")
         product.managedObject.setValue(salePrice, forKey: "salePrice")
 
@@ -93,6 +101,22 @@ struct ProductWrapper: Identifiable, Hashable {
 
     var name: String {
         managedObject.value(forKey: "name") as? String ?? ""
+    }
+
+    var type: String {
+        managedObject.value(forKey: "type") as? String ?? ""
+    }
+
+    var units: String {
+        managedObject.value(forKey: "units") as? String ?? ""
+    }
+
+    var benefits: String {
+        managedObject.value(forKey: "benefits") as? String ?? ""
+    }
+
+    var prodDescription: String {
+        managedObject.value(forKey: "prodDescription") as? String ?? ""
     }
 
     var costPrice: Double {

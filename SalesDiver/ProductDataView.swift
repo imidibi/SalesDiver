@@ -34,14 +34,31 @@ struct ProductDataView: View {
                     viewModel.fetchProducts()
                 }
 
-                List {
+              List {
                     ForEach(viewModel.products) { product in
-                        VStack(alignment: .leading) {
+                        VStack(alignment: .leading, spacing: 4) {
                             Text(product.name)
                                 .font(.headline)
+
+                            Text("Type: \(product.type)")
+                                .font(.subheadline)
+                                .foregroundColor(.gray)
+
+                            Text("Units: \(product.units)")
+                                .font(.subheadline)
+                                .foregroundColor(.gray)
+
                             Text("Cost: $\(product.costPrice, specifier: "%.2f") | Sale: $\(product.salePrice, specifier: "%.2f")")
                                 .font(.subheadline)
                                 .foregroundColor(.gray)
+
+                            Text("Description: \(product.prodDescription)")
+                                .font(.footnote)
+                                .foregroundColor(.secondary)
+
+                            Text("Benefits: \(product.benefits)")
+                                .font(.footnote)
+                                .foregroundColor(.secondary)
                         }
                         .padding()
                         .onTapGesture {

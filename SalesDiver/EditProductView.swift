@@ -15,6 +15,10 @@ struct EditProductView: View {
     @State private var name: String
     @State private var costPrice: String
     @State private var salePrice: String
+    @State private var type: String
+    @State private var benefits: String
+    @State private var prodDescription: String
+    @State private var units: String
 
     init(viewModel: ProductViewModel, product: ProductWrapper) {
         self.viewModel = viewModel
@@ -22,53 +26,69 @@ struct EditProductView: View {
         _name = State(initialValue: product.name)
         _costPrice = State(initialValue: "\(product.costPrice)")
         _salePrice = State(initialValue: "\(product.salePrice)")
+        _type = State(initialValue: product.type)
+        _benefits = State(initialValue: product.benefits)
+        _prodDescription = State(initialValue: product.prodDescription)
+        _units = State(initialValue: product.units)
     }
 
     var body: some View {
         NavigationStack {
             Form {
                 Section(header: Text("Product Information")) {
-                    VStack(alignment: .leading) {
-                        Text("Product Name").font(.headline)
-                        TextField("Enter product name", text: $name)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                    TextField("Product Name", text: $name)
+                    Picker("Type", selection: $type) {
+                        ForEach(["Hardware", "Software", "Service", "Labor", "Bundle"], id: \.self) { Text($0) }
                     }
+                    Picker("Units", selection: $units) {
+                        ForEach(["Per Device", "Per User", "Per Email User", "Per Site"], id: \.self) { Text($0) }
+                    }
+                }
 
-                    VStack(alignment: .leading) {
-                        Text("Cost Price").font(.headline)
-                        TextField("Enter cost price", text: $costPrice)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                Section(header: Text("Pricing")) {
+                    HStack {
+                        Text("Cost Price: $")
+                        TextField("0.00", text: $costPrice)
                             .keyboardType(.decimalPad)
                     }
-
-                    VStack(alignment: .leading) {
-                        Text("Sale Price").font(.headline)
-                        TextField("Enter sale price", text: $salePrice)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                    
+                    HStack {
+                        Text("Sale Price: $")
+                        TextField("0.00", text: $salePrice)
                             .keyboardType(.decimalPad)
                     }
+                }
+
+                Section(header: Text("Description")) {
+                    TextEditor(text: $prodDescription)
+                        .frame(height: 100)
+                }
+
+                Section(header: Text("Benefits")) {
+                    TextEditor(text: $benefits)
+                        .frame(height: 100)
                 }
             }
             .navigationTitle("Edit Product")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
+                    Button("Cancel") { dismiss() }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Save") {
-                        // Convert strings to Double safely
                         let convertedCostPrice = Double(costPrice) ?? 0.0
                         let convertedSalePrice = Double(salePrice) ?? 0.0
 
-                        // ✅ Correct function call now using `ProductWrapper`
                         viewModel.updateProduct(
                             product: product,
                             name: name,
                             costPrice: convertedCostPrice,
-                            salePrice: convertedSalePrice
+                            salePrice: convertedSalePrice,
+                            type: type,
+                            benefits: benefits,
+                            prodDescription: prodDescription,
+                            units: units
                         )
                         dismiss()
                     }
