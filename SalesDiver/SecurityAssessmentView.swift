@@ -23,72 +23,75 @@ struct SecurityAssessmentView: View {
 
     var body: some View {
         NavigationStack {
-            VStack {
-                // Show Search Field Only If No Customer Selected
-                if selectedCustomer == nil {
-                    HStack {
-                        TextField("Enter Company Name", text: $searchText, onCommit: {
-                            showClientSelection = true
-                        })
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .padding()
+            GeometryReader { geometry in
+                VStack {
+                    // Show Search Field Only If No Customer Selected
+                    if selectedCustomer == nil {
+                        HStack {
+                            TextField("Enter Company Name", text: $searchText, onCommit: {
+                                showClientSelection = true
+                            })
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .padding()
 
-                        Button(action: {
-                            showClientSelection = true
-                        }) {
-                            Image(systemName: "magnifyingglass")
-                                .padding()
-                        }
-                    }
-                    .popover(isPresented: $showClientSelection) {
-                        ClientSelectionPopover(viewModel: CompanyViewModel(), selectedCustomer: $selectedCustomer, searchText: searchText)
-                            .frame(width: 300, height: 400) // Adjust as needed
-                    }
-                }
-
-                // Display selected customer name in large bold text
-                if let customer = selectedCustomer {
-                    Text("\(customer) - Security Assessment")
-                        .font(.title)
-                        .bold()
-                        .padding(.bottom, 10)
-                }
-
-                // Security Assessment Grid
-                LazyVGrid(columns: columns, spacing: 20) {
-                    ForEach(securityOptions, id: \.name) { option in
-                        Toggle(isOn: Binding(
-                            get: { selections[option.name] ?? false },
-                            set: { selections[option.name] = $0 }
-                        )) {
-                            VStack {
-                                HStack {
-                                    Image(systemName: option.icon)
-                                        .resizable()
-                                        .scaledToFit()
-                                        .frame(width: 56, height: 56)
-                                        .foregroundColor(.blue)
-
-                                    Spacer()
-
-                                    Image(systemName: selections[option.name] ?? false ? "checkmark.square.fill" : "square")
-                                        .foregroundColor(selections[option.name] ?? false ? .blue : .gray)
-                                        .font(.system(size: 60)) // Increased size for checkboxes
-                                }
-                                .padding(.top, 10)
-
-                                Text(option.name)
-                                    .font(.system(size: 19)) // Increased size by 60%
-                                    .multilineTextAlignment(.leading)
+                            Button(action: {
+                                showClientSelection = true
+                            }) {
+                                Image(systemName: "magnifyingglass")
+                                    .padding()
                             }
                         }
-                        .toggleStyle(CustomCheckboxToggleStyle())
-                        .frame(width: 210, height: 210)
-                        .background(Color(.systemGray6))
-                        .cornerRadius(10)
+                        .popover(isPresented: $showClientSelection) {
+                            ClientSelectionPopover(viewModel: CompanyViewModel(), selectedCustomer: $selectedCustomer, searchText: searchText)
+                                .frame(width: 300, height: 400) // Adjust as needed
+                        }
+                        .padding(.bottom, geometry.size.width > geometry.size.height ? 20 : 0) // Adjust padding based on orientation
                     }
+
+                    // Display selected customer name in large bold text
+                    if let customer = selectedCustomer {
+                        Text("\(customer) - Security Assessment")
+                            .font(.title)
+                            .bold()
+                            .padding(.bottom, 10)
+                    }
+
+                    // Security Assessment Grid
+                    LazyVGrid(columns: columns, spacing: 20) {
+                        ForEach(securityOptions, id: \.name) { option in
+                            Toggle(isOn: Binding(
+                                get: { selections[option.name] ?? false },
+                                set: { selections[option.name] = $0 }
+                            )) {
+                                VStack {
+                                    HStack {
+                                        Image(systemName: option.icon)
+                                            .resizable()
+                                            .scaledToFit()
+                                            .frame(width: 56, height: 56)
+                                            .foregroundColor(.blue)
+
+                                        Spacer()
+
+                                        Image(systemName: selections[option.name] ?? false ? "checkmark.square.fill" : "square")
+                                            .foregroundColor(selections[option.name] ?? false ? .blue : .gray)
+                                            .font(.system(size: 60)) // Increased size for checkboxes
+                                    }
+                                    .padding(.top, 10)
+
+                                    Text(option.name)
+                                        .font(.system(size: 19)) // Increased size by 60%
+                                        .multilineTextAlignment(.leading)
+                                }
+                            }
+                            .toggleStyle(CustomCheckboxToggleStyle())
+                            .frame(width: 210, height: 210)
+                            .background(Color(.systemGray6))
+                            .cornerRadius(10)
+                        }
+                    }
+                    .padding()
                 }
-                .padding()
             }
             .navigationTitle("Security Assessment")
             .toolbar {
