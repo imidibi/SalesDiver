@@ -16,7 +16,11 @@ enum ProductSortOption: String, CaseIterable {
 class ProductViewModel: ObservableObject {
     @Published var products: [ProductWrapper] = []
     @Published var searchText: String = ""  // ✅ Search text state
-    @Published var sortOption: ProductSortOption = .name  // ✅ Default sort by name
+    @Published var sortOption: ProductSortOption = .name {
+        didSet {
+            fetchProducts()  // Re-fetch and sort products when sortOption changes
+        }
+    }
 
     private let context = CoreDataManager.shared.context
 
@@ -27,7 +31,7 @@ class ProductViewModel: ObservableObject {
     func fetchProducts() {
         let request = NSFetchRequest<NSManagedObject>(entityName: "ProductEntity")
 
-        // Apply sorting
+        // Apply sorting based on the selected option
         switch sortOption {
         case .name:
             request.sortDescriptors = [NSSortDescriptor(key: "name", ascending: true)]
@@ -44,6 +48,16 @@ class ProductViewModel: ObservableObject {
             // Apply search filter
             if !searchText.isEmpty {
                 wrappedProducts = wrappedProducts.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+            }
+
+            // Sort products manually if Core Data sorting is not working as expected
+            switch sortOption {
+            case .name:
+                wrappedProducts.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+            case .costPrice:
+                wrappedProducts.sort { $0.costPrice < $1.costPrice }
+            case .salePrice:
+                wrappedProducts.sort { $0.salePrice < $1.salePrice }
             }
 
             self.products = wrappedProducts
