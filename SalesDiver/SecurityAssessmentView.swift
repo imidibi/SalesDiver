@@ -322,6 +322,7 @@ struct StatusSelectionView: View {
     @Binding var selectedStatus: SecurityAssessmentView.Status?
     var statusName: String
     @Environment(\.dismiss) var dismiss
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         VStack {
@@ -336,11 +337,11 @@ struct StatusSelectionView: View {
                     HStack {
                         Text(status.description)
                             .font(selectedStatus == status ? .headline.bold() : .body)
+                            .foregroundColor(colorScheme == .dark ? .white : (selectedStatus == status ? .white : .black))
                         Spacer()
                     }
                     .padding()
                     .background(selectedStatus == status ? status.color : Color.clear)
-                    .foregroundColor(selectedStatus == status ? .white : .black)
                     .cornerRadius(10)
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(selectedStatus == status ? Color.clear : Color.gray))
                 }
