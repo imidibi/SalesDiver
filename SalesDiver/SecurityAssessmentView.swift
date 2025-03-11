@@ -2,6 +2,7 @@ import SwiftUI
 import CoreData
 
 struct SecurityAssessmentView: View {
+    @State private var assessmentDate: Date? = nil
     @State private var searchText: String = ""
     @State private var selectedCustomer: String? = nil
     @State private var showClientSelection: Bool = false
@@ -17,12 +18,15 @@ struct SecurityAssessmentView: View {
     @State private var showErrorMessage: Bool = false
 
     enum Status: Int16, Codable, CaseIterable {
+        case unset = -1
         case protected = 0
         case inProgress = 1
         case atRisk = 2
+    
         
         var color: Color {
             switch self {
+            case .unset: return Color(.systemGray4)
             case .protected: return .green
             case .inProgress: return .yellow
             case .atRisk: return .red
@@ -31,6 +35,7 @@ struct SecurityAssessmentView: View {
         
         var description: String {
             switch self {
+            case .unset: return "Unset"
             case .protected: return "Protected"
             case .inProgress: return "In Progress"
             case .atRisk: return "At Risk"
@@ -53,7 +58,7 @@ struct SecurityAssessmentView: View {
                     if selectedCustomer == nil {
                         searchField
                     } else {
-                        Text("\(selectedCustomer ?? "") - Security Assessment")
+                    Text("\(selectedCustomer ?? "Unknown") - Security Assessment \(assessmentDate != nil ? assessmentDate!.formatted(date: .numeric, time: .omitted) : "")")
                             .font(.title)
                             .bold()
                             .padding(.bottom, 10)
@@ -63,6 +68,55 @@ struct SecurityAssessmentView: View {
                     let columns = Array(repeating: GridItem(.flexible(minimum: 0)), count: 4) // Enforce 4 columns
                     ScrollView { // Make grid vertically scrollable
                         securityGrid(columns: columns, geometry: geometry)
+                    }
+                }
+                .onChange(of: selectedCustomer) { oldValue, newValue in
+                    guard let companyName = selectedCustomer, !companyName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                    // print("❌ No company selected or empty name. Skipping fetch.")
+                        return
+                    }
+ 
+                    // print("📢 Selected Customer Updated: \(companyName)")
+ 
+                    if let companyEntity = CoreDataManager.shared.fetchCompanyByName(name: companyName) {
+                        // print("✅ Company Entity Found: \(companyEntity.name ?? "Unknown")")
+ 
+                        let assessments = CoreDataManager.shared.fetchSecurityAssessments(for: companyEntity)
+                        // print("📊 Security Assessments Fetched: \(assessments.count) for \(companyEntity.name ?? "Unknown")")
+ 
+                        if let latestAssessment = assessments.first {
+                            // print("✅ Latest Assessment Retrieved: \(latestAssessment.assessDate ?? Date())")
+                            
+                            DispatchQueue.main.async {
+                                assessmentDate = latestAssessment.assessDate
+                                selectedStatus["Security Assessment"] = SecurityAssessmentView.Status(rawValue: latestAssessment.secAssess) ?? .unset
+                                selectedStatus["Security Awareness"] = SecurityAssessmentView.Status(rawValue: latestAssessment.secAware) ?? .unset
+                                selectedStatus["Dark Web Research"] = SecurityAssessmentView.Status(rawValue: latestAssessment.darkWeb) ?? .unset
+                                selectedStatus["Backup"] = SecurityAssessmentView.Status(rawValue: latestAssessment.backup) ?? .unset
+                                selectedStatus["Email Protection"] = SecurityAssessmentView.Status(rawValue: latestAssessment.emailProtect) ?? .unset
+                                selectedStatus["Advanced EDR"] = SecurityAssessmentView.Status(rawValue: latestAssessment.advancedEDR) ?? .unset
+                                selectedStatus["Mobile Device Security"] = SecurityAssessmentView.Status(rawValue: latestAssessment.mobDevice) ?? .unset
+                                selectedStatus["Physical Security"] = SecurityAssessmentView.Status(rawValue: latestAssessment.phySec) ?? .unset
+                                selectedStatus["Passwords"] = SecurityAssessmentView.Status(rawValue: latestAssessment.passwords) ?? .unset
+                                selectedStatus["SIEM & SOC"] = SecurityAssessmentView.Status(rawValue: latestAssessment.siemSoc) ?? .unset
+                                selectedStatus["Firewall"] = SecurityAssessmentView.Status(rawValue: latestAssessment.firewall) ?? .unset
+                                selectedStatus["DNS Protection"] = SecurityAssessmentView.Status(rawValue: latestAssessment.dnsProtect) ?? .unset
+                                selectedStatus["Multi-Factor Authentication"] = SecurityAssessmentView.Status(rawValue: latestAssessment.mfa) ?? .unset
+                                selectedStatus["Computer Updates"] = SecurityAssessmentView.Status(rawValue: latestAssessment.compUpdates) ?? .unset
+                                selectedStatus["Encryption"] = SecurityAssessmentView.Status(rawValue: latestAssessment.encryption) ?? .unset
+                                selectedStatus["Cyber Insurance"] = SecurityAssessmentView.Status(rawValue: latestAssessment.cyberInsurance) ?? .unset
+                            }
+                        } else {
+                        // print("❌ No assessments found for \(companyEntity.name ?? "Unknown")")
+                        DispatchQueue.main.async {
+                            for option in securityOptions {
+                                selectedStatus[option.name] = .unset
+                            }
+                            assessmentDate = nil
+                        }
+                    }
+                    } else {
+                        // print("❌ No company entity found for \(companyName)")
                     }
                 }
             }
@@ -88,6 +142,9 @@ struct SecurityAssessmentView: View {
         .sheet(isPresented: $showClientSelection) {
             ClientSelectionPopover(viewModel: CompanyViewModel(), selectedCustomer: $selectedCustomer, searchText: searchText)
         }
+        .onDisappear {
+        // print("🔄 Client selection popover dismissed.")
+        }
         .alert(isPresented: $showErrorMessage) {
             Alert(title: Text("Error"), message: Text("Please select a company before proceeding."), dismissButton: .default(Text("OK")))
         }
@@ -109,7 +166,10 @@ struct SecurityAssessmentView: View {
     
     private var searchField: some View {
         HStack {
-            TextField("Enter Company Name", text: $searchText, onCommit: { showClientSelection = true })
+            TextField("Enter Company Name", text: $searchText)
+                .onSubmit {
+                    showClientSelection = true
+                }
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .padding()
 
@@ -177,82 +237,82 @@ struct SecurityGridItem: View {
 
 extension SecAssessEntity {
     var secAssessStatus: SecurityAssessmentView.Status {
-        get { SecurityAssessmentView.Status(rawValue: self.secAssess) ?? .protected }
+        get { SecurityAssessmentView.Status(rawValue: self.secAssess) ?? .unset }
         set { self.secAssess = newValue.rawValue }
     }
     
     var secAwareStatus: SecurityAssessmentView.Status {
-        get { SecurityAssessmentView.Status(rawValue: self.secAware) ?? .protected }
+        get { SecurityAssessmentView.Status(rawValue: self.secAware) ?? .unset }
         set { self.secAware = newValue.rawValue }
     }
 
     var darkWebStatus: SecurityAssessmentView.Status {
-        get { SecurityAssessmentView.Status(rawValue: self.darkWeb) ?? .protected }
+        get { SecurityAssessmentView.Status(rawValue: self.darkWeb) ?? .unset }
         set { self.darkWeb = newValue.rawValue }
     }
 
     var backupStatus: SecurityAssessmentView.Status {
-        get { SecurityAssessmentView.Status(rawValue: self.backup) ?? .protected }
+        get { SecurityAssessmentView.Status(rawValue: self.backup) ?? .unset }
         set { self.backup = newValue.rawValue }
     }
 
     var emailProtectStatus: SecurityAssessmentView.Status {
-        get { SecurityAssessmentView.Status(rawValue: self.emailProtect) ?? .protected }
+        get { SecurityAssessmentView.Status(rawValue: self.emailProtect) ?? .unset }
         set { self.emailProtect = newValue.rawValue }
     }
 
     var advancedEDRStatus: SecurityAssessmentView.Status {
-        get { SecurityAssessmentView.Status(rawValue: self.advancedEDR) ?? .protected }
+        get { SecurityAssessmentView.Status(rawValue: self.advancedEDR) ?? .unset }
         set { self.advancedEDR = newValue.rawValue }
     }
 
     var mobDeviceStatus: SecurityAssessmentView.Status {
-        get { SecurityAssessmentView.Status(rawValue: self.mobDevice) ?? .protected }
+        get { SecurityAssessmentView.Status(rawValue: self.mobDevice) ?? .unset }
         set { self.mobDevice = newValue.rawValue }
     }
 
     var phySecStatus: SecurityAssessmentView.Status {
-        get { SecurityAssessmentView.Status(rawValue: self.phySec) ?? .protected }
+        get { SecurityAssessmentView.Status(rawValue: self.phySec) ?? .unset }
         set { self.phySec = newValue.rawValue }
     }
 
     var passwordsStatus: SecurityAssessmentView.Status {
-        get { SecurityAssessmentView.Status(rawValue: self.passwords) ?? .protected }
+        get { SecurityAssessmentView.Status(rawValue: self.passwords) ?? .unset }
         set { self.passwords = newValue.rawValue }
     }
 
     var siemSocStatus: SecurityAssessmentView.Status {
-        get { SecurityAssessmentView.Status(rawValue: self.siemSoc) ?? .protected }
+        get { SecurityAssessmentView.Status(rawValue: self.siemSoc) ?? .unset }
         set { self.siemSoc = newValue.rawValue }
     }
 
     var firewallStatus: SecurityAssessmentView.Status {
-        get { SecurityAssessmentView.Status(rawValue: self.firewall) ?? .protected }
+        get { SecurityAssessmentView.Status(rawValue: self.firewall) ?? .unset }
         set { self.firewall = newValue.rawValue }
     }
 
     var dnsProtectStatus: SecurityAssessmentView.Status {
-        get { SecurityAssessmentView.Status(rawValue: self.dnsProtect) ?? .protected }
+        get { SecurityAssessmentView.Status(rawValue: self.dnsProtect) ?? .unset }
         set { self.dnsProtect = newValue.rawValue }
     }
 
     var mfaStatus: SecurityAssessmentView.Status {
-        get { SecurityAssessmentView.Status(rawValue: self.mfa) ?? .protected }
+        get { SecurityAssessmentView.Status(rawValue: self.mfa) ?? .unset }
         set { self.mfa = newValue.rawValue }
     }
 
     var compUpdatesStatus: SecurityAssessmentView.Status {
-        get { SecurityAssessmentView.Status(rawValue: self.compUpdates) ?? .protected }
+        get { SecurityAssessmentView.Status(rawValue: self.compUpdates) ?? .unset }
         set { self.compUpdates = newValue.rawValue }
     }
 
     var encryptionStatus: SecurityAssessmentView.Status {
-        get { SecurityAssessmentView.Status(rawValue: self.encryption) ?? .protected }
+        get { SecurityAssessmentView.Status(rawValue: self.encryption) ?? .unset }
         set { self.encryption = newValue.rawValue }
     }
 
     var cyberInsuranceStatus: SecurityAssessmentView.Status {
-        get { SecurityAssessmentView.Status(rawValue: self.cyberInsurance) ?? .protected }
+        get { SecurityAssessmentView.Status(rawValue: self.cyberInsurance) ?? .unset }
         set { self.cyberInsurance = newValue.rawValue }
     }
 }
@@ -269,7 +329,7 @@ struct StatusSelectionView: View {
                 .font(.headline)
                 .padding()
 
-            ForEach(SecurityAssessmentView.Status.allCases, id: \.self) { status in
+            ForEach(SecurityAssessmentView.Status.allCases.sorted { $0.rawValue < $1.rawValue }, id: \.self) { status in
                 Button(action: {
                     selectedStatus = status
                 }) {
@@ -332,8 +392,11 @@ struct ClientSelectionPopover: View {
                 List {
                     ForEach(filteredCustomers, id: \.id) { customer in
                         Button(action: {
-                            selectedCustomer = customer.name
-                            dismiss()
+                            DispatchQueue.main.async {
+                                selectedCustomer = customer.name
+                                // print("✅ Selected Customer Updated: \(selectedCustomer ?? "None")")
+                                dismiss()
+                            }
                         }) {
                             Text(customer.name)
                                 .padding()

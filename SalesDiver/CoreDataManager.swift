@@ -4,7 +4,7 @@ class CoreDataManager {
     static let shared = CoreDataManager()
     
     let persistentContainer: NSPersistentContainer
-
+    
     private init() {
         persistentContainer = NSPersistentContainer(name: "CompanyDataModel")
         persistentContainer.loadPersistentStores { (_, error) in
@@ -13,11 +13,11 @@ class CoreDataManager {
             }
         }
     }
-
+    
     var context: NSManagedObjectContext {
         persistentContainer.viewContext
     }
-
+    
     func saveContext() {
         let context = persistentContainer.viewContext
         if context.hasChanges {
@@ -28,14 +28,14 @@ class CoreDataManager {
             }
         }
     }
-
+    
     func syncCompaniesFromAutotask(companies: [(name: String, address1: String?, address2: String?, city: String?, state: String?)]) {
         let context = persistentContainer.viewContext
         
         for company in companies {
             let fetchRequest: NSFetchRequest<CompanyEntity> = CompanyEntity.fetchRequest()
             fetchRequest.predicate = NSPredicate(format: "name == %@", company.name)
-
+            
             do {
                 let results = try context.fetch(fetchRequest)
                 let companyEntity = results.first ?? CompanyEntity(context: context)
@@ -50,28 +50,45 @@ class CoreDataManager {
                 print("Error fetching company: \(error)")
             }
         }
-
+        
         saveContext()
     }
     
     func fetchSecurityAssessments(for company: CompanyEntity) -> [SecAssessEntity] {
         let request: NSFetchRequest<SecAssessEntity> = SecAssessEntity.fetchRequest()
-        request.predicate = NSPredicate(format: "company == %@", company)
+
+        guard let companyName = company.name, !companyName.isEmpty else {
+            print("❌ Error: Company Name is nil or invalid")
+            return []
+        }
         
+        request.predicate = NSPredicate(format: "company.name == %@", companyName)
+        request.sortDescriptors = [NSSortDescriptor(key: "assessDate", ascending: false)]
+
         do {
-            return try context.fetch(request)
+            let assessments = try context.fetch(request)
+        // print("🔍 Fetch Attempt: Looking for assessments for \(companyName)")
+        // print("✅ Fetch Success: Found \(assessments.count) assessments for \(companyName)")
+
+            for assessment in assessments {
+                // print("📌 Assessment Retrieved - Date: \(assessment.assessDate ?? Date()) | MFA: \(assessment.mfa) | Encryption: \(assessment.encryption) | Backup: \(assessment.backup)")
+            }
+
+            return assessments
         } catch {
-            print("Failed to fetch security assessments: \(error)")
+            print("❌ Fetch Error: \(error.localizedDescription)")
             return []
         }
     }
-
+    
     func saveSecurityAssessment(for company: CompanyEntity, assessmentData: [SecurityAssessmentView.Status]) {
         let newAssessment = SecAssessEntity(context: context)
         newAssessment.id = UUID()
         newAssessment.assessDate = Date()
+        
         newAssessment.company = company
-
+        // print("✅ Linking assessment to company \(company.name ?? "Unknown")")
+        
         newAssessment.secAssess = assessmentData[0].rawValue
         newAssessment.secAware = assessmentData[1].rawValue
         newAssessment.darkWeb = assessmentData[2].rawValue
@@ -88,33 +105,34 @@ class CoreDataManager {
         newAssessment.compUpdates = assessmentData[13].rawValue
         newAssessment.encryption = assessmentData[14].rawValue
         newAssessment.cyberInsurance = assessmentData[15].rawValue
-
+        
         do {
+            let companyName = company.name ?? "Unknown"
             try context.save()
-            print("✅ Security assessment saved successfully for company: \(company.name)")
-            print("📅 Date: \(newAssessment.assessDate ?? Date())")
-            print("🔍 Status Values:")
-            print(" - Security Assessment: \(newAssessment.secAssess)")
-            print(" - Security Awareness: \(newAssessment.secAware)")
-            print(" - Dark Web Research: \(newAssessment.darkWeb)")
-            print(" - Backup: \(newAssessment.backup)")
-            print(" - Email Protection: \(newAssessment.emailProtect)")
-            print(" - Advanced EDR: \(newAssessment.advancedEDR)")
-            print(" - Mobile Device Security: \(newAssessment.mobDevice)")
-            print(" - Physical Security: \(newAssessment.phySec)")
-            print(" - Passwords: \(newAssessment.passwords)")
-            print(" - SIEM & SOC: \(newAssessment.siemSoc)")
-            print(" - Firewall: \(newAssessment.firewall)")
-            print(" - DNS Protection: \(newAssessment.dnsProtect)")
-            print(" - Multi-Factor Authentication: \(newAssessment.mfa)")
-            print(" - Computer Updates: \(newAssessment.compUpdates)")
-            print(" - Encryption: \(newAssessment.encryption)")
-            print(" - Cyber Insurance: \(newAssessment.cyberInsurance)")
+            // print("✅ Security assessment saved successfully for company: \(companyName)")
+            // print("📅 Date: \(newAssessment.assessDate ?? Date())")
+            // print("🔍 Status Values:")
+            // print(" - Security Assessment: \(newAssessment.secAssess)")
+            // print(" - Security Awareness: \(newAssessment.secAware)")
+            // print(" - Dark Web Research: \(newAssessment.darkWeb)")
+            // print(" - Backup: \(newAssessment.backup)")
+            // print(" - Email Protection: \(newAssessment.emailProtect)")
+            // print(" - Advanced EDR: \(newAssessment.advancedEDR)")
+            // print(" - Mobile Device Security: \(newAssessment.mobDevice)")
+            // print(" - Physical Security: \(newAssessment.phySec)")
+            // print(" - Passwords: \(newAssessment.passwords)")
+            // print(" - SIEM & SOC: \(newAssessment.siemSoc)")
+            // print(" - Firewall: \(newAssessment.firewall)")
+            // print(" - DNS Protection: \(newAssessment.dnsProtect)")
+            // print(" - Multi-Factor Authentication: \(newAssessment.mfa)")
+            // print(" - Computer Updates: \(newAssessment.compUpdates)")
+            // print(" - Encryption: \(newAssessment.encryption)")
+            // print(" - Cyber Insurance: \(newAssessment.cyberInsurance)")
         } catch {
             print("❌ Failed to save security assessment: \(error.localizedDescription)")
         }
     }
-
+    
     func deleteSecurityAssessment(_ assessment: SecAssessEntity) {
         context.delete(assessment)
         do {
@@ -124,16 +142,32 @@ class CoreDataManager {
             print("Failed to delete security assessment: \(error)")
         }
     }
-
+    
     func fetchCompanyByName(name: String) -> CompanyEntity? {
         let request: NSFetchRequest<CompanyEntity> = CompanyEntity.fetchRequest()
-        request.predicate = NSPredicate(format: "name == %@", name)
-
+        request.predicate = NSPredicate(format: "name ==[c] %@", name.trimmingCharacters(in: .whitespacesAndNewlines))
+        
         do {
             return try context.fetch(request).first
         } catch {
             print("Failed to fetch company: \(error)")
             return nil
+        }
+    }
+    
+    func debugFetchAllAssessments() {
+        let request: NSFetchRequest<SecAssessEntity> = SecAssessEntity.fetchRequest()
+        
+        do {
+            let assessments = try context.fetch(request)
+            // print("🔍 Total Security Assessments in Core Data: \(assessments.count)")
+            for assessment in assessments {
+                let companyName = assessment.company?.name ?? "Unknown"
+                // print("✅ Assessment for Company: \(companyName) | Date: \(assessment.assessDate ?? Date())")
+                // print("🔹 MFA: \(assessment.mfa) | Encryption: \(assessment.encryption) | Backup: \(assessment.backup)")
+            }
+        } catch {
+            print("❌ Fetch All Assessments Error: \(error.localizedDescription)")
         }
     }
 }
