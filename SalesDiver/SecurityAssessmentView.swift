@@ -324,6 +324,45 @@ struct StatusSelectionView: View {
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
 
+    private var explanationText: String {
+        switch statusName {
+        case "Security Assessment":
+            return "A security assessment helps SMBs identify vulnerabilities in their IT infrastructure before they can be exploited by cybercriminals. By evaluating current security measures, businesses can uncover weaknesses in networks, applications, and policies that could lead to data breaches or compliance violations. Regular assessments ensure that security strategies keep pace with evolving threats, reducing the risk of financial losses and reputational damage. For SMBs with limited IT resources, a security assessment provides a roadmap for prioritizing security investments effectively."
+        case "Security Awareness":
+            return "Security awareness training educates employees about cyber threats, safe online practices, and how to recognize phishing attempts, reducing the risk of human error and insider threats."
+        case "Dark Web Research":
+            return "Dark web research helps businesses monitor for leaked or compromised data, enabling them to take proactive measures to protect sensitive information and prevent potential breaches."
+        case "Backup":
+            return "Regular backups ensure that critical data can be restored in the event of data loss, ransomware attacks, or system failures, minimizing downtime and operational disruption."
+        case "Email Protection":
+            return "Email protection safeguards against phishing, spam, and malware, ensuring that communication channels remain secure and reducing the risk of cyber attacks."
+        case "Advanced EDR":
+            return "Advanced Endpoint Detection and Response (EDR) provides real-time monitoring and threat detection on endpoints, enabling rapid response to security incidents and minimizing damage."
+        case "Mobile Device Security":
+            return "Mobile device security protects smartphones and tablets from cyber threats, ensuring that data accessed on the go remains secure and reducing the risk of unauthorized access."
+        case "Physical Security":
+            return "Physical security measures protect hardware and sensitive information from unauthorized physical access, theft, or damage, complementing digital security strategies."
+        case "Passwords":
+            return "Strong password policies and management practices help prevent unauthorized access, reducing the risk of account breaches and data theft."
+        case "SIEM & SOC":
+            return "Security Information and Event Management (SIEM) and Security Operations Centers (SOC) provide centralized monitoring and analysis of security events, enabling rapid detection and response to threats."
+        case "Firewall":
+            return "Firewalls act as a barrier between trusted and untrusted networks, filtering traffic and preventing unauthorized access to sensitive systems."
+        case "DNS Protection":
+            return "DNS protection safeguards against attacks that exploit vulnerabilities in the Domain Name System, preventing malicious redirection and ensuring network reliability."
+        case "Multi-Factor Authentication":
+            return "Multi-factor authentication adds an extra layer of security by requiring multiple forms of verification, significantly reducing the risk of unauthorized access."
+        case "Computer Updates":
+            return "Regular computer updates ensure that systems have the latest security patches and features, reducing vulnerabilities and protecting against known threats."
+        case "Encryption":
+            return "Encryption protects data by converting it into a secure format, ensuring that sensitive information remains confidential even if intercepted."
+        case "Cyber Insurance":
+            return "Cyber insurance provides financial protection against cyber attacks, helping businesses recover from losses and mitigate the impact of security incidents."
+        default:
+            return "No explanation available."
+        }
+    }
+
     var body: some View {
         VStack {
             Text("\(statusName) Status")
@@ -349,10 +388,14 @@ struct StatusSelectionView: View {
             }
 
             Text("Why is this important?")
-                .font(.headline)
+                .font(.title)
+                .bold()
                 .padding(.top)
 
-            Text("They are all important!")
+            Text(explanationText)
+                .font(.body)
+                .bold()
+                .multilineTextAlignment(.center)
                 .padding()
 
             Spacer()
