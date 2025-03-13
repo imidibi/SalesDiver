@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="23605" systemVersion="24D70" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithSwiftData="YES" userDefinedModelVersionIdentifier="">
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="23605" systemVersion="24D81" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithSwiftData="YES" userDefinedModelVersionIdentifier="">
     <entity name="BANTQuestion" representedClassName="BANTQuestion" syncable="YES" codeGenerationType="class">
         <attribute name="category" optional="YES" attributeType="String"/>
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
@@ -17,6 +17,7 @@
         <relationship name="opportunities" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="OpportunityEntity" inverseName="company" inverseEntity="OpportunityEntity"/>
         <relationship name="secAssessments" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="SecAssessEntity" inverseName="company" inverseEntity="SecAssessEntity"/>
     </entity>
+    <entity name="ContactsEntity" representedClassName="ContactsEntity" syncable="YES" codeGenerationType="class"/>
     <entity name="OpportunityEntity" representedClassName="OpportunityEntity" syncable="YES" codeGenerationType="class">
         <attribute name="authorityCommentary" optional="YES" attributeType="String"/>
         <attribute name="authorityStatus" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>

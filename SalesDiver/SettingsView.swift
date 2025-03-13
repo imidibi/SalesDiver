@@ -12,6 +12,7 @@ struct SettingsView: View {
     @State private var searchResults: [String] = []
     @State private var selectedCompanies: Set<String> = []
     @State private var showAutotaskSettings = false
+    @State private var selectedCategory: String = "Company"
     
     var body: some View {
         NavigationStack {
@@ -57,6 +58,27 @@ struct SettingsView: View {
                     }
                 }
                 
+                if autotaskEnabled {
+                    Section(header: Text("Select Data Type")) {
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 4), spacing: 10) {
+                            ForEach(["Company", "Contact", "Opportunity", "Product"], id: \.self) { category in
+                                Button(action: {
+                                    selectedCategory = category
+                                }) {
+                                    Text(category)
+                                        .frame(maxWidth: .infinity)
+                                        .padding()
+                                        .background(selectedCategory == category ? Color.blue : Color.gray)
+                                        .foregroundColor(.white)
+                                        .cornerRadius(8)
+                                }
+                                .buttonStyle(PlainButtonStyle()) // Ensures correct behavior on selection
+                            }
+                        }
+                        .padding()
+                    }
+                }
+                
                 if !testResult.isEmpty {
                     Section(header: Text("Autotask Sync Status")) {
                         Text(testResult)
@@ -71,20 +93,25 @@ struct SettingsView: View {
                         })
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         
-                        List(searchResults, id: \.self, selection: $selectedCompanies) { company in
-                            Text(company)
-                                .font(.body)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.vertical, 4)
-                                .onTapGesture {
-                                    if selectedCompanies.contains(company) {
-                                        selectedCompanies.remove(company)
-                                    } else {
-                                        selectedCompanies.insert(company)
-                                    }
+                        ScrollView {
+                            LazyVStack {
+                                ForEach(searchResults, id: \.self) { company in
+                                    Text(company)
+                                        .font(.body)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .padding(.vertical, 4)
+                                        .onTapGesture {
+                                            if selectedCompanies.contains(company) {
+                                                selectedCompanies.remove(company)
+                                            } else {
+                                                selectedCompanies.insert(company)
+                                            }
+                                        }
+                                        .background(selectedCompanies.contains(company) ? Color.blue.opacity(0.3) : Color.clear)
                                 }
-                                .background(selectedCompanies.contains(company) ? Color.blue.opacity(0.3) : Color.clear)
+                            }
                         }
+                        .frame(maxHeight: 300)
                     }
                 }
             }
@@ -112,7 +139,7 @@ struct SettingsView: View {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
         let requestBody: [String: Any] = [
-            "MaxRecords": selectedCompanies.count,
+            "MaxRecords": 50,
             "IncludeFields": ["id", "companyName", "address1", "address2", "city", "state", "postalCode", "phone"],
             "Filter": [
                 [
@@ -211,4 +238,3 @@ struct SettingsView: View {
     }
     
 }
-
