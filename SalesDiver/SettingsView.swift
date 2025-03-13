@@ -14,6 +14,19 @@ struct SettingsView: View {
     @State private var showAutotaskSettings = false
     @State private var selectedCategory: String = "Company"
     
+    private var searchHeaderText: String {
+        switch selectedCategory {
+        case "Contact":
+            return "Search Contacts in Autotask"
+        case "Opportunity":
+            return "Search Opportunities in Autotask"
+        case "Product":
+            return "Search Products in Autotask"
+        default:
+            return "Search Companies in Autotask"
+        }
+    }
+    
     var body: some View {
         NavigationStack {
             Form {
@@ -87,7 +100,7 @@ struct SettingsView: View {
                 }
                 
                 if autotaskEnabled {
-                    Section(header: Text("Search Companies in Autotask")) {
+                    Section(header: Text(searchHeaderText)) {
                         TextField("Enter company name", text: $companyName, onCommit: {
                             searchCompanies()
                         })
