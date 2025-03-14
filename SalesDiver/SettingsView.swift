@@ -76,7 +76,14 @@ struct SettingsView: View {
                         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 4), spacing: 10) {
                             ForEach(["Company", "Contact", "Opportunity", "Product"], id: \.self) { category in
                                 Button(action: {
+                                    if selectedCategory != category {
+                                        companyName = ""  // Clear search field
+                                        searchResults = [] // Reset search results
+                                        selectedCompanies.removeAll() // Clear selection
+                                    }
+                                    
                                     selectedCategory = category
+                                    // Removed automatic search for Contacts when button is selected
                                 }) {
                                     Text(category)
                                         .frame(maxWidth: .infinity)
@@ -102,7 +109,13 @@ struct SettingsView: View {
                 if autotaskEnabled {
                     Section(header: Text(searchHeaderText)) {
                         TextField("Enter company name", text: $companyName, onCommit: {
-                            searchCompanies()
+                            if selectedCategory == "Contact" {
+                                if !companyName.trimmingCharacters(in: .whitespaces).isEmpty {
+                                    searchCompaniesForContacts() // Trigger search only when user submits with input
+                                }
+                            } else {
+                                searchCompanies()
+                            }
                         })
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         
@@ -114,10 +127,15 @@ struct SettingsView: View {
                                         .frame(maxWidth: .infinity, alignment: .leading)
                                         .padding(.vertical, 4)
                                         .onTapGesture {
-                                            if selectedCompanies.contains(company) {
-                                                selectedCompanies.remove(company)
+                                            if selectedCategory == "Contact" {
+                                                companyName = company  // Replace search field text with full company name
+                                                selectedCompanies = [company] // Ensure only one company is selected
                                             } else {
-                                                selectedCompanies.insert(company)
+                                                if selectedCompanies.contains(company) {
+                                                    selectedCompanies.remove(company)
+                                                } else {
+                                                    selectedCompanies.insert(company)
+                                                }
                                             }
                                         }
                                         .background(selectedCompanies.contains(company) ? Color.blue.opacity(0.3) : Color.clear)
@@ -249,5 +267,17 @@ struct SettingsView: View {
             }
         }
     }
+
+    private func searchCompaniesForContacts() {
+        let trimmedQuery = companyName.trimmingCharacters(in: .whitespaces)
+        guard !trimmedQuery.isEmpty else { return } // Prevent search if input is empty
+
+        AutotaskAPIManager.shared.searchCompanies(query: trimmedQuery) { results in
+            DispatchQueue.main.async {
+                searchResults = results
+            }
+        }
+    }
     
 }
+
