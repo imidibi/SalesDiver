@@ -13,6 +13,8 @@ struct SettingsView: View {
     @State private var selectedCompanies: Set<String> = []
     @State private var showAutotaskSettings = false
     @State private var selectedCategory: String = "Company"
+    @State private var showContactSearch = false
+    @State private var contactName: String = ""
     
     private var searchHeaderText: String {
         switch selectedCategory {
@@ -80,6 +82,7 @@ struct SettingsView: View {
                                         companyName = ""  // Clear search field
                                         searchResults = [] // Reset search results
                                         selectedCompanies.removeAll() // Clear selection
+                                        showContactSearch = false // Reset contact search visibility
                                     }
                                     
                                     selectedCategory = category
@@ -130,6 +133,8 @@ struct SettingsView: View {
                                             if selectedCategory == "Contact" {
                                                 companyName = company  // Replace search field text with full company name
                                                 selectedCompanies = [company] // Ensure only one company is selected
+                                                searchResults = [] // Clear search results after selecting a company
+                                                showContactSearch = true // Show contact search field after selecting a company
                                             } else {
                                                 if selectedCompanies.contains(company) {
                                                     selectedCompanies.remove(company)
@@ -143,6 +148,12 @@ struct SettingsView: View {
                             }
                         }
                         .frame(maxHeight: 300)
+                        
+                        if showContactSearch {
+                            TextField("Enter contact name", text: $contactName)
+                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                                .padding(.top, 10)
+                        }
                     }
                 }
             }
@@ -280,4 +291,3 @@ struct SettingsView: View {
     }
     
 }
-
