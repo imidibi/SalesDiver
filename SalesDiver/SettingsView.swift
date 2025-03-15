@@ -15,6 +15,7 @@ struct SettingsView: View {
     @State private var selectedCategory: String = "Company"
     @State private var showContactSearch = false
     @State private var contactName: String = ""
+    @State private var selectedCompanyID: Int? = nil
     
     private var searchHeaderText: String {
         switch selectedCategory {
@@ -132,11 +133,11 @@ struct SettingsView: View {
                                         .onTapGesture {
                                             if selectedCategory == "Contact" {
                                                 companyName = company.1  // Store company name in text field
+                                                selectedCompanyID = company.0  // Store selected company ID
                                                 selectedCompanies = [company.1] // Ensure only one company is selected
                                                 searchResults = [] // Clear search results after selecting a company
                                                 showContactSearch = true // Show contact search field after selecting a company
-                                                // Print selected company ID and name for debugging
-                                                print("Selected Company: ID = \(company.0), Name = \(company.1)")
+                                                print("✅ Selected Company: ID = \(company.0), Name = \(company.1)")
                                             } else {
                                                 if selectedCompanies.contains(company.1) {
                                                     selectedCompanies.remove(company.1)
@@ -152,9 +153,24 @@ struct SettingsView: View {
                         .frame(maxHeight: 300)
                         
                         if showContactSearch {
-                            TextField("Enter contact name", text: $contactName)
-                                .textFieldStyle(RoundedBorderTextFieldStyle())
-                                .padding(.top, 10)
+                            TextField("Enter contact name", text: $contactName, onCommit: {
+                                let trimmedQuery = contactName.trimmingCharacters(in: .whitespaces)
+                                guard !trimmedQuery.isEmpty, let companyID = selectedCompanyID else {
+                                    print("❌ Contact search not triggered: Query empty or no company selected.")
+                                    return
+                                }
+                                
+                                print("🔍 Triggering contact search for Contact Name: \(trimmedQuery) in Company ID: \(companyID)")
+                                
+                                AutotaskAPIManager.shared.searchContacts(companyID: companyID, contactName: trimmedQuery) { results in
+                                    DispatchQueue.main.async {
+                                        print("✅ Contact search completed. Results: \(results)")
+                                        searchResults = results
+                                    }
+                                }
+                            })
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .padding(.top, 10)
                         }
                     }
                 }
