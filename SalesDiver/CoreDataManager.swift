@@ -70,7 +70,7 @@ class CoreDataManager {
         // print("🔍 Fetch Attempt: Looking for assessments for \(companyName)")
         // print("✅ Fetch Success: Found \(assessments.count) assessments for \(companyName)")
 
-            for assessment in assessments {
+            for _ in assessments {
                 // print("📌 Assessment Retrieved - Date: \(assessment.assessDate ?? Date()) | MFA: \(assessment.mfa) | Encryption: \(assessment.encryption) | Backup: \(assessment.backup)")
             }
 
@@ -107,7 +107,6 @@ class CoreDataManager {
         newAssessment.cyberInsurance = assessmentData[15].rawValue
         
         do {
-            let companyName = company.name ?? "Unknown"
             try context.save()
             // print("✅ Security assessment saved successfully for company: \(companyName)")
             // print("📅 Date: \(newAssessment.assessDate ?? Date())")
@@ -161,8 +160,7 @@ class CoreDataManager {
         do {
             let assessments = try context.fetch(request)
             // print("🔍 Total Security Assessments in Core Data: \(assessments.count)")
-            for assessment in assessments {
-                let companyName = assessment.company?.name ?? "Unknown"
+            for _ in assessments {
                 // print("✅ Assessment for Company: \(companyName) | Date: \(assessment.assessDate ?? Date())")
                 // print("🔹 MFA: \(assessment.mfa) | Encryption: \(assessment.encryption) | Backup: \(assessment.backup)")
             }
