@@ -128,9 +128,19 @@ class AutotaskAPIManager {
         request.setValue(apiTrackingID, forHTTPHeaderField: "ApiIntegrationCode")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
+        print("📌 Preparing Contact Search Request")
+        print("🔍 Company ID: \(companyID) (Type: \(type(of: companyID)))")
+        print("🔍 Contact Name: \(contactName)")
+        print("🔍 Using `companyID` for filtering")
+        print("🔍 Company ID Type Before API Call: \(type(of: companyID)) - Value: \(companyID)")
+        print("🔍 Ensuring `companyID` is passed as an integer: \(companyID) (Type: \(type(of: companyID)))")
+        if companyID <= 0 {
+            print("⚠️ Warning: Invalid `companyID` detected (\(companyID)). Check how the ID is being passed.")
+        }
+
         let requestBody: [String: Any] = [
             "MaxRecords": 50,
-            "IncludeFields": ["id", "firstName", "lastName"],
+            "IncludeFields": ["id", "firstName", "lastName", "companyID"],
             "Filter": [
                 [
                     "op": "equals",
@@ -153,7 +163,7 @@ class AutotaskAPIManager {
             let jsonData = try JSONSerialization.data(withJSONObject: requestBody, options: [])
             request.httpBody = jsonData
             print("📤 Sending Contact Search Request for Contact Name: \(contactName) in Company ID: \(companyID)")
-            print("📄 Request Body: \(String(data: jsonData, encoding: .utf8) ?? "Invalid JSON")")
+            print("📄 Formatted Request Body: \(String(data: jsonData, encoding: .utf8) ?? "Invalid JSON")")
         } catch {
             print("🔴 Failed to encode request body: \(error.localizedDescription)")
             completion([])
@@ -178,20 +188,30 @@ class AutotaskAPIManager {
                 return
             }
             
+            print("📥 Full Raw Contact API Response: \(String(data: data, encoding: .utf8) ?? "Invalid JSON")") // Log the full raw API response
+            
             do {
                 let jsonResponse = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any]
                 print("📥 Raw Contact API Response: \(jsonResponse ?? [:])")
                 
                 if let contacts = jsonResponse?["items"] as? [[String: Any]] {
                     let contactData = contacts.compactMap { contact -> (Int, String)? in
-                        if let id = contact["id"] as? Int,
-                           let firstName = contact["firstName"] as? String,
-                           let lastName = contact["lastName"] as? String {
-                            return (id, "\(firstName) \(lastName)")
+                        guard let id = contact["id"] as? Int,
+                              let firstName = contact["firstName"] as? String,
+                              let lastName = contact["lastName"] as? String,
+                              let returnedCompanyID = contact["companyID"] as? Int else {
+                            return nil
                         }
-                        return nil
+
+                        // Ensure we only keep contacts that match the requested companyID
+                        if returnedCompanyID != companyID {
+                            print("⚠️ Filtering out contact \(firstName) \(lastName) (ID: \(id)) from companyID \(returnedCompanyID) - does not match requested companyID \(companyID).")
+                            return nil
+                        }
+
+                        return (id, "\(firstName) \(lastName)")
                     }
-                    print("✅ Parsed Contacts: \(contactData)")
+                    print("✅ Filtered Contacts for Company ID \(companyID): \(contactData)")
                     completion(contactData)
                 } else {
                     print("⚠️ No contacts found in response")
