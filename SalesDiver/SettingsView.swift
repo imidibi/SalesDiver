@@ -123,9 +123,30 @@ struct SettingsView: View {
                         })
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         
+                        if showContactSearch {
+                            TextField("Enter contact name", text: $contactName, onCommit: {
+                                let trimmedQuery = contactName.trimmingCharacters(in: .whitespaces)
+                                guard !trimmedQuery.isEmpty, let companyID = selectedCompanyID else {
+                                    print("❌ Contact search not triggered: Query empty or no company selected.")
+                                    return
+                                }
+                                
+                                print("🔍 Triggering contact search for Contact Name: \(trimmedQuery) in Company ID: \(companyID)")
+                                
+                                AutotaskAPIManager.shared.searchContacts(companyID: companyID, contactName: trimmedQuery) { results in
+                                    DispatchQueue.main.async {
+                                        print("✅ Contact search completed. Results: \(results)")
+                                        searchResults = results
+                                    }
+                                }
+                            })
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .padding(.top, 10)
+                        }
+                        
                         ScrollView {
                             LazyVStack {
-                        ForEach(searchResults, id: \.0) { company in
+                                ForEach(searchResults, id: \.0) { company in
                                     Text(company.1)
                                         .font(.body)
                                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -151,27 +172,6 @@ struct SettingsView: View {
                             }
                         }
                         .frame(maxHeight: 300)
-                        
-                        if showContactSearch {
-                            TextField("Enter contact name", text: $contactName, onCommit: {
-                                let trimmedQuery = contactName.trimmingCharacters(in: .whitespaces)
-                                guard !trimmedQuery.isEmpty, let companyID = selectedCompanyID else {
-                                    print("❌ Contact search not triggered: Query empty or no company selected.")
-                                    return
-                                }
-                                
-                                print("🔍 Triggering contact search for Contact Name: \(trimmedQuery) in Company ID: \(companyID)")
-                                
-                                AutotaskAPIManager.shared.searchContacts(companyID: companyID, contactName: trimmedQuery) { results in
-                                    DispatchQueue.main.async {
-                                        print("✅ Contact search completed. Results: \(results)")
-                                        searchResults = results
-                                    }
-                                }
-                            })
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .padding(.top, 10)
-                        }
                     }
                 }
             }
