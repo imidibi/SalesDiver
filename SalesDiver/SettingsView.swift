@@ -9,7 +9,7 @@ struct SettingsView: View {
     @State private var testResult: String = ""
     @State private var isTesting = false
     @State private var companyName: String = ""
-    @State private var searchResults: [String] = []
+    @State private var searchResults: [(Int, String)] = []
     @State private var selectedCompanies: Set<String> = []
     @State private var showAutotaskSettings = false
     @State private var selectedCategory: String = "Company"
@@ -124,26 +124,28 @@ struct SettingsView: View {
                         
                         ScrollView {
                             LazyVStack {
-                                ForEach(searchResults, id: \.self) { company in
-                                    Text(company)
+                        ForEach(searchResults, id: \.0) { company in
+                                    Text(company.1)
                                         .font(.body)
                                         .frame(maxWidth: .infinity, alignment: .leading)
                                         .padding(.vertical, 4)
                                         .onTapGesture {
                                             if selectedCategory == "Contact" {
-                                                companyName = company  // Replace search field text with full company name
-                                                selectedCompanies = [company] // Ensure only one company is selected
+                                                companyName = company.1  // Store company name in text field
+                                                selectedCompanies = [company.1] // Ensure only one company is selected
                                                 searchResults = [] // Clear search results after selecting a company
                                                 showContactSearch = true // Show contact search field after selecting a company
+                                                // Print selected company ID and name for debugging
+                                                print("Selected Company: ID = \(company.0), Name = \(company.1)")
                                             } else {
-                                                if selectedCompanies.contains(company) {
-                                                    selectedCompanies.remove(company)
+                                                if selectedCompanies.contains(company.1) {
+                                                    selectedCompanies.remove(company.1)
                                                 } else {
-                                                    selectedCompanies.insert(company)
+                                                    selectedCompanies.insert(company.1)
                                                 }
                                             }
                                         }
-                                        .background(selectedCompanies.contains(company) ? Color.blue.opacity(0.3) : Color.clear)
+                                        .background(selectedCompanies.contains(company.1) ? Color.blue.opacity(0.3) : Color.clear)
                                 }
                             }
                         }

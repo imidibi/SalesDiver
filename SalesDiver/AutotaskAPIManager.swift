@@ -16,7 +16,7 @@ class AutotaskAPIManager {
         return (apiUsername, apiSecret, apiTrackingID)
     }
     
-    func searchCompanies(query: String, completion: @escaping ([String]) -> Void) {
+    func searchCompanies(query: String, completion: @escaping ([(Int, String)]) -> Void) {
         guard UserDefaults.standard.bool(forKey: "autotaskEnabled") else {
             completion([])
             return
@@ -82,8 +82,13 @@ class AutotaskAPIManager {
                 print("Raw API Response: \(jsonResponse ?? [:])")
 
                 if let companies = jsonResponse?["items"] as? [[String: Any]] {
-                    let companyNames = companies.compactMap { $0["companyName"] as? String }
-                    completion(companyNames)
+                    let companyData = companies.compactMap { company -> (Int, String)? in
+                        if let id = company["id"] as? Int, let name = company["companyName"] as? String {
+                            return (id, name)
+                        }
+                        return nil
+                    }
+                    completion(companyData)
                 } else {
                     completion([])
                 }
