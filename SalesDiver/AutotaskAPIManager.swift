@@ -41,7 +41,7 @@ class AutotaskAPIManager {
         
         let requestBody: [String: Any] = [
             "MaxRecords": 50,
-            "IncludeFields": ["companyName"],
+            "IncludeFields": ["id","companyName"],
             "Filter": [[
                 "op": "like",
                 "field": "companyName",
@@ -50,7 +50,7 @@ class AutotaskAPIManager {
                 "items": []
             ]]
         ]
-        
+
         do {
             let jsonData = try JSONSerialization.data(withJSONObject: requestBody, options: [])
             request.httpBody = jsonData
