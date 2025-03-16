@@ -11,6 +11,7 @@ struct SettingsView: View {
     @State private var companyName: String = ""
     @State private var searchResults: [(Int, String)] = []
     @State private var selectedCompanies: Set<String> = []
+    @State private var selectedContacts: Set<String> = []
     @State private var showAutotaskSettings = false
     @State private var selectedCategory: String = "Company"
     @State private var showContactSearch = false
@@ -152,22 +153,28 @@ struct SettingsView: View {
                                         .frame(maxWidth: .infinity, alignment: .leading)
                                         .padding(.vertical, 4)
                                         .onTapGesture {
-                                            if selectedCategory == "Contact" {
+                                            if showContactSearch {
+                                                let contactName = company.1
+                                                if selectedContacts.contains(contactName) {
+                                                    selectedContacts.remove(contactName)
+                                                } else {
+                                                    selectedContacts.insert(contactName)
+                                                }
+                                            } else {
                                                 companyName = company.1  // Store company name in text field
                                                 selectedCompanyID = company.0  // Store selected company ID
                                                 selectedCompanies = [company.1] // Ensure only one company is selected
                                                 searchResults = [] // Clear search results after selecting a company
                                                 showContactSearch = true // Show contact search field after selecting a company
                                                 print("✅ Selected Company: ID = \(company.0), Name = \(company.1)")
-                                            } else {
-                                                if selectedCompanies.contains(company.1) {
-                                                    selectedCompanies.remove(company.1)
-                                                } else {
-                                                    selectedCompanies.insert(company.1)
-                                                }
                                             }
                                         }
-                                        .background(selectedCompanies.contains(company.1) ? Color.blue.opacity(0.3) : Color.clear)
+                                        .background(
+                                            showContactSearch ?
+                                                (selectedContacts.contains(company.1) ? Color.blue.opacity(0.3) : Color.clear)
+                                            :
+                                                (selectedCompanies.contains(company.1) ? Color.blue.opacity(0.3) : Color.clear)
+                                        )
                                 }
                             }
                         }
