@@ -14,10 +14,28 @@
         <attribute name="name" optional="YES" attributeType="String"/>
         <attribute name="state" optional="YES" attributeType="String"/>
         <attribute name="zipCode" optional="YES" attributeType="String"/>
+        <relationship name="contacts" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="ContactsEntity" inverseName="company" inverseEntity="ContactsEntity"/>
         <relationship name="opportunities" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="OpportunityEntity" inverseName="company" inverseEntity="OpportunityEntity"/>
         <relationship name="secAssessments" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="SecAssessEntity" inverseName="company" inverseEntity="SecAssessEntity"/>
     </entity>
-    <entity name="ContactsEntity" representedClassName="ContactsEntity" syncable="YES" codeGenerationType="class"/>
+    <entity name="ContactsEntity" representedClassName="ContactsEntity" syncable="YES" codeGenerationType="class">
+        <attribute name="address1" optional="YES" attributeType="String"/>
+        <attribute name="address2" optional="YES" attributeType="String"/>
+        <attribute name="city" optional="YES" attributeType="String"/>
+        <attribute name="companyID" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="country" optional="YES" attributeType="String"/>
+        <attribute name="emailAddress" optional="YES" attributeType="String"/>
+        <attribute name="firstName" optional="YES" attributeType="String"/>
+        <attribute name="id" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="isOptedOutFromBulkEmail" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="isPrimaryContact" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="lastName" optional="YES" attributeType="String"/>
+        <attribute name="phone" optional="YES" attributeType="String"/>
+        <attribute name="postalCode" optional="YES" attributeType="String"/>
+        <attribute name="state" optional="YES" attributeType="String"/>
+        <attribute name="title" optional="YES" attributeType="String"/>
+        <relationship name="company" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CompanyEntity" inverseName="contacts" inverseEntity="CompanyEntity"/>
+    </entity>
     <entity name="OpportunityEntity" representedClassName="OpportunityEntity" syncable="YES" codeGenerationType="class">
         <attribute name="authorityCommentary" optional="YES" attributeType="String"/>
         <attribute name="authorityStatus" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
