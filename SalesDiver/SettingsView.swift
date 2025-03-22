@@ -116,10 +116,10 @@ struct SettingsView: View {
                         TextField("Enter company name", text: $companyName, onCommit: {
                             if selectedCategory == "Contact" {
                                 if !companyName.trimmingCharacters(in: .whitespaces).isEmpty {
-                                    searchCompaniesForContacts() // Trigger search only when user submits with input
+                                    searchCompanyForContacts()
                                 }
                             } else {
-                                searchCompanies()
+                                searchCompaniesForSelection()
                             }
                         })
                         .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -153,20 +153,19 @@ struct SettingsView: View {
                                         .frame(maxWidth: .infinity, alignment: .leading)
                                         .padding(.vertical, 4)
                                         .onTapGesture {
-                                            if showContactSearch {
-                                                let contactName = company.1
-                                                if selectedContacts.contains(contactName) {
-                                                    selectedContacts.remove(contactName)
+                                            if selectedCategory == "Company" {
+                                                let companyNameValue = company.1
+                                                if selectedCompanies.contains(companyNameValue) {
+                                                    selectedCompanies.remove(companyNameValue)
                                                 } else {
-                                                    selectedContacts.insert(contactName)
+                                                    selectedCompanies.insert(companyNameValue)
                                                 }
-                                            } else {
-                                                companyName = company.1  // Store company name in text field
-                                                selectedCompanyID = company.0  // Store selected company ID
-                                                selectedCompanies = [company.1] // Ensure only one company is selected
-                                                searchResults = [] // Clear search results after selecting a company
-                                                showContactSearch = true // Show contact search field after selecting a company
-                                                print("✅ Selected Company: ID = \(company.0), Name = \(company.1)")
+                                            } else if selectedCategory == "Contact" {
+                                                companyName = company.1
+                                                selectedCompanyID = company.0
+                                                selectedCompanies = [company.1]
+                                                searchResults = []
+                                                showContactSearch = true
                                             }
                                         }
                                         .background(
@@ -296,17 +295,20 @@ struct SettingsView: View {
         }
     }
     
-    private func searchCompanies() {
-        AutotaskAPIManager.shared.searchCompanies(query: companyName) { results in
+    private func searchCompaniesForSelection() {
+        let trimmedQuery = companyName.trimmingCharacters(in: .whitespaces).lowercased()
+        guard !trimmedQuery.isEmpty else { return }
+
+        AutotaskAPIManager.shared.searchCompanies(query: trimmedQuery) { results in
             DispatchQueue.main.async {
-                searchResults = results
+                searchResults = results.filter { $0.1.lowercased().hasPrefix(trimmedQuery) }
             }
         }
     }
 
-    private func searchCompaniesForContacts() {
+    private func searchCompanyForContacts() {
         let trimmedQuery = companyName.trimmingCharacters(in: .whitespaces)
-        guard !trimmedQuery.isEmpty else { return } // Prevent search if input is empty
+        guard !trimmedQuery.isEmpty else { return }
 
         AutotaskAPIManager.shared.searchCompanies(query: trimmedQuery) { results in
             DispatchQueue.main.async {

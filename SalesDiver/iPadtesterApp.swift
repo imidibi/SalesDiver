@@ -9,9 +9,12 @@ import SwiftUI
 
 @main
 struct iPadtesterApp: App {
+    let coreDataManager = CoreDataManager.shared
+
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(\.managedObjectContext, coreDataManager.persistentContainer.viewContext)
         }
     }
 }

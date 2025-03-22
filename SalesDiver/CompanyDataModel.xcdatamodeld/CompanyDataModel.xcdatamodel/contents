@@ -26,7 +26,7 @@
         <attribute name="country" optional="YES" attributeType="String"/>
         <attribute name="emailAddress" optional="YES" attributeType="String"/>
         <attribute name="firstName" optional="YES" attributeType="String"/>
-        <attribute name="id" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="isOptedOutFromBulkEmail" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
         <attribute name="isPrimaryContact" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
         <attribute name="lastName" optional="YES" attributeType="String"/>

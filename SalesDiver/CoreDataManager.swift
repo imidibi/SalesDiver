@@ -8,14 +8,14 @@ class CoreDataManager {
     private init() {
         persistentContainer = NSPersistentContainer(name: "CompanyDataModel")
         persistentContainer.loadPersistentStores { (_, error) in
-            if let error = error {
-                fatalError("Failed to load Core Data: \(error)")
+            if let error = error as NSError? {
+                print("❌ Failed to load Core Data: \(error), \(error.userInfo)")
             }
         }
     }
     
     var context: NSManagedObjectContext {
-        persistentContainer.viewContext
+        return persistentContainer.viewContext
     }
     
     func saveContext() {
@@ -24,7 +24,7 @@ class CoreDataManager {
             do {
                 try context.save()
             } catch {
-                fatalError("Unresolved error \(error)")
+                print("Unresolved error \(error)")
             }
         }
     }
@@ -54,6 +54,18 @@ class CoreDataManager {
         saveContext()
     }
     
+    func fetchCompanies() -> [CompanyEntity] {
+        let request: NSFetchRequest<CompanyEntity> = CompanyEntity.fetchRequest()
+        request.sortDescriptors = [NSSortDescriptor(key: "name", ascending: true)]
+        
+        do {
+            return try context.fetch(request)
+        } catch {
+            print("Failed to fetch companies: \(error)")
+            return []
+        }
+    }
+    
     func fetchSecurityAssessments(for company: CompanyEntity) -> [SecAssessEntity] {
         let request: NSFetchRequest<SecAssessEntity> = SecAssessEntity.fetchRequest()
 
@@ -67,8 +79,8 @@ class CoreDataManager {
 
         do {
             let assessments = try context.fetch(request)
-        // print("🔍 Fetch Attempt: Looking for assessments for \(companyName)")
-        // print("✅ Fetch Success: Found \(assessments.count) assessments for \(companyName)")
+            // print("🔍 Fetch Attempt: Looking for assessments for \(companyName)")
+            // print("✅ Fetch Success: Found \(assessments.count) assessments for \(companyName)")
 
             for _ in assessments {
                 // print("📌 Assessment Retrieved - Date: \(assessment.assessDate ?? Date()) | MFA: \(assessment.mfa) | Encryption: \(assessment.encryption) | Backup: \(assessment.backup)")
