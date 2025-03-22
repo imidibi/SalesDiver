@@ -4,12 +4,13 @@
         <attribute name="answer" optional="YES" attributeType="String"/>
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <relationship name="meeting" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="MeetingsEntity" inverseName="answers" inverseEntity="MeetingsEntity"/>
-        <relationship name="questions" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="BANTQuestion"/>
+        <relationship name="questions" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="BANTQuestion" inverseName="answers" inverseEntity="BANTQuestion"/>
     </entity>
     <entity name="BANTQuestion" representedClassName="BANTQuestion" syncable="YES" codeGenerationType="class">
         <attribute name="category" optional="YES" attributeType="String"/>
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="questionText" optional="YES" attributeType="String"/>
+        <relationship name="answers" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="AnswersEntity" inverseName="questions" inverseEntity="AnswersEntity"/>
     </entity>
     <entity name="CompanyEntity" representedClassName="CompanyEntity" syncable="YES" codeGenerationType="class">
         <attribute name="address" optional="YES" attributeType="String"/>
@@ -20,9 +21,9 @@
         <attribute name="name" optional="YES" attributeType="String"/>
         <attribute name="state" optional="YES" attributeType="String"/>
         <attribute name="zipCode" optional="YES" attributeType="String"/>
-        <relationship name="contacts" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="ContactsEntity" inverseName="company" inverseEntity="ContactsEntity"/>
-        <relationship name="meetings" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="MeetingsEntity" inverseName="companies" inverseEntity="MeetingsEntity"/>
-        <relationship name="opportunities" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="OpportunityEntity" inverseName="company" inverseEntity="OpportunityEntity"/>
+        <relationship name="contacts" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="ContactsEntity" inverseName="company" inverseEntity="ContactsEntity"/>
+        <relationship name="meetings" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="MeetingsEntity" inverseName="company" inverseEntity="MeetingsEntity"/>
+        <relationship name="opportunities" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="OpportunityEntity" inverseName="company" inverseEntity="OpportunityEntity"/>
         <relationship name="secAssessments" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="SecAssessEntity" inverseName="company" inverseEntity="SecAssessEntity"/>
     </entity>
     <entity name="ContactsEntity" representedClassName="ContactsEntity" syncable="YES" codeGenerationType="class">
@@ -58,10 +59,11 @@
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="location" optional="YES" attributeType="String"/>
         <attribute name="notes" optional="YES" attributeType="String"/>
+        <attribute name="objective" optional="YES" attributeType="String"/>
         <attribute name="title" optional="YES" attributeType="String"/>
         <relationship name="answers" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="AnswersEntity" inverseName="meeting" inverseEntity="AnswersEntity"/>
-        <relationship name="companies" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CompanyEntity" inverseName="meetings" inverseEntity="CompanyEntity"/>
-        <relationship name="contacts" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="ContactsEntity" inverseName="meetings" inverseEntity="ContactsEntity"/>
+        <relationship name="company" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CompanyEntity" inverseName="meetings" inverseEntity="CompanyEntity"/>
+        <relationship name="contacts" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="ContactsEntity" inverseName="meetings" inverseEntity="ContactsEntity"/>
         <relationship name="followUps" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="FollowUpsEntity" inverseName="meeting" inverseEntity="FollowUpsEntity"/>
         <relationship name="opportunity" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="OpportunityEntity" inverseName="meetings" inverseEntity="OpportunityEntity"/>
     </entity>
