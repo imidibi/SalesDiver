@@ -13,10 +13,16 @@ struct PlanMeetingView: View {
     @Environment(\.presentationMode) private var presentationMode
     @State private var meetingTitle: String = ""
     @State private var meetingDate: Date = Date()
+    @State private var meetingTime: Date = Date()
     @State private var selectedCompany: CompanyEntity?
     @State private var selectedOpportunity: OpportunityEntity?
     @State private var selectedAttendees: Set<ContactsEntity> = []
     @State private var meetingObjective: String = ""
+    @State private var showingDatePicker: Bool = false
+    @State private var showingTimePicker: Bool = false
+    @State private var companySearchText: String = ""
+    @State private var opportunitySearchText: String = ""
+    @State private var contactsSearchText: String = ""
     
     @FetchRequest(entity: CompanyEntity.entity(), sortDescriptors: [NSSortDescriptor(keyPath: \CompanyEntity.name, ascending: true)])
     private var companies: FetchedResults<CompanyEntity>
@@ -34,15 +40,57 @@ struct PlanMeetingView: View {
     var body: some View {
         NavigationStack {
             Form {
+                Section(header: Text("Meeting Title")) {
+                    TextField("Enter Meeting Title", text: $meetingTitle)
+                }
+
                 Section(header: Text("Meeting Details")) {
-                    TextField("Meeting Title", text: $meetingTitle)
-                    
-                    DatePicker("Meeting Date", selection: $meetingDate, displayedComponents: .date)
+                    Button(action: { showingDatePicker = true }) {
+                        HStack {
+                            Text("Meeting Date")
+                            Spacer()
+                            Text(meetingDate, style: .date)
+                                .foregroundColor(.gray)
+                        }
+                    }
+                    .sheet(isPresented: $showingDatePicker) {
+                        VStack {
+                            DatePicker("Select Date", selection: $meetingDate, displayedComponents: .date)
+                                .datePickerStyle(GraphicalDatePickerStyle())
+
+                            Button("Done") {
+                                showingDatePicker = false
+                            }
+                            .padding()
+                        }
+                    }
+
+                    Button(action: { showingTimePicker = true }) {
+                        HStack {
+                            Text("Scheduled Time")
+                            Spacer()
+                            Text(meetingTime, style: .time)
+                                .foregroundColor(.gray)
+                        }
+                    }
+                    .sheet(isPresented: $showingTimePicker) {
+                        VStack {
+                            DatePicker("Select Time", selection: $meetingTime, displayedComponents: .hourAndMinute)
+                                .datePickerStyle(WheelDatePickerStyle())
+
+                            Button("Done") {
+                                showingTimePicker = false
+                            }
+                            .padding()
+                        }
+                    }
                 }
                 
                 Section(header: Text("Company")) {
+                    TextField("Search Company", text: $companySearchText)
+                    
                     Picker("Select Company", selection: $selectedCompany) {
-                        ForEach(companies, id: \.self) { company in
+                        ForEach(companies.filter { companySearchText.isEmpty || ($0.name?.localizedCaseInsensitiveContains(companySearchText) ?? false) }, id: \.self) { company in
                             Text(company.name ?? "Unknown").tag(company as CompanyEntity?)
                         }
                     }
@@ -50,15 +98,19 @@ struct PlanMeetingView: View {
                 
                 if selectedCompany != nil {
                     Section(header: Text("Opportunity")) {
+                        TextField("Search Opportunity", text: $opportunitySearchText)
+                        
                         Picker("Select Opportunity", selection: $selectedOpportunity) {
-                            ForEach(filteredOpportunities, id: \.self) { opportunity in
+                            ForEach(filteredOpportunities.filter { opportunitySearchText.isEmpty || ($0.name?.localizedCaseInsensitiveContains(opportunitySearchText) ?? false) }, id: \.self) { opportunity in
                                 Text(opportunity.name ?? "Untitled").tag(opportunity as OpportunityEntity?)
                             }
                         }
                     }
                     
                     Section(header: Text("Attendees")) {
-                        ForEach(filteredContacts, id: \.self) { contact in
+                        TextField("Search Attendees", text: $contactsSearchText)
+                        
+                        ForEach(filteredContacts.filter { contactsSearchText.isEmpty || ("\(($0.firstName ?? "")) \(($0.lastName ?? ""))".localizedCaseInsensitiveContains(contactsSearchText)) }, id: \.self) { contact in
                             let firstName = contact.value(forKey: "firstName") as? String ?? ""
                             let lastName = contact.value(forKey: "lastName") as? String ?? ""
                             let fullName = "\(firstName) \(lastName)"
@@ -87,7 +139,11 @@ struct PlanMeetingView: View {
         
         // Assign properties
         newMeeting.title = meetingTitle
-        newMeeting.date = meetingDate
+        let calendar = Calendar.current
+        let combinedDateTime = calendar.date(bySettingHour: calendar.component(.hour, from: meetingTime),
+                                             minute: calendar.component(.minute, from: meetingTime),
+                                             second: 0, of: meetingDate) ?? meetingDate
+        newMeeting.date = combinedDateTime
         newMeeting.objective = meetingObjective
         
         // Safely assign company (ensure relationship exists in Core Data)

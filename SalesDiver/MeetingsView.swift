@@ -59,8 +59,4 @@ struct RecordMeetingView: View {
     }
 }
 
-struct ViewMeetingsView: View {
-    var body: some View {
-        Text("View Meetings Screen")
-    }
-}
+// Removed duplicate `ViewMeetingsView` to avoid redeclaration error.
