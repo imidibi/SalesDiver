@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="23605" systemVersion="24D81" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithSwiftData="YES" userDefinedModelVersionIdentifier="">
+    <entity name="AnswersEntity" representedClassName="AnswersEntity" syncable="YES" codeGenerationType="class">
+        <attribute name="answer" optional="YES" attributeType="String"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <relationship name="meeting" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="MeetingsEntity" inverseName="answers" inverseEntity="MeetingsEntity"/>
+        <relationship name="questions" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="BANTQuestion"/>
+    </entity>
     <entity name="BANTQuestion" representedClassName="BANTQuestion" syncable="YES" codeGenerationType="class">
         <attribute name="category" optional="YES" attributeType="String"/>
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
@@ -15,6 +21,7 @@
         <attribute name="state" optional="YES" attributeType="String"/>
         <attribute name="zipCode" optional="YES" attributeType="String"/>
         <relationship name="contacts" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="ContactsEntity" inverseName="company" inverseEntity="ContactsEntity"/>
+        <relationship name="meetings" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="MeetingsEntity" inverseName="companies" inverseEntity="MeetingsEntity"/>
         <relationship name="opportunities" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="OpportunityEntity" inverseName="company" inverseEntity="OpportunityEntity"/>
         <relationship name="secAssessments" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="SecAssessEntity" inverseName="company" inverseEntity="SecAssessEntity"/>
     </entity>
@@ -35,6 +42,28 @@
         <attribute name="state" optional="YES" attributeType="String"/>
         <attribute name="title" optional="YES" attributeType="String"/>
         <relationship name="company" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CompanyEntity" inverseName="contacts" inverseEntity="CompanyEntity"/>
+        <relationship name="meetings" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="MeetingsEntity" inverseName="contacts" inverseEntity="MeetingsEntity"/>
+    </entity>
+    <entity name="FollowUpsEntity" representedClassName="FollowUpsEntity" syncable="YES" codeGenerationType="class">
+        <attribute name="assignedTo" optional="YES" attributeType="String"/>
+        <attribute name="completed" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="dueDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <relationship name="meeting" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="MeetingsEntity" inverseName="followUps" inverseEntity="MeetingsEntity"/>
+    </entity>
+    <entity name="MeetingsEntity" representedClassName="MeetingsEntity" syncable="YES" codeGenerationType="class">
+        <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="date" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="location" optional="YES" attributeType="String"/>
+        <attribute name="notes" optional="YES" attributeType="String"/>
+        <attribute name="title" optional="YES" attributeType="String"/>
+        <relationship name="answers" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="AnswersEntity" inverseName="meeting" inverseEntity="AnswersEntity"/>
+        <relationship name="companies" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CompanyEntity" inverseName="meetings" inverseEntity="CompanyEntity"/>
+        <relationship name="contacts" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="ContactsEntity" inverseName="meetings" inverseEntity="ContactsEntity"/>
+        <relationship name="followUps" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="FollowUpsEntity" inverseName="meeting" inverseEntity="FollowUpsEntity"/>
+        <relationship name="opportunity" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="OpportunityEntity" inverseName="meetings" inverseEntity="OpportunityEntity"/>
     </entity>
     <entity name="OpportunityEntity" representedClassName="OpportunityEntity" syncable="YES" codeGenerationType="class">
         <attribute name="authorityCommentary" optional="YES" attributeType="String"/>
@@ -51,6 +80,7 @@
         <attribute name="timingStatus" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="totalPrice" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <relationship name="company" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CompanyEntity" inverseName="opportunities" inverseEntity="CompanyEntity"/>
+        <relationship name="meetings" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="MeetingsEntity" inverseName="opportunity" inverseEntity="MeetingsEntity"/>
         <relationship name="product" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="ProductEntity" inverseName="opportunities" inverseEntity="ProductEntity"/>
     </entity>
     <entity name="ProductEntity" representedClassName="ProductEntity" syncable="YES" codeGenerationType="class">
