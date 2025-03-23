@@ -2,13 +2,16 @@ import SwiftUI
 
 struct MeetingsView: View {
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 20) {
+        ZStack {
+            WaterBackgroundView() // Apply the WaterBackgroundView for the blue gradient and wave effect
+            
+            VStack {
                 Text("Meetings")
                     .font(.largeTitle)
                     .fontWeight(.bold)
+                    .padding(.top, 40) // Adjust padding for title
                 
-                VStack(spacing: 16) {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 20) {
                     NavigationLink(destination: PlanMeetingView()) {
                         MenuButton(icon: "calendar.badge.plus", label: "Plan Meeting")
                     }
@@ -32,24 +35,23 @@ struct MenuButton: View {
     var label: String
 
     var body: some View {
-        HStack {
+        VStack {
             Image(systemName: icon)
                 .resizable()
-                .frame(width: 30, height: 30)
-                .foregroundColor(.blue)
-                .padding()
-
+                .scaledToFit()
+                .frame(width: 80, height: 80) // Exactly 80x80 icon size
+                .foregroundColor(.blue) // Match icon color
+            
             Text(label)
-                .font(.title2)
-                .foregroundColor(.primary)
-
-            Spacer()
+                .font(.headline) // Match text formatting
+                .foregroundColor(.black) // Match text color
+                .multilineTextAlignment(.center) // Center text inside the button
         }
-        .frame(maxWidth: .infinity, minHeight: 60)
-        .background(Color(.systemGray6))
-        .cornerRadius(10)
-        .shadow(radius: 2)
-        .padding(.horizontal)
+        .frame(width: 180, height: 180) // Apply frame to the entire button
+        .padding()
+        .background(Color.white) // Use white background
+        .cornerRadius(15) // Adjusted corner radius
+        .shadow(radius: 5) // Adjusted shadow effect
     }
 }
 
@@ -58,5 +60,3 @@ struct RecordMeetingView: View {
         Text("Record Meeting Screen")
     }
 }
-
-// Removed duplicate `ViewMeetingsView` to avoid redeclaration error.
