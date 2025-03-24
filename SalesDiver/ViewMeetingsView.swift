@@ -12,47 +12,49 @@ struct ViewMeetingsView: View {
         NavigationView {
             List {
                 ForEach(meetings, id: \.objectID) { meeting in
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
+                    HStack(alignment: .top, spacing: 16) {
+                        VStack(alignment: .leading, spacing: 8) {
                             Text(meeting.title ?? "Untitled Meeting")
                                 .font(.headline)
-                            Spacer()
-                            if let opportunity = meeting.opportunity {
-                                VStack(alignment: .trailing) {
-                                    Text("Opportunity: \(opportunity.name ?? "Unknown")")
-                                        .font(.subheadline)
-                                        .foregroundColor(.blue)
 
-                                    Text("Expected Value: $\(opportunity.customPrice ?? 0.0, specifier: "%.2f")")
+                            Text("Date: \(meeting.date ?? Date(), formatter: dateFormatter)")
+                                .font(.subheadline)
+                                .foregroundColor(.gray)
+
+                            if let company = meeting.company {
+                                Text("Company: \(company.name ?? "Unknown Company")")
+                                    .font(.subheadline)
+                            }
+
+                            if let contacts = meeting.contacts as? Set<ContactsEntity>, !contacts.isEmpty {
+                                Text("Attendees: \(contacts.map { $0.firstName ?? "" + " " + ($0.lastName ?? "") }.joined(separator: ", "))")
+                                    .font(.subheadline)
+                            }
+
+                            Text("Objective: \(meeting.objective ?? "No objective specified.")")
+                                .font(.subheadline)
+                                .italic()
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                        if let opportunity = meeting.opportunity {
+                            VStack(alignment: .trailing, spacing: 4) {
+                                Text("Opportunity: \(opportunity.name ?? "Unknown")")
+                                    .font(.subheadline)
+                                    .foregroundColor(.blue)
+
+                                Text("Expected Value: $\(opportunity.customPrice ?? 0.0, specifier: "%.2f")")
+                                    .font(.subheadline)
+                                    .foregroundColor(.gray)
+
+                                if let closeDate = opportunity.closeDate {
+                                    Text("Expected Close: \(closeDate, formatter: shortDateFormatter)")
                                         .font(.subheadline)
                                         .foregroundColor(.gray)
-
-                                    if let closeDate = opportunity.closeDate {
-                                        Text("Expected Close: \(closeDate, formatter: shortDateFormatter)")
-                                            .font(.subheadline)
-                                            .foregroundColor(.gray)
-                                    }
                                 }
                             }
+                            .frame(maxWidth: .infinity, alignment: .trailing)
                         }
-
-                        Text("Date: \(meeting.date ?? Date(), formatter: dateFormatter)")
-                            .font(.subheadline)
-                            .foregroundColor(.gray)
-
-                        if let company = meeting.company {
-                            Text("Company: \(company.name ?? "Unknown Company")")
-                                .font(.subheadline)
-                        }
-
-                        if let contacts = meeting.contacts as? Set<ContactsEntity>, !contacts.isEmpty {
-                            Text("Attendees: \(contacts.map { $0.firstName ?? "" + " " + ($0.lastName ?? "") }.joined(separator: ", "))")
-                                .font(.subheadline)
-                        }
-
-                        Text("Objective: \(meeting.objective ?? "No objective specified.")")
-                            .font(.subheadline)
-                            .italic()
                     }
                     .padding()
                 }
