@@ -160,13 +160,12 @@ struct SettingsView: View {
                                                 } else {
                                                     selectedCompanies.insert(companyNameValue)
                                                 }
-                                            } else if selectedCategory == "Contact" {
-                                                companyName = company.1
-                                                selectedCompanyID = company.0
-                                                selectedCompanies = [company.1]
-                                                searchResults = []
-                                                showContactSearch = true
-                                            }
+                                        } else if selectedCategory == "Contact" {
+                                            companyName = company.1
+                                            selectedCompanyID = company.0
+                                            selectedCompanies = [company.1]
+                                            searchResults = []
+                                        }
                                         }
                                         .background(
                                             showContactSearch ?
