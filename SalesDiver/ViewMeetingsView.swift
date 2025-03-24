@@ -26,6 +26,12 @@ struct ViewMeetingsView: View {
                                     Text("Expected Value: $\(opportunity.customPrice ?? 0.0, specifier: "%.2f")")
                                         .font(.subheadline)
                                         .foregroundColor(.gray)
+
+                                    if let closeDate = opportunity.closeDate {
+                                        Text("Expected Close: \(closeDate, formatter: shortDateFormatter)")
+                                            .font(.subheadline)
+                                            .foregroundColor(.gray)
+                                    }
                                 }
                             }
                         }
@@ -61,5 +67,12 @@ private let dateFormatter: DateFormatter = {
     let formatter = DateFormatter()
     formatter.dateStyle = .medium
     formatter.timeStyle = .short
+    return formatter
+}()
+
+private let shortDateFormatter: DateFormatter = {
+    let formatter = DateFormatter()
+    formatter.dateStyle = .medium
+    formatter.timeStyle = .none
     return formatter
 }()
