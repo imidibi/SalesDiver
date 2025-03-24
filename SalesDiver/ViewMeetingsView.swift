@@ -11,10 +11,24 @@ struct ViewMeetingsView: View {
     var body: some View {
         NavigationView {
             List {
-                ForEach(meetings, id: \.self) { meeting in
+                ForEach(meetings, id: \.objectID) { meeting in
                     VStack(alignment: .leading, spacing: 8) {
-                        Text(meeting.title ?? "Untitled Meeting")
-                            .font(.headline)
+                        HStack {
+                            Text(meeting.title ?? "Untitled Meeting")
+                                .font(.headline)
+                            Spacer()
+                            if let opportunity = meeting.opportunity {
+                                VStack(alignment: .trailing) {
+                                    Text("Opportunity: \(opportunity.name ?? "Unknown")")
+                                        .font(.subheadline)
+                                        .foregroundColor(.blue)
+
+                                    Text("Expected Value: $\(opportunity.customPrice ?? 0.0, specifier: "%.2f")")
+                                        .font(.subheadline)
+                                        .foregroundColor(.gray)
+                                }
+                            }
+                        }
 
                         Text("Date: \(meeting.date ?? Date(), formatter: dateFormatter)")
                             .font(.subheadline)
@@ -22,11 +36,6 @@ struct ViewMeetingsView: View {
 
                         if let company = meeting.company {
                             Text("Company: \(company.name ?? "Unknown Company")")
-                                .font(.subheadline)
-                        }
-
-                        if let opportunity = meeting.opportunity {
-                            Text("Opportunity: \(opportunity.name ?? "Unknown Opportunity")")
                                 .font(.subheadline)
                         }
 
