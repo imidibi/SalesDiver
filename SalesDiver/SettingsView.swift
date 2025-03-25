@@ -67,114 +67,159 @@ struct SettingsView: View {
         }
     }
     
-    var body: some View  {
+   var body: some View {
         NavigationStack {
             Form {
                 autotaskIntegrationSection
-                
+
                 if autotaskEnabled {
-                    Section(header: Text("Select Data Type")) {
-                        LazyVGrid(columns: gridColumns, spacing: 10) {
-                            ForEach(["Company", "Contact", "Opportunity", "Product"], id: \.self) { category in
-                                Button(action: {
-                                    if selectedCategory != category {
-                                        companyName = ""  // Clear search field
-                                        searchResults = [] // Reset search results
-                                        selectedCompanies.removeAll() // Clear selection
-                                        showContactSearch = false // Reset contact search visibility
-                                    }
-                                    
-                                    selectedCategory = category
-                                    // Removed automatic search for Contacts when button is selected
-                                }) {
-                                    Text(category)
-                                        .frame(maxWidth: .infinity)
-                                        .padding()
-                                        .background(selectedCategory == category ? Color.blue : Color.gray)
-                                        .foregroundColor(.white)
-                                        .cornerRadius(8)
-                                }
-                                .buttonStyle(PlainButtonStyle()) // Ensures correct behavior on selection
-                            }
-                        }
-                        .padding()
-                    }
+                    selectDataTypeSection
                 }
-                
-                if !testResult.isEmpty {
-                    Section(header: Text("Autotask Sync Status")) {
-                        Text(testResult)
-                            .foregroundColor(testResult.contains("Failed") || testResult.contains("Error") || testResult.contains("No companies found") ? .red : .primary)
-                    }
-                }
-                
-                if autotaskEnabled {
-                    Section(header: Text(searchHeaderText)) {
-                        TextField("Enter company name", text: $companyName, onCommit: {
-                            if selectedCategory == "Contact" {
-                                if !companyName.trimmingCharacters(in: .whitespaces).isEmpty {
-                                    searchCompanyForContacts()
-                                }
-                            } else {
-                                searchCompaniesForSelection()
-                            }
-                        })
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        
-                        if selectedCategory == "Contact", selectedCompanyID != nil {
-                            TextField("Enter contact name", text: $contactName, onCommit: {
-                                searchContactsForCompany()
-                            })
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .padding(.top, 10)
-                        }
-                        
-                        ScrollView {
-                            LazyVStack {
-                                ForEach(searchResults, id: \.0) { company in
-                                    Text(company.1)
-                                        .font(.body)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                        .padding(.vertical, 4)
-                                        .onTapGesture {
-                                            if selectedCategory == "Company" {
-                                                let companyNameValue = company.1
-                                                if selectedCompanies.contains(companyNameValue) {
-                                                    selectedCompanies.remove(companyNameValue)
-                                                } else {
-                                                    selectedCompanies.insert(companyNameValue)
-                                                }
-                                            } else if selectedCategory == "Contact" {
-                                                // When in Contact mode, select the company to import contacts from.
-                                                selectedCompanyID = company.0
-                                                companyName = company.1
-                                                showContactSearch = true
-                                            }
-                                        }
-                                        .background(backgroundColor(for: company.1))
-                                }
-                            }
-                        }
-                        .frame(maxHeight: 300)
-                        
-                        if selectedCategory == "Contact", selectedCompanyID != nil {
-                            Button("Import All Contacts") {
-                                contactName = ""
-                                // Call the new GET-based function
-                                AutotaskAPIManager.shared.searchContactsGET(companyID: selectedCompanyID!) { results in
-                                     DispatchQueue.main.async {
-                                         searchResults = results
-                                     }
-                                }
-                            }
-                            .padding()
-                            .background(Color.blue)
-                            .foregroundColor(.white)
-                            .cornerRadius(8)
-                        }                    }
-                }
+
+                additionalSettingsSections
             }
             .navigationTitle("Settings")
+        }
+    }
+
+    // Extracted Select Data Type Section
+    private var selectDataTypeSection: some View {
+        Section(header: Text("Select Data Type")) {
+            dataTypeButtonsGrid
+                .padding()
+        }
+    }
+
+    // Extracted LazyVGrid of buttons
+    private var dataTypeButtonsGrid: some View {
+        LazyVGrid(columns: gridColumns, spacing: 10) {
+            ForEach(["Company", "Contact", "Opportunity", "Product"], id: \.self) { category in
+                dataTypeButton(for: category)
+            }
+        }
+    }
+
+    // Extracted button view
+    private func dataTypeButton(for category: String) -> some View {
+        Button(action: {
+            handleCategorySelection(category)
+        }) {
+            Text(category)
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(selectedCategory == category ? Color.blue : Color.gray)
+                .foregroundColor(.white)
+                .cornerRadius(8)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+
+    // Extracted button action logic
+    private func handleCategorySelection(_ category: String) {
+        if selectedCategory != category {
+            companyName = ""
+            searchResults = []
+            selectedCompanies.removeAll()
+            showContactSearch = false
+        }
+        selectedCategory = category
+    }
+
+    // Extracted additional settings below main grid
+    private var additionalSettingsSections: some View {
+        Group {
+            if !testResult.isEmpty {
+                Section(header: Text("Autotask Sync Status")) {
+                    Text(testResult)
+                        .foregroundColor(testResult.contains("Failed") || testResult.contains("Error") || testResult.contains("No companies found") ? .red : .primary)
+                }
+            }
+
+            if autotaskEnabled {
+                searchAndResultsSection
+            }
+        }
+    }
+
+    // Extracted search and results section
+    private var searchAndResultsSection: some View {
+        Section(header: Text(searchHeaderText)) {
+            TextField("Enter company name", text: $companyName, onCommit: handleSearchCommit)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+
+            if selectedCategory == "Contact", selectedCompanyID != nil {
+                contactSearchField
+            }
+
+            resultsScrollView
+
+            syncOrImportButton
+        }
+    }
+
+    // Extracted commit handler
+    private func handleSearchCommit() {
+        if selectedCategory == "Contact" {
+            if !companyName.trimmingCharacters(in: .whitespaces).isEmpty {
+                searchCompanyForContacts()
+            }
+        } else {
+            searchCompaniesForSelection()
+        }
+    }
+
+    // Extracted contact search TextField
+    private var contactSearchField: some View {
+        TextField("Enter contact name", text: $contactName, onCommit: {
+            searchContactsForCompany()
+        })
+        .textFieldStyle(RoundedBorderTextFieldStyle())
+        .padding(.top, 10)
+    }
+
+    // Extracted ScrollView for results
+    private var resultsScrollView: some View {
+        ScrollView {
+            LazyVStack {
+                ForEach(searchResults, id: \.0) { company in
+                    Text(company.1)
+                        .font(.body)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, 4)
+                        .onTapGesture {
+                            handleTap(for: company)
+                        }
+                        .background(backgroundColor(for: company.1))
+                }
+            }
+        }
+        .frame(maxHeight: 300)
+    }
+
+    // Extracted Button for sync/import actions
+    @ViewBuilder
+    private var syncOrImportButton: some View {
+        if selectedCategory == "Company", !selectedCompanies.isEmpty {
+            Button("Sync with Autotask now") {
+                syncWithAutotask()
+            }
+            .padding()
+            .background(Color.green)
+            .foregroundColor(.white)
+            .cornerRadius(8)
+        } else if selectedCategory == "Contact", selectedCompanyID != nil {
+            Button("Import All Contacts") {
+                contactName = ""
+                AutotaskAPIManager.shared.searchContactsGET(companyID: selectedCompanyID!) { results in
+                    DispatchQueue.main.async {
+                        searchResults = results
+                    }
+                }
+            }
+            .padding()
+            .background(Color.blue)
+            .foregroundColor(.white)
+            .cornerRadius(8)
         }
     }
     
@@ -362,15 +407,21 @@ struct SettingsView: View {
         return name.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
     }
     
-    private func handleTap(for company: (Int, String)) {
-        if selectedCategory == "Company" {
-            let companyNameValue = company.1
-            if selectedCompanies.contains(companyNameValue) {
-                selectedCompanies.remove(companyNameValue)
-            } else {
-                selectedCompanies.insert(companyNameValue)
-            }
-          }    }
+private func handleTap(for company: (Int, String)) {
+    if selectedCategory == "Company" {
+        let companyNameValue = company.1
+        if selectedCompanies.contains(companyNameValue) {
+            selectedCompanies.remove(companyNameValue)
+        } else {
+            selectedCompanies.insert(companyNameValue)
+        }
+    } else if selectedCategory == "Contact" {
+        selectedCompanyID = company.0
+        companyName = company.1
+        showContactSearch = true
+        searchContactsForCompany()
+    }
+}
     
     private func contactFromString(_ string: String) -> Contact {
         let nameComponents = string.split(separator: " ").map(String.init)
