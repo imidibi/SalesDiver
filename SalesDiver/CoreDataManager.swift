@@ -79,10 +79,6 @@ class CoreDataManager {
 
         do {
             let assessments = try context.fetch(request)
-
-            for _ in assessments {
-            }
-
             return assessments
         } catch {
             print("❌ Fetch Error: \(error.localizedDescription)")
@@ -147,7 +143,7 @@ class CoreDataManager {
         let request: NSFetchRequest<SecAssessEntity> = SecAssessEntity.fetchRequest()
         
         do {
-            let assessments = try context.fetch(request)
+            _ = try context.fetch(request)
         } catch {
             print("❌ Fetch All Assessments Error: \(error.localizedDescription)")
         }

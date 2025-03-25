@@ -370,17 +370,7 @@ struct SettingsView: View {
             } else {
                 selectedCompanies.insert(companyNameValue)
             }
-            if selectedCategory == "Contact", selectedCompanyID != nil {
-                Button("Import All Contacts") {
-                     // Set contactName to empty string to import all contacts
-                     contactName = ""
-                     searchContactsForCompany()
-                }
-                .padding()
-                .background(Color.blue)
-                .foregroundColor(.white)
-                .cornerRadius(8)
-            }}    }
+          }    }
     
     private func contactFromString(_ string: String) -> Contact {
         let nameComponents = string.split(separator: " ").map(String.init)

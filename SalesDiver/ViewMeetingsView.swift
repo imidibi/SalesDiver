@@ -43,7 +43,7 @@ struct ViewMeetingsView: View {
                                     .font(.subheadline)
                                     .foregroundColor(.blue)
 
-                                Text("Expected Value: $\(opportunity.customPrice ?? 0.0, specifier: "%.2f")")
+                              Text("Expected Value: $\(opportunity.customPrice, specifier: "%.2f")")
                                     .font(.subheadline)
                                     .foregroundColor(.gray)
 
