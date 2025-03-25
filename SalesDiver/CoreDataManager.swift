@@ -79,11 +79,8 @@ class CoreDataManager {
 
         do {
             let assessments = try context.fetch(request)
-            // print("🔍 Fetch Attempt: Looking for assessments for \(companyName)")
-            // print("✅ Fetch Success: Found \(assessments.count) assessments for \(companyName)")
 
             for _ in assessments {
-                // print("📌 Assessment Retrieved - Date: \(assessment.assessDate ?? Date()) | MFA: \(assessment.mfa) | Encryption: \(assessment.encryption) | Backup: \(assessment.backup)")
             }
 
             return assessments
@@ -99,7 +96,6 @@ class CoreDataManager {
         newAssessment.assessDate = Date()
         
         newAssessment.company = company
-        // print("✅ Linking assessment to company \(company.name ?? "Unknown")")
         
         newAssessment.secAssess = assessmentData[0].rawValue
         newAssessment.secAware = assessmentData[1].rawValue
@@ -120,25 +116,6 @@ class CoreDataManager {
         
         do {
             try context.save()
-            // print("✅ Security assessment saved successfully for company: \(companyName)")
-            // print("📅 Date: \(newAssessment.assessDate ?? Date())")
-            // print("🔍 Status Values:")
-            // print(" - Security Assessment: \(newAssessment.secAssess)")
-            // print(" - Security Awareness: \(newAssessment.secAware)")
-            // print(" - Dark Web Research: \(newAssessment.darkWeb)")
-            // print(" - Backup: \(newAssessment.backup)")
-            // print(" - Email Protection: \(newAssessment.emailProtect)")
-            // print(" - Advanced EDR: \(newAssessment.advancedEDR)")
-            // print(" - Mobile Device Security: \(newAssessment.mobDevice)")
-            // print(" - Physical Security: \(newAssessment.phySec)")
-            // print(" - Passwords: \(newAssessment.passwords)")
-            // print(" - SIEM & SOC: \(newAssessment.siemSoc)")
-            // print(" - Firewall: \(newAssessment.firewall)")
-            // print(" - DNS Protection: \(newAssessment.dnsProtect)")
-            // print(" - Multi-Factor Authentication: \(newAssessment.mfa)")
-            // print(" - Computer Updates: \(newAssessment.compUpdates)")
-            // print(" - Encryption: \(newAssessment.encryption)")
-            // print(" - Cyber Insurance: \(newAssessment.cyberInsurance)")
         } catch {
             print("❌ Failed to save security assessment: \(error.localizedDescription)")
         }
@@ -171,13 +148,33 @@ class CoreDataManager {
         
         do {
             let assessments = try context.fetch(request)
-            // print("🔍 Total Security Assessments in Core Data: \(assessments.count)")
-            for _ in assessments {
-                // print("✅ Assessment for Company: \(companyName) | Date: \(assessment.assessDate ?? Date())")
-                // print("🔹 MFA: \(assessment.mfa) | Encryption: \(assessment.encryption) | Backup: \(assessment.backup)")
-            }
         } catch {
             print("❌ Fetch All Assessments Error: \(error.localizedDescription)")
         }
+    }
+    
+    func importContacts(contacts: [String]) {
+        let context = persistentContainer.viewContext
+        for contactName in contacts {
+            let nameComponents = contactName.split(separator: " ", maxSplits: 1).map { String($0) }
+            let firstName = nameComponents.first ?? ""
+            let lastName = nameComponents.count > 1 ? nameComponents[1] : ""
+            
+            let fetchRequest: NSFetchRequest<ContactsEntity> = ContactsEntity.fetchRequest()
+            fetchRequest.predicate = NSPredicate(format: "firstName ==[c] %@ AND lastName ==[c] %@", firstName.trimmingCharacters(in: .whitespacesAndNewlines), lastName.trimmingCharacters(in: .whitespacesAndNewlines))
+            
+            do {
+                let results = try context.fetch(fetchRequest)
+                if results.isEmpty {
+                    let newContact = ContactsEntity(context: context)
+                    newContact.id = UUID()
+                    newContact.firstName = firstName
+                    newContact.lastName = lastName
+                }
+            } catch {
+                print("Error fetching contact: \(error)")
+            }
+        }
+        saveContext()
     }
 }

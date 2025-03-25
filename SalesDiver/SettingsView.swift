@@ -1,5 +1,10 @@
 import SwiftUI
 
+struct Contact: Hashable {
+    let firstName: String
+    let lastName: String
+}
+
 struct SettingsView: View {
     @AppStorage("autotaskEnabled") private var autotaskEnabled = false
     @AppStorage("autotaskAPIUsername") private var apiUsername = ""
@@ -11,7 +16,7 @@ struct SettingsView: View {
     @State private var companyName: String = ""
     @State private var searchResults: [(Int, String)] = []
     @State private var selectedCompanies: Set<String> = []
-    @State private var selectedContacts: Set<String> = []
+    @State private var selectedContacts: Set<Contact> = []
     @State private var showAutotaskSettings = false
     @State private var selectedCategory: String = "Company"
     @State private var showContactSearch = false
@@ -31,53 +36,45 @@ struct SettingsView: View {
         }
     }
     
-    var body: some View {
-        NavigationStack {
-            Form {
-                Section(header: Text("Autotask Integration")) {
-                    Toggle("Enable Autotask API", isOn: $autotaskEnabled)
-                        .onChange(of: autotaskEnabled) { oldValue, newValue in
-                            if newValue {
-                                showAutotaskSettings = true  // Show settings when enabling API
-                            }
-                        }
-
-                    if autotaskEnabled {
-                        Toggle("Show Settings", isOn: $showAutotaskSettings)
-
-                        if showAutotaskSettings {
-                            TextField("API Username", text: $apiUsername)
-                                .textContentType(.username)
-                                .autocapitalization(.none)
-                            
-                            SecureField("API Secret", text: $apiSecret)
-                                .textContentType(.password)
-                            
-                            TextField("Tracking Identifier", text: $apiTrackingID)
-                                .autocapitalization(.none)
-                        }
-
-                        Button(action: syncWithAutotask) {
-                            if isTesting {
-                                ProgressView()
-                            } else {
-                                Text("Sync with Autotask now")
-                                    .font(.headline)
-                                    .frame(maxWidth: .infinity)
-                                    .padding()
-                                    .background(Color.blue)
-                                    .foregroundColor(.white)
-                                    .cornerRadius(10)
-                            }
-                        }
-                        .disabled(isTesting)
-                        .padding()
+    private var gridColumns: [GridItem] {
+        Array(repeating: GridItem(.flexible(), spacing: 10), count: 4)
+    }
+    
+    private var autotaskIntegrationSection: some View {
+        Section(header: Text("Autotask Integration")) {
+            Toggle("Enable Autotask API", isOn: $autotaskEnabled)
+                .onChange(of: autotaskEnabled) { oldValue, newValue in
+                    if newValue {
+                        showAutotaskSettings = true  // Show settings when enabling API
                     }
                 }
+
+            if autotaskEnabled {
+                Toggle("Show Settings", isOn: $showAutotaskSettings)
+
+                if showAutotaskSettings {
+                    TextField("API Username", text: $apiUsername)
+                        .textContentType(.username)
+                        .autocapitalization(.none)
+                    
+                    SecureField("API Secret", text: $apiSecret)
+                        .textContentType(.password)
+                    
+                    TextField("Tracking Identifier", text: $apiTrackingID)
+                        .autocapitalization(.none)
+                }
+            }
+        }
+    }
+    
+    var body: some View  {
+        NavigationStack {
+            Form {
+                autotaskIntegrationSection
                 
                 if autotaskEnabled {
                     Section(header: Text("Select Data Type")) {
-                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 4), spacing: 10) {
+                        LazyVGrid(columns: gridColumns, spacing: 10) {
                             ForEach(["Company", "Contact", "Opportunity", "Product"], id: \.self) { category in
                                 Button(action: {
                                     if selectedCategory != category {
@@ -124,22 +121,9 @@ struct SettingsView: View {
                         })
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         
-                        if showContactSearch {
+                        if selectedCategory == "Contact", selectedCompanyID != nil {
                             TextField("Enter contact name", text: $contactName, onCommit: {
-                                let trimmedQuery = contactName.trimmingCharacters(in: .whitespaces)
-                                guard !trimmedQuery.isEmpty, let companyID = selectedCompanyID else {
-                                    print("❌ Contact search not triggered: Query empty or no company selected.")
-                                    return
-                                }
-                                
-                                print("🔍 Triggering contact search for Contact Name: \(trimmedQuery) in Company ID: \(companyID)")
-                                
-                                AutotaskAPIManager.shared.searchContacts(companyID: companyID, contactName: trimmedQuery) { results in
-                                    DispatchQueue.main.async {
-                                        print("✅ Contact search completed. Results: \(results)")
-                                        searchResults = results
-                                    }
-                                }
+                                searchContactsForCompany()
                             })
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                             .padding(.top, 10)
@@ -160,24 +144,34 @@ struct SettingsView: View {
                                                 } else {
                                                     selectedCompanies.insert(companyNameValue)
                                                 }
-                                        } else if selectedCategory == "Contact" {
-                                            companyName = company.1
-                                            selectedCompanyID = company.0
-                                            selectedCompanies = [company.1]
-                                            searchResults = []
+                                            } else if selectedCategory == "Contact" {
+                                                // When in Contact mode, select the company to import contacts from.
+                                                selectedCompanyID = company.0
+                                                companyName = company.1
+                                                showContactSearch = true
+                                            }
                                         }
-                                        }
-                                        .background(
-                                            showContactSearch ?
-                                                (selectedContacts.contains(company.1) ? Color.blue.opacity(0.3) : Color.clear)
-                                            :
-                                                (selectedCompanies.contains(company.1) ? Color.blue.opacity(0.3) : Color.clear)
-                                        )
+                                        .background(backgroundColor(for: company.1))
                                 }
                             }
                         }
                         .frame(maxHeight: 300)
-                    }
+                        
+                        if selectedCategory == "Contact", selectedCompanyID != nil {
+                            Button("Import All Contacts") {
+                                contactName = ""
+                                // Call the new GET-based function
+                                AutotaskAPIManager.shared.searchContactsGET(companyID: selectedCompanyID!) { results in
+                                     DispatchQueue.main.async {
+                                         searchResults = results
+                                     }
+                                }
+                            }
+                            .padding()
+                            .background(Color.blue)
+                            .foregroundColor(.white)
+                            .cornerRadius(8)
+                        }                    }
                 }
             }
             .navigationTitle("Settings")
@@ -202,6 +196,13 @@ struct SettingsView: View {
         request.setValue(apiSecret, forHTTPHeaderField: "Secret")
         request.setValue(apiTrackingID, forHTTPHeaderField: "ApiIntegrationCode")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let companyFilters = selectedCompanies.map { company in
+            return [
+                "op": "contains",
+                "field": "companyName",
+                "value": company.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+            ]
+        }
         
         let requestBody: [String: Any] = [
             "MaxRecords": 50,
@@ -209,13 +210,7 @@ struct SettingsView: View {
             "Filter": [
                 [
                     "op": "or",
-                    "items": selectedCompanies.map { company in
-                        [
-                            "op": "contains",
-                            "field": "companyName",
-                            "value": company.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
-                        ]
-                    }
+                    "items": companyFilters
                 ]
             ]
         ]
@@ -295,14 +290,23 @@ struct SettingsView: View {
     }
     
     private func searchCompaniesForSelection() {
-        let trimmedQuery = companyName.trimmingCharacters(in: .whitespaces).lowercased()
-        guard !trimmedQuery.isEmpty else { return }
+    let trimmedQuery = companyName.trimmingCharacters(in: .whitespaces)
+    guard !trimmedQuery.isEmpty else { return }
 
-        AutotaskAPIManager.shared.searchCompanies(query: trimmedQuery) { results in
+    if trimmedQuery == "SyncAllCompanyData" {
+        AutotaskAPIManager.shared.getAllCompanies { results in
             DispatchQueue.main.async {
-                searchResults = results.filter { $0.1.lowercased().hasPrefix(trimmedQuery) }
+                searchResults = results
+                print("Imported all companies: \(results)")
             }
         }
+    } else {
+        AutotaskAPIManager.shared.searchCompanies(query: trimmedQuery.lowercased()) { results in
+            DispatchQueue.main.async {
+                searchResults = results.filter { $0.1.lowercased().hasPrefix(trimmedQuery.lowercased()) }
+            }
+        }
+    }
     }
 
     private func searchCompanyForContacts() {
@@ -315,5 +319,82 @@ struct SettingsView: View {
             }
         }
     }
+
+    private func searchContactsForCompany() {
+        guard let companyID = selectedCompanyID else {
+            print("❌ No company selected for contact search.")
+            return
+        }
+        
+        print("🔍 Searching contacts for Company ID \(companyID)")
+
+        AutotaskAPIManager.shared.searchContacts(companyID: companyID) { results in
+            DispatchQueue.main.async {
+                if results.isEmpty {
+                    print("⚠️ No contacts found for company ID: \(companyID)")
+                } else {
+                    print("✅ Found \(results.count) contacts for company ID: \(companyID)")
+                }
+                searchResults = results.map { ($0.0, "\($0.1) \($0.2)") }
+            }
+        }
+    }
+
+    private func importSelectedContacts() {
+        let context = CoreDataManager.shared.persistentContainer.viewContext
+        for contact in selectedContacts {
+            let newContact = ContactsEntity(context: context)
+            newContact.id = UUID()
+            newContact.firstName = contact.firstName
+            newContact.lastName = contact.lastName
+            newContact.companyID = Int64(selectedCompanyID ?? 0)
+        }
+        CoreDataManager.shared.saveContext()
+        print("✅ Successfully imported \(selectedContacts.count) contacts.")
+        selectedContacts.removeAll()
+    }
+    private func filterForCompany(_ company: String) -> [String: String] {
+        let trimmed = normalizeCompanyName(company)
+        return ["op": "contains", "field": "companyName", "value": trimmed]
+    }
     
+    private func normalizeCompanyName(_ name: String) -> String {
+        return name.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+    
+    private func handleTap(for company: (Int, String)) {
+        if selectedCategory == "Company" {
+            let companyNameValue = company.1
+            if selectedCompanies.contains(companyNameValue) {
+                selectedCompanies.remove(companyNameValue)
+            } else {
+                selectedCompanies.insert(companyNameValue)
+            }
+            if selectedCategory == "Contact", selectedCompanyID != nil {
+                Button("Import All Contacts") {
+                     // Set contactName to empty string to import all contacts
+                     contactName = ""
+                     searchContactsForCompany()
+                }
+                .padding()
+                .background(Color.blue)
+                .foregroundColor(.white)
+                .cornerRadius(8)
+            }}    }
+    
+    private func contactFromString(_ string: String) -> Contact {
+        let nameComponents = string.split(separator: " ").map(String.init)
+        return Contact(firstName: nameComponents.first ?? "", lastName: nameComponents.last ?? "")
+    }
+    
+    private func backgroundColor(for companyName: String) -> Color {
+        let baseColor = Color.blue.opacity(0.3)
+        if showContactSearch {
+            return selectedContacts.contains(contactFromString(companyName)) ? baseColor : Color.clear
+        } else {
+            return selectedCompanies.contains(companyName) ? baseColor : Color.clear
+        }
+    }
+
 }
+
