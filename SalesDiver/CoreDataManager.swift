@@ -173,4 +173,19 @@ class CoreDataManager {
         }
         saveContext()
     }
+    func fetchOrCreateCompany(companyID: Int, completion: @escaping (CompanyEntity) -> Void) {
+        let context = persistentContainer.viewContext
+        let fetchRequest: NSFetchRequest<CompanyEntity> = CompanyEntity.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "id == %d", companyID)
+
+        if let existingCompany = try? context.fetch(fetchRequest).first {
+            completion(existingCompany)
+        } else {
+            let newCompany = CompanyEntity(context: context)
+            newCompany.id = Int64(companyID)
+            // Set additional company fields here as needed
+            saveContext()
+            completion(newCompany)
+        }
+    }
 }

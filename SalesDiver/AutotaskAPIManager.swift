@@ -106,14 +106,8 @@ class AutotaskAPIManager {
     }
     
     func searchContacts(companyID: Int, completion: @escaping ([(Int, String, String)]) -> Void) {
-        guard UserDefaults.standard.bool(forKey: "autotaskEnabled") else {
-            print("Autotask integration is disabled.")
-            completion([])
-            return
-        }
-        
-        guard let (apiUsername, apiSecret, apiTrackingID) = getAutotaskCredentials() else {
-            print("Authentication failed: API credentials missing")
+        guard UserDefaults.standard.bool(forKey: "autotaskEnabled"),
+              let (apiUsername, apiSecret, apiTrackingID) = getAutotaskCredentials() else {
             completion([])
             return
         }
@@ -121,16 +115,14 @@ class AutotaskAPIManager {
         let apiBaseURL = "https://webservices24.autotask.net/ATServicesRest/V1.0/Contacts/query"
         var request = URLRequest(url: URL(string: apiBaseURL)!)
         request.httpMethod = "POST"
-        
-        request.setValue("application/json", forHTTPHeaderField: "accept")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(apiUsername, forHTTPHeaderField: "UserName")
         request.setValue(apiSecret, forHTTPHeaderField: "Secret")
         request.setValue(apiTrackingID, forHTTPHeaderField: "ApiIntegrationCode")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
+        
         let requestBody: [String: Any] = [
             "MaxRecords": 500,
-            "IncludeFields": ["firstName", "lastName", "CompanyID"],
+            "IncludeFields": ["id", "firstName", "lastName"],
             "Filter": [
                 ["op": "eq", "field": "CompanyID", "value": companyID],
                 ["op": "gt", "field": "id", "value": 0]
@@ -138,16 +130,17 @@ class AutotaskAPIManager {
         ]
         
         do {
-            request.httpBody = try JSONSerialization.data(withJSONObject: requestBody, options: [])
+            let jsonData = try JSONSerialization.data(withJSONObject: requestBody, options: [])
+            request.httpBody = jsonData
         } catch {
-            print("Failed to encode request body: \(error)")
+            print("JSON encoding error: \(error.localizedDescription)")
             completion([])
             return
         }
         
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
-                print("API Request Error: \(error.localizedDescription)")
+                print("API error: \(error.localizedDescription)")
                 completion([])
                 return
             }
@@ -158,25 +151,26 @@ class AutotaskAPIManager {
                 return
             }
             
-            print("Raw API Response: \(String(data: data, encoding: .utf8) ?? "Invalid response")")
-            
             do {
-                if let jsonResponse = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-                   let items = jsonResponse["items"] as? [[String: Any]] {
-                    let contacts = items.compactMap { item -> (Int, String, String)? in
-                        guard let id = item["id"] as? Int,
-                              let firstName = item["firstName"] as? String,
-                              let lastName = item["lastName"] as? String else {
-                            return nil
-                        }
-                        return (id, firstName, lastName)
-                    }
-                    completion(contacts)
-                } else {
+                let jsonResponse = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any]
+                guard let contactsArray = jsonResponse?["items"] as? [[String: Any]] else {
+                    print("No 'items' in response")
                     completion([])
+                    return
                 }
+                
+                let contacts = contactsArray.compactMap { contact -> (Int, String, String)? in
+                    guard let id = contact["id"] as? Int,
+                          let firstName = contact["firstName"] as? String,
+                          let lastName = contact["lastName"] as? String else {
+                        return nil
+                    }
+                    return (id, firstName, lastName)
+                }
+                
+                completion(contacts)
             } catch {
-                print("JSON Parsing Error: \(error.localizedDescription)")
+                print("JSON parsing error: \(error.localizedDescription)")
                 completion([])
             }
         }.resume()
@@ -281,40 +275,40 @@ class AutotaskAPIManager {
             completion([])
             return
         }
-
+        
         guard let (apiUsername, apiSecret, apiTrackingID) = getAutotaskCredentials() else {
             print("Authentication failed: API credentials missing")
             completion([])
             return
         }
-
+        
         let urlString = "https://webservices24.autotask.net/atservicesrest/v1.0/Companies/query?search=%7B%22filter%22:[%7B%22op%22:%22exist%22,%22field%22:%22id%22%7D]%7D"
         guard let url = URL(string: urlString) else {
             print("Invalid URL")
             completion([])
             return
         }
-
+        
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue("application/json", forHTTPHeaderField: "accept")
         request.setValue(apiUsername, forHTTPHeaderField: "UserName")
         request.setValue(apiSecret, forHTTPHeaderField: "Secret")
         request.setValue(apiTrackingID, forHTTPHeaderField: "ApiIntegrationCode")
-
+        
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
                 print("API Request Error: \(error.localizedDescription)")
                 completion([])
                 return
             }
-
+            
             guard let data = data else {
                 print("No data received from API")
                 completion([])
                 return
             }
-
+            
             do {
                 if let jsonResponse = try JSONSerialization.jsonObject(with: data) as? [String: Any],
                    let items = jsonResponse["items"] as? [[String: Any]] {
@@ -333,6 +327,58 @@ class AutotaskAPIManager {
                 print("JSON Parsing Error: \(error.localizedDescription)")
                 completion([])
             }
+        }.resume()
+    }
+    
+    func searchContacts(with requestBody: [String: Any], completion: @escaping ([(Int, String, String)]) -> Void) {
+        guard let url = URL(string: "https://webservices24.autotask.net/ATServicesRest/V1.0/Contacts/query") else {
+            print("Invalid URL")
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "accept")
+        guard let (apiUsername, apiSecret, apiTrackingID) = getAutotaskCredentials() else {
+            print("❌ Missing Autotask credentials")
+            completion([])
+            return
+        }
+        request.setValue(apiUsername, forHTTPHeaderField: "UserName")
+        request.setValue(apiSecret, forHTTPHeaderField: "Secret")
+        request.setValue(apiTrackingID, forHTTPHeaderField: "ApiIntegrationCode")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: requestBody, options: [])
+        } catch {
+            print("❌ Failed to serialize request body: \(error)")
+            return
+        }
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("❌ Network error: \(error)")
+                completion([])
+                return
+            }
+            
+            guard let data = data,
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let items = json["items"] as? [[String: Any]] else {
+                print("❌ Failed to parse contact response")
+                completion([])
+                return
+            }
+            
+            let contacts: [(Int, String, String)] = items.compactMap {
+                guard let id = $0["id"] as? Int,
+                      let firstName = $0["firstName"] as? String,
+                      let lastName = $0["lastName"] as? String else { return nil }
+                return (id, firstName, lastName)
+            }
+            
+            completion(contacts)
         }.resume()
     }
 }

@@ -14,7 +14,7 @@ struct SettingsView: View {
     @State private var testResult: String = ""
     @State private var isTesting = false
     @State private var companyName: String = ""
-    @State private var searchResults: [(Int, String)] = []
+    @State private var searchResults: [(Int, String, String)] = []
     @State private var selectedCompanies: Set<String> = []
     @State private var selectedContacts: Set<Contact> = []
     @State private var showAutotaskSettings = false
@@ -181,15 +181,15 @@ struct SettingsView: View {
     private var resultsScrollView: some View {
         ScrollView {
             LazyVStack {
-                ForEach(searchResults, id: \.0) { company in
-                    Text(company.1)
+                ForEach(searchResults, id: \.0) { result in
+                    Text("\(result.1) \(result.2)")
                         .font(.body)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.vertical, 4)
                         .onTapGesture {
-                            handleTap(for: company)
+                            handleTap(for: result)
                         }
-                        .background(backgroundColor(for: company.1))
+                        .background(backgroundColor(for: result))
                 }
             }
         }
@@ -207,14 +207,9 @@ struct SettingsView: View {
             .background(Color.green)
             .foregroundColor(.white)
             .cornerRadius(8)
-        } else if selectedCategory == "Contact", selectedCompanyID != nil {
-            Button("Import All Contacts") {
-                contactName = ""
-                AutotaskAPIManager.shared.searchContactsGET(companyID: selectedCompanyID!) { results in
-                    DispatchQueue.main.async {
-                        searchResults = results
-                    }
-                }
+        } else if selectedCategory == "Contact", !selectedContacts.isEmpty {
+            Button("Sync Contacts now") {
+                importSelectedContacts()
             }
             .padding()
             .background(Color.blue)
@@ -341,14 +336,14 @@ struct SettingsView: View {
     if trimmedQuery == "SyncAllCompanyData" {
         AutotaskAPIManager.shared.getAllCompanies { results in
             DispatchQueue.main.async {
-                searchResults = results
+                searchResults = results.map { ($0.0, $0.1, "") }
                 print("Imported all companies: \(results)")
             }
         }
     } else {
         AutotaskAPIManager.shared.searchCompanies(query: trimmedQuery.lowercased()) { results in
             DispatchQueue.main.async {
-                searchResults = results.filter { $0.1.lowercased().hasPrefix(trimmedQuery.lowercased()) }
+                searchResults = results.map { ($0.0, $0.1, "") }
             }
         }
     }
@@ -360,43 +355,72 @@ struct SettingsView: View {
 
         AutotaskAPIManager.shared.searchCompanies(query: trimmedQuery) { results in
             DispatchQueue.main.async {
+                searchResults = results.map { ($0.0, $0.1, "") }            }
+        }
+    }
+
+private func searchContactsForCompany() {
+    guard let companyID = selectedCompanyID else {
+        print("❌ No company selected.")
+        return
+    }
+
+    let trimmedContactName = contactName.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmedContactName.isEmpty else {
+        print("❌ Contact name is empty.")
+        return
+    }
+
+    let nameComponents = trimmedContactName.split(separator: " ").map(String.init)
+    let firstName = nameComponents.first ?? ""
+    let lastName = nameComponents.count > 1 ? nameComponents.last ?? "" : ""
+
+    let requestBody: [String: Any] = [
+        "MaxRecords": 10,
+        "IncludeFields": ["id", "firstName", "lastName", "emailAddress", "phone"],
+        "Filter": [
+            [
+                "op": "and",
+                "items": [
+                    ["op": "eq", "field": "CompanyID", "value": companyID],
+                    ["op": "eq", "field": "firstName", "value": firstName],
+                    ["op": "eq", "field": "lastName", "value": lastName]
+                ]
+            ]
+        ]
+    ]
+
+    AutotaskAPIManager.shared.searchContacts(with: requestBody) { results in
+        DispatchQueue.main.async {
+            if results.isEmpty {
+                print("⚠️ No contacts found for company ID: \(companyID), name: \(firstName) \(lastName)")
+            } else {
+                print("✅ Found \(results.count) matching contacts.")
                 searchResults = results
             }
+            showContactSearch = true
         }
     }
-
-    private func searchContactsForCompany() {
-        guard let companyID = selectedCompanyID else {
-            print("❌ No company selected for contact search.")
-            return
-        }
-        
-        print("🔍 Searching contacts for Company ID \(companyID)")
-
-        AutotaskAPIManager.shared.searchContacts(companyID: companyID) { results in
-            DispatchQueue.main.async {
-                if results.isEmpty {
-                    print("⚠️ No contacts found for company ID: \(companyID)")
-                } else {
-                    print("✅ Found \(results.count) contacts for company ID: \(companyID)")
-                }
-                searchResults = results.map { ($0.0, "\($0.1) \($0.2)") }
-            }
-        }
-    }
+}
 
     private func importSelectedContacts() {
         let context = CoreDataManager.shared.persistentContainer.viewContext
-        for contact in selectedContacts {
-            let newContact = ContactsEntity(context: context)
-            newContact.id = UUID()
-            newContact.firstName = contact.firstName
-            newContact.lastName = contact.lastName
-            newContact.companyID = Int64(selectedCompanyID ?? 0)
+        
+        CoreDataManager.shared.fetchOrCreateCompany(companyID: selectedCompanyID!) { companyEntity in
+            for contact in selectedContacts {
+                let newContact = ContactsEntity(context: context)
+                newContact.id = UUID()
+                newContact.firstName = contact.firstName
+                newContact.lastName = contact.lastName
+                newContact.companyID = Int64(selectedCompanyID ?? 0)
+                newContact.company = companyEntity
+                // Add additional fields (address, phone, etc.) as needed here
+            }
+            
+            CoreDataManager.shared.saveContext()
+            print("✅ Successfully imported \(selectedContacts.count) contacts.")
+            selectedContacts.removeAll()
         }
-        CoreDataManager.shared.saveContext()
-        print("✅ Successfully imported \(selectedContacts.count) contacts.")
-        selectedContacts.removeAll()
     }
     private func filterForCompany(_ company: String) -> [String: String] {
         let trimmed = normalizeCompanyName(company)
@@ -407,33 +431,32 @@ struct SettingsView: View {
         return name.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
     }
     
-private func handleTap(for company: (Int, String)) {
-    if selectedCategory == "Company" {
-        let companyNameValue = company.1
-        if selectedCompanies.contains(companyNameValue) {
-            selectedCompanies.remove(companyNameValue)
-        } else {
-            selectedCompanies.insert(companyNameValue)
-        }
+    private func handleTap(for result: (Int, String, String)) {
+        if selectedCategory == "Company" {
+            if selectedCompanies.contains(result.1) {
+                selectedCompanies.remove(result.1)
+            } else {
+                selectedCompanies.insert(result.1)
+            }
     } else if selectedCategory == "Contact" {
-        selectedCompanyID = company.0
-        companyName = company.1
-        showContactSearch = true
-        searchContactsForCompany()
+        selectedCompanyID = result.0
+        companyName = result.1
+        searchResults.removeAll()
     }
-}
+    }
     
     private func contactFromString(_ string: String) -> Contact {
         let nameComponents = string.split(separator: " ").map(String.init)
         return Contact(firstName: nameComponents.first ?? "", lastName: nameComponents.last ?? "")
     }
     
-    private func backgroundColor(for companyName: String) -> Color {
+    private func backgroundColor(for result: (Int, String, String)) -> Color {
         let baseColor = Color.blue.opacity(0.3)
         if showContactSearch {
-            return selectedContacts.contains(contactFromString(companyName)) ? baseColor : Color.clear
+            let contact = Contact(firstName: result.1, lastName: result.2)
+            return selectedContacts.contains(contact) ? baseColor : Color.clear
         } else {
-            return selectedCompanies.contains(companyName) ? baseColor : Color.clear
+            return selectedCompanies.contains(result.1) ? baseColor : Color.clear
         }
     }
 
