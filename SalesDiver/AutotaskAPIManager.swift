@@ -381,4 +381,50 @@ class AutotaskAPIManager {
             completion(contacts)
         }.resume()
     }
+    func searchFullContactDetail(_ requestBody: [String: Any], completion: @escaping ([(firstName: String, lastName: String, email: String, phone: String)]) -> Void) {
+        guard let url = URL(string: "https://webservices24.autotask.net/ATServicesRest/V1.0/Contacts/query"),
+              let (apiUsername, apiSecret, apiTrackingID) = getAutotaskCredentials() else {
+            print("❌ Invalid URL or missing credentials")
+            completion([])
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "accept")
+        request.setValue(apiUsername, forHTTPHeaderField: "UserName")
+        request.setValue(apiSecret, forHTTPHeaderField: "Secret")
+        request.setValue(apiTrackingID, forHTTPHeaderField: "ApiIntegrationCode")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: requestBody, options: [])
+        } catch {
+            print("❌ Failed to encode request body: \(error)")
+            completion([])
+            return
+        }
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            guard let data = data,
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let items = json["items"] as? [[String: Any]] else {
+                print("❌ Failed to fetch or decode contact details")
+                completion([])
+                return
+            }
+
+            let contacts = items.compactMap { item -> (firstName: String, lastName: String, email: String, phone: String)? in
+                guard let firstName = item["firstName"] as? String,
+                      let lastName = item["lastName"] as? String else {
+                    return nil
+                }
+                let email = item["emailAddress"] as? String ?? ""
+                let phone = item["phone"] as? String ?? ""
+                return (firstName, lastName, email, phone)
+            }
+
+            completion(contacts)
+        }.resume()
+    }
 }

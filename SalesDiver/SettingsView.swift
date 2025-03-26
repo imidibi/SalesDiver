@@ -430,22 +430,49 @@ private func searchContactsForCompany() {
 }
 
     private func importSelectedContacts() {
-        let context = CoreDataManager.shared.persistentContainer.viewContext
-        
-        CoreDataManager.shared.fetchOrCreateCompany(companyID: selectedCompanyID!) { companyEntity in
-            for contact in selectedContacts {
-                let newContact = ContactsEntity(context: context)
-                newContact.id = UUID()
-                newContact.firstName = contact.firstName
-                newContact.lastName = contact.lastName
-                newContact.companyID = Int64(selectedCompanyID ?? 0)
-                newContact.company = companyEntity
-                // Add additional fields (address, phone, etc.) as needed here
+        guard let selectedCompanyID = selectedCompanyID, let contact = selectedContacts.first else {
+            print("❌ Missing selected contact or company ID.")
+            return
+        }
+
+        let requestBody: [String: Any] = [
+            "MaxRecords": 1,
+            "IncludeFields": ["id", "firstName", "lastName", "emailAddress", "phone"],
+            "Filter": [
+                [
+                    "op": "and",
+                    "items": [
+                        ["op": "eq", "field": "CompanyID", "value": selectedCompanyID],
+                        ["op": "eq", "field": "firstName", "value": contact.firstName],
+                        ["op": "eq", "field": "lastName", "value": contact.lastName]
+                    ]
+                ]
+            ]
+        ]
+
+        AutotaskAPIManager.shared.searchFullContactDetail(requestBody) { contactDetails in
+            DispatchQueue.main.async {
+                guard let details = contactDetails.first else {
+                    print("❌ No contact details found.")
+                    return
+                }
+
+                let context = CoreDataManager.shared.persistentContainer.viewContext
+                CoreDataManager.shared.fetchOrCreateCompany(companyID: selectedCompanyID) { companyEntity in
+                    let newContact = ContactsEntity(context: context)
+                    newContact.id = UUID()
+                    newContact.firstName = details.firstName
+                    newContact.lastName = details.lastName
+                    newContact.emailAddress = details.email
+                    newContact.phone = details.phone
+                    newContact.companyID = Int64(selectedCompanyID)
+                    newContact.company = companyEntity
+
+                    CoreDataManager.shared.saveContext()
+                    print("✅ Contact \(details.firstName) \(details.lastName) imported successfully.")
+                    selectedContacts.removeAll()
+                }
             }
-            
-            CoreDataManager.shared.saveContext()
-            print("✅ Successfully imported \(selectedContacts.count) contacts.")
-            selectedContacts.removeAll()
         }
     }
     private func filterForCompany(_ company: String) -> [String: String] {
