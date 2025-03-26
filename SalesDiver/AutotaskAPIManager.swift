@@ -381,7 +381,7 @@ class AutotaskAPIManager {
             completion(contacts)
         }.resume()
     }
-    func searchFullContactDetail(_ requestBody: [String: Any], completion: @escaping ([(firstName: String, lastName: String, email: String, phone: String)]) -> Void) {
+    func searchFullContactDetail(_ requestBody: [String: Any], completion: @escaping ([(firstName: String, lastName: String, email: String, phone: String, title: String)]) -> Void) {
         guard let url = URL(string: "https://webservices24.autotask.net/ATServicesRest/V1.0/Contacts/query"),
               let (apiUsername, apiSecret, apiTrackingID) = getAutotaskCredentials() else {
             print("❌ Invalid URL or missing credentials")
@@ -414,14 +414,15 @@ class AutotaskAPIManager {
                 return
             }
 
-            let contacts = items.compactMap { item -> (firstName: String, lastName: String, email: String, phone: String)? in
+            let contacts = items.compactMap { item -> (firstName: String, lastName: String, email: String, phone: String, title: String)? in
                 guard let firstName = item["firstName"] as? String,
                       let lastName = item["lastName"] as? String else {
                     return nil
                 }
                 let email = item["emailAddress"] as? String ?? ""
                 let phone = item["phone"] as? String ?? ""
-                return (firstName, lastName, email, phone)
+                let title = item["title"] as? String ?? ""
+                return (firstName, lastName, email, phone, title)
             }
 
             completion(contacts)

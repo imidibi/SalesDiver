@@ -407,7 +407,7 @@ private func searchContactsForCompany() {
 
     let requestBody: [String: Any] = [
         "MaxRecords": 10,
-        "IncludeFields": ["id", "firstName", "lastName", "emailAddress", "phone"],
+        "IncludeFields": ["id", "firstName", "lastName", "emailAddress", "phone", "title"],
         "Filter": [filterGroup]
     ]
 
@@ -437,7 +437,7 @@ private func searchContactsForCompany() {
 
         let requestBody: [String: Any] = [
             "MaxRecords": 1,
-            "IncludeFields": ["id", "firstName", "lastName", "emailAddress", "phone"],
+            "IncludeFields": ["id", "firstName", "lastName", "emailAddress", "phone", "title"],
             "Filter": [
                 [
                     "op": "and",
@@ -465,6 +465,7 @@ private func searchContactsForCompany() {
                     newContact.lastName = details.lastName
                     newContact.emailAddress = details.email
                     newContact.phone = details.phone
+                    newContact.title = details.title
                     newContact.companyID = Int64(selectedCompanyID)
                     newContact.company = companyEntity
 
