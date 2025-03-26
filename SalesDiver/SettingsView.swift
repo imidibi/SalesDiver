@@ -458,7 +458,7 @@ private func searchContactsForCompany() {
                 }
 
                 let context = CoreDataManager.shared.persistentContainer.viewContext
-                CoreDataManager.shared.fetchOrCreateCompany(companyID: selectedCompanyID) { companyEntity in
+                CoreDataManager.shared.fetchOrCreateCompany(companyID: selectedCompanyID, companyName: companyName) { companyEntity in
                     let newContact = ContactsEntity(context: context)
                     newContact.id = UUID()
                     newContact.firstName = details.firstName
