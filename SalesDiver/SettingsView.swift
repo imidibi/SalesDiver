@@ -355,7 +355,8 @@ struct SettingsView: View {
 
         AutotaskAPIManager.shared.searchCompanies(query: trimmedQuery) { results in
             DispatchQueue.main.async {
-                searchResults = results.map { ($0.0, $0.1, "") }            }
+                searchResults = results.map { ($0.0, $0.1, "") }
+            }
         }
     }
 
@@ -375,27 +376,52 @@ private func searchContactsForCompany() {
     let firstName = nameComponents.first ?? ""
     let lastName = nameComponents.count > 1 ? nameComponents.last ?? "" : ""
 
-    let requestBody: [String: Any] = [
-        "MaxRecords": 10,
-        "IncludeFields": ["id", "firstName", "lastName", "emailAddress", "phone"],
-        "Filter": [
-            [
-                "op": "and",
-                "items": [
-                    ["op": "eq", "field": "CompanyID", "value": companyID],
-                    ["op": "eq", "field": "firstName", "value": firstName],
-                    ["op": "eq", "field": "lastName", "value": lastName]
+    var filterGroup: [String: Any]
+
+    if lastName.isEmpty {
+        // Only one name part entered – search by firstName OR lastName
+        filterGroup = [
+            "op": "and",
+            "items": [
+                ["op": "eq", "field": "CompanyID", "value": companyID],
+                [
+                    "op": "or",
+                    "items": [
+                        ["op": "eq", "field": "firstName", "value": firstName],
+                        ["op": "eq", "field": "lastName", "value": firstName]
+                    ]
                 ]
             ]
         ]
+    } else {
+        // Two name parts – exact match
+        filterGroup = [
+            "op": "and",
+            "items": [
+                ["op": "eq", "field": "CompanyID", "value": companyID],
+                ["op": "eq", "field": "firstName", "value": firstName],
+                ["op": "eq", "field": "lastName", "value": lastName]
+            ]
+        ]
+    }
+
+    let requestBody: [String: Any] = [
+        "MaxRecords": 10,
+        "IncludeFields": ["id", "firstName", "lastName", "emailAddress", "phone"],
+        "Filter": [filterGroup]
     ]
 
-    AutotaskAPIManager.shared.searchContacts(with: requestBody) { results in
+    print("🔍 Searching contact with CompanyID: \(companyID), FirstName: \(firstName), LastName: \(lastName)")
+    print("📤 Contact Query Request Body: \(requestBody)")
+    AutotaskAPIManager.shared.searchContactsFromBody(requestBody) { results in
         DispatchQueue.main.async {
             if results.isEmpty {
                 print("⚠️ No contacts found for company ID: \(companyID), name: \(firstName) \(lastName)")
             } else {
-                print("✅ Found \(results.count) matching contacts.")
+                print("✅ Found \(results.count) matching contacts:")
+                for contact in results {
+                    print("➡️ ID: \(contact.0), Name: \(contact.1) \(contact.2)")
+                }
                 searchResults = results
             }
             showContactSearch = true
@@ -432,19 +458,68 @@ private func searchContactsForCompany() {
     }
     
     private func handleTap(for result: (Int, String, String)) {
-        if selectedCategory == "Company" {
-            if selectedCompanies.contains(result.1) {
-                selectedCompanies.remove(result.1)
+        let tappedID = result.0
+        let name1 = result.1
+        let name2 = result.2
+
+        switch selectedCategory {
+        case "Company":
+            let company = name1
+            if selectedCompanies.contains(company) {
+                selectedCompanies.remove(company)
             } else {
-                selectedCompanies.insert(result.1)
+                selectedCompanies.insert(company)
             }
-    } else if selectedCategory == "Contact" {
-        selectedCompanyID = result.0
-        companyName = result.1
-        searchResults.removeAll()
-    }
+
+        case "Contact":
+            if selectedCompanyID == nil {
+                // Initial selection: treat as selecting a company for contact search
+                selectedCompanyID = tappedID
+                companyName = name1
+                contactName = ""
+                selectedContacts.removeAll()
+                searchResults.removeAll()
+        } else if !name2.isEmpty {
+            // Selecting a contact (allow if last name is present)
+            contactName = "\(name1) \(name2)"
+            selectedContacts = [Contact(firstName: name1, lastName: name2)]
+            searchResults.removeAll()
+        }
+
+        default:
+            break
+        }
     }
     
+    private func handleCompanyTap(_ result: (Int, String, String)) {
+        if selectedCompanies.contains(result.1) {
+            selectedCompanies.remove(result.1)
+        } else {
+            selectedCompanies.insert(result.1)
+        }
+    }
+
+    private func handleContactTap(_ result: (Int, String, String)) {
+        let tappedID = result.0
+        let contactFirstName = result.1
+        let contactLastName = result.2
+        let tappedCompanyName = result.1  // use separately for clarity when selecting a company
+
+        if selectedCompanyID == nil || selectedCompanyID != tappedID {
+            // This is a company selection during contact search
+            selectedCompanyID = tappedID
+            companyName = tappedCompanyName
+            contactName = ""
+            selectedContacts.removeAll()
+            searchResults.removeAll()
+        } else {
+            // This is a contact selection
+            contactName = "\(contactFirstName) \(contactLastName)"
+            selectedContacts = [Contact(firstName: contactFirstName, lastName: contactLastName)]
+            searchResults.removeAll()
+        }
+    }
+
     private func contactFromString(_ string: String) -> Contact {
         let nameComponents = string.split(separator: " ").map(String.init)
         return Contact(firstName: nameComponents.first ?? "", lastName: nameComponents.last ?? "")

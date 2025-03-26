@@ -330,7 +330,7 @@ class AutotaskAPIManager {
         }.resume()
     }
     
-    func searchContacts(with requestBody: [String: Any], completion: @escaping ([(Int, String, String)]) -> Void) {
+    func searchContactsFromBody(_ requestBody: [String: Any], completion: @escaping ([(Int, String, String)]) -> Void) {
         guard let url = URL(string: "https://webservices24.autotask.net/ATServicesRest/V1.0/Contacts/query") else {
             print("Invalid URL")
             return
