@@ -1,30 +1,41 @@
 import SwiftUI
 
 struct MeetingsView: View {
+    let columns = [
+        GridItem(.flexible(), spacing: 20),
+        GridItem(.flexible(), spacing: 20),
+        GridItem(.flexible(), spacing: 20)
+    ]
+    
     var body: some View {
         ZStack {
             WaterBackgroundView() // Apply the WaterBackgroundView for the blue gradient and wave effect
             
-            VStack {
-                Text("Meetings")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .padding(.top, 40) // Adjust padding for title
-                
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 20) {
+            VStack(alignment: .leading, spacing: 20) {
+                HStack {
+                    Spacer()
+                    Text("Meetings")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                    Spacer()
+                }
+                .padding(.top, 40)
+
+                LazyVGrid(columns: columns, spacing: 40) {
                     NavigationLink(destination: PlanMeetingView()) {
-                        MenuButton(icon: "calendar.badge.plus", label: "Plan Meeting")
+                        MenuButton(icon: "calendar.badge.plus", label: "Plan")
                     }
 
                     NavigationLink(destination: RecordMeetingView()) {
-                        MenuButton(icon: "pencil.and.outline", label: "Record Meeting")
+                        MenuButton(icon: "pencil.and.outline", label: "Record")
                     }
 
                     NavigationLink(destination: ViewMeetingsView()) {
-                        MenuButton(icon: "doc.text.magnifyingglass", label: "View Meetings")
+                        MenuButton(icon: "doc.text.magnifyingglass", label: "View")
                     }
                 }
-                .padding()
+                .padding(.horizontal)
+                Spacer()
             }
         }
     }
@@ -39,19 +50,18 @@ struct MenuButton: View {
             Image(systemName: icon)
                 .resizable()
                 .scaledToFit()
-                .frame(width: 80, height: 80) // Exactly 80x80 icon size
-                .foregroundColor(.blue) // Match icon color
-            
+                .frame(width: 80, height: 80)
+                .foregroundColor(.blue)
+
             Text(label)
-                .font(.headline) // Match text formatting
-                .foregroundColor(.black) // Match text color
-                .multilineTextAlignment(.center) // Center text inside the button
+                .font(.headline)
+                .foregroundColor(.primary)
         }
-        .frame(width: 180, height: 180) // Apply frame to the entire button
         .padding()
-        .background(Color.white) // Use white background
-        .cornerRadius(15) // Adjusted corner radius
-        .shadow(radius: 5) // Adjusted shadow effect
+        .frame(width: 180, height: 180)
+        .background(Color(.systemGray6))
+        .cornerRadius(15)
+        .shadow(radius: 5)
     }
 }
 

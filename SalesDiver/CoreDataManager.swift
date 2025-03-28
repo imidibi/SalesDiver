@@ -29,7 +29,7 @@ class CoreDataManager {
         }
     }
     
-    func syncCompaniesFromAutotask(companies: [(name: String, address1: String?, address2: String?, city: String?, state: String?)]) {
+    func syncCompaniesFromAutotask(companies: [(name: String, address1: String?, address2: String?, city: String?, state: String?, zipCode: String?)]) {
         let context = persistentContainer.viewContext
         
         for company in companies {
@@ -45,6 +45,7 @@ class CoreDataManager {
                 companyEntity.address2 = company.address2
                 companyEntity.city = company.city
                 companyEntity.state = company.state
+                companyEntity.zipCode = company.zipCode
                 
             } catch {
                 print("Error fetching company: \(error)")

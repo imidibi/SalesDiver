@@ -296,7 +296,7 @@ struct SettingsView: View {
             if let companies = jsonResponse?["items"] as? [[String: Any]] {
                 print("Fetched Companies from API: \(companies.compactMap { $0["companyName"] as? String })")
                 
-                var companiesToSync: [(name: String, address1: String?, address2: String?, city: String?, state: String?)] = []
+                var companiesToSync: [(name: String, address1: String?, address2: String?, city: String?, state: String?, zipCode: String?)] = []
                 
                 for company in companies {
                     if let name = company["companyName"] as? String {
@@ -309,12 +309,14 @@ struct SettingsView: View {
                             let city = company["city"] as? String
                             let state = company["state"] as? String
 
-                            companiesToSync.append((name, address1, address2, city, state))
+                            let zipCode = company["postalCode"] as? String
+                            companiesToSync.append((name, address1, address2, city, state, zipCode))
                         }
                     }
                 }
                 
                 if !companiesToSync.isEmpty {
+                    // Updated to pass tuple with zipCode to the Core Data manager method
                     CoreDataManager.shared.syncCompaniesFromAutotask(companies: companiesToSync)
                     testResult = "Synced \(companiesToSync.count) companies successfully."
                 } else {
