@@ -1,6 +1,7 @@
 import SwiftUI
 import CoreData
 
+
 struct PlanMeetingView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.presentationMode) private var presentationMode
@@ -252,8 +253,11 @@ struct PlanMeetingView: View {
                 .padding(.vertical)
 
             VStack(alignment: .leading, spacing: 10) {
-                Text("Opportunity")
-                    .font(.headline)
+                HStack(spacing: 8) {
+                    Text("Opportunity")
+                        .font(.headline)
+                    bantIcons
+                }
                 Button(action: { showOpportunityPicker = true }) {
                     HStack {
                         Text(selectedOpportunity?.name ?? "Select an Opportunity")
@@ -379,6 +383,17 @@ struct PlanMeetingView: View {
                     }
                 }
             }
+        }
+    }
+
+    @ViewBuilder
+    private var bantIcons: some View {
+        if let opportunity = selectedOpportunity {
+            let wrapper = OpportunityWrapper(managedObject: opportunity)
+            BANTIndicatorView(opportunity: wrapper, onBANTSelected: { _ in })
+                .frame(height: 14)
+        } else {
+            EmptyView()
         }
     }
 }
