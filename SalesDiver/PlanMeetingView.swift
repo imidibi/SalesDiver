@@ -1,10 +1,3 @@
-//
-//  PlanMeetingView.swift
-//  SalesDiver
-//
-//  Created by Ian Miller on 3/22/25.
-//
-
 import SwiftUI
 import CoreData
 
@@ -13,17 +6,17 @@ struct PlanMeetingView: View {
     @Environment(\.presentationMode) private var presentationMode
     @State private var meetingTitle: String = ""
     @State private var meetingDate: Date = Date()
-    @State private var meetingTime: Date = Date()
+    @State private var meetingTime: Date = Calendar.current.date(bySettingHour: Calendar.current.component(.hour, from: Date()), minute: 0, second: 0, of: Date()) ?? Date()
     @State private var selectedCompany: CompanyEntity?
     @State private var selectedOpportunity: OpportunityEntity?
     @State private var selectedAttendees: Set<ContactsEntity> = []
     @State private var meetingObjective: String = ""
-    @State private var showingDatePicker: Bool = false
-    @State private var showingTimePicker: Bool = false
     @State private var companySearchText: String = ""
     @State private var opportunitySearchText: String = ""
     @State private var contactsSearchText: String = ""
-    
+    @State private var showingDatePicker = false
+    @State private var showingTimePicker = false
+
     @FetchRequest(entity: CompanyEntity.entity(), sortDescriptors: [NSSortDescriptor(keyPath: \CompanyEntity.name, ascending: true)])
     private var companies: FetchedResults<CompanyEntity>
     
@@ -39,98 +32,165 @@ struct PlanMeetingView: View {
     
     var body: some View {
         NavigationStack {
-            Form {
-                Section(header: Text("Meeting Title")) {
-                    TextField("Enter Meeting Title", text: $meetingTitle)
-                }
+            ScrollView {
+                VStack(spacing: 20) {
+                    HStack(alignment: .top, spacing: 20) {
+                        VStack(alignment: .leading) {
+                            Text("Meeting Title")
+                                .font(.headline)
+                            TextField("Enter Meeting Title", text: $meetingTitle)
+                                .textFieldStyle(.roundedBorder)
+                        }
+                        .frame(maxWidth: .infinity)
 
-                Section(header: Text("Meeting Details")) {
-                    Button(action: { showingDatePicker = true }) {
-                        HStack {
-                            Text("Meeting Date")
-                            Spacer()
-                            Text(meetingDate, style: .date)
-                                .foregroundColor(.gray)
+                        Rectangle()
+                            .frame(width: 1)
+                            .foregroundColor(.black)
+                            .padding(.vertical)
+
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("Date & Time")
+                                .font(.headline)
+
+                            Button(action: { showingDatePicker = true }) {
+                                Text(meetingDate, style: .date)
+                                    .foregroundColor(.gray)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .sheet(isPresented: $showingDatePicker) {
+                                VStack {
+                                    DatePicker("Select Date", selection: $meetingDate, displayedComponents: .date)
+                                        .datePickerStyle(.graphical)
+                                    Button("Done") {
+                                        showingDatePicker = false
+                                    }
+                                    .padding()
+                                }
+                            }
+
+                            Button(action: { showingTimePicker = true }) {
+                                Text(meetingTime, style: .time)
+                                    .foregroundColor(.gray)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .sheet(isPresented: $showingTimePicker) {
+                                VStack(spacing: 20) {
+                                    Text("Select Time")
+                                        .font(.headline)
+                                        .padding(.top)
+                                        .multilineTextAlignment(.center)
+
+                                    DatePicker("", selection: $meetingTime, displayedComponents: .hourAndMinute)
+                                        .datePickerStyle(.wheel)
+                                        .labelsHidden()
+
+                                    Button("Done") {
+                                        showingTimePicker = false
+                                    }
+                                    .padding()
+                                }
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                .background(Color(.systemBackground))
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.gray.opacity(0.4), lineWidth: 1)
+                            .background(RoundedRectangle(cornerRadius: 12).fill(Color(.systemGray6)))
+                    )
+
+                    GroupBox(label: Text("Company").bold()) {
+                        VStack(alignment: .leading, spacing: 10) {
+                            TextField("Search Company", text: $companySearchText)
+                                .textFieldStyle(.roundedBorder)
+
+                            Menu {
+                                ForEach(companies.filter {
+                                    companySearchText.isEmpty || ($0.name?.localizedCaseInsensitiveContains(companySearchText) ?? false)
+                                }, id: \.self) { company in
+                                    Button(company.name ?? "Unknown") {
+                                        selectedCompany = company
+                                    }
+                                }
+                            } label: {
+                                Label(
+                                    title: { Text(selectedCompany?.name ?? "Select a Company") },
+                                    icon: { Image(systemName: "building.2") }
+                                )
+                                .padding()
+                                .background(Color(.systemGray6))
+                                .cornerRadius(8)
+                            }
                         }
                     }
-                    .sheet(isPresented: $showingDatePicker) {
-                        VStack {
-                            DatePicker("Select Date", selection: $meetingDate, displayedComponents: .date)
-                                .datePickerStyle(GraphicalDatePickerStyle())
 
-                            Button("Done") {
-                                showingDatePicker = false
+                    if selectedCompany != nil {
+                        GroupBox(label: Text("Opportunity").bold()) {
+                            VStack(alignment: .leading, spacing: 10) {
+                                TextField("Search Opportunity", text: $opportunitySearchText)
+                                    .textFieldStyle(.roundedBorder)
+
+                                Menu {
+                                    ForEach(filteredOpportunities.filter {
+                                        opportunitySearchText.isEmpty || ($0.name?.localizedCaseInsensitiveContains(opportunitySearchText) ?? false)
+                                    }, id: \.self) { opportunity in
+                                        Button(opportunity.name ?? "Untitled") {
+                                            selectedOpportunity = opportunity
+                                        }
+                                    }
+                                } label: {
+                                    Label(
+                                        title: { Text(selectedOpportunity?.name ?? "Select an Opportunity") },
+                                        icon: { Image(systemName: "briefcase.fill") }
+                                    )
+                                    .padding()
+                                    .background(Color(.systemGray6))
+                                    .cornerRadius(8)
+                                }
                             }
+                        }
+
+                        GroupBox(label: Text("Attendees").bold()) {
+                            VStack(alignment: .leading, spacing: 5) {
+                                TextField("Search Attendees", text: $contactsSearchText)
+                                    .textFieldStyle(.roundedBorder)
+
+                                ForEach(filteredContacts.filter {
+                                    contactsSearchText.isEmpty ||
+                                    ("\(($0.firstName ?? "")) \(($0.lastName ?? ""))".localizedCaseInsensitiveContains(contactsSearchText))
+                                }, id: \.self) { contact in
+                                    let fullName = "\((contact.firstName ?? "")) \((contact.lastName ?? ""))"
+                                    let isSelected = selectedAttendees.contains(contact)
+
+                                    MultipleSelectionRow(title: fullName, isSelected: isSelected) {
+                                        selectedAttendees.formSymmetricDifference([contact])
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    GroupBox(label: Text("Meeting Objective").bold()) {
+                        TextField("Enter Objective", text: $meetingObjective)
+                            .textFieldStyle(.roundedBorder)
+                    }
+
+                    Button(action: saveMeeting) {
+                        Text("Save Meeting")
+                            .fontWeight(.semibold)
+                            .frame(maxWidth: .infinity)
                             .padding()
-                        }
-                    }
-
-                    Button(action: { showingTimePicker = true }) {
-                        HStack {
-                            Text("Scheduled Time")
-                            Spacer()
-                            Text(meetingTime, style: .time)
-                                .foregroundColor(.gray)
-                        }
-                    }
-                    .sheet(isPresented: $showingTimePicker) {
-                        VStack {
-                            DatePicker("Select Time", selection: $meetingTime, displayedComponents: .hourAndMinute)
-                                .datePickerStyle(WheelDatePickerStyle())
-
-                            Button("Done") {
-                                showingTimePicker = false
-                            }
-                            .padding()
-                        }
+                            .background(Color.blue)
+                            .foregroundColor(.white)
+                            .cornerRadius(10)
                     }
                 }
-                
-                Section(header: Text("Company")) {
-                    TextField("Search Company", text: $companySearchText)
-                    
-                    Picker("Select Company", selection: $selectedCompany) {
-                        ForEach(companies.filter { companySearchText.isEmpty || ($0.name?.localizedCaseInsensitiveContains(companySearchText) ?? false) }, id: \.self) { company in
-                            Text(company.name ?? "Unknown").tag(company as CompanyEntity?)
-                        }
-                    }
-                }
-                
-                if selectedCompany != nil {
-                    Section(header: Text("Opportunity")) {
-                        TextField("Search Opportunity", text: $opportunitySearchText)
-                        
-                        Picker("Select Opportunity", selection: $selectedOpportunity) {
-                            ForEach(filteredOpportunities.filter { opportunitySearchText.isEmpty || ($0.name?.localizedCaseInsensitiveContains(opportunitySearchText) ?? false) }, id: \.self) { opportunity in
-                                Text(opportunity.name ?? "Untitled").tag(opportunity as OpportunityEntity?)
-                            }
-                        }
-                    }
-                    
-                    Section(header: Text("Attendees")) {
-                        TextField("Search Attendees", text: $contactsSearchText)
-                        
-                        ForEach(filteredContacts.filter { contactsSearchText.isEmpty || ("\(($0.firstName ?? "")) \(($0.lastName ?? ""))".localizedCaseInsensitiveContains(contactsSearchText)) }, id: \.self) { contact in
-                            let firstName = contact.value(forKey: "firstName") as? String ?? ""
-                            let lastName = contact.value(forKey: "lastName") as? String ?? ""
-                            let fullName = "\(firstName) \(lastName)"
-                            let isSelected = selectedAttendees.contains(contact)
-                            
-                            MultipleSelectionRow(title: fullName, isSelected: isSelected) {
-                                selectedAttendees.formSymmetricDifference([contact])
-                            }
-                        }
-                    }
-                }
-                
-                Section(header: Text("Meeting Objective")) {
-                    TextField("Enter Objective", text: $meetingObjective)
-                }
+                .padding()
             }
             .navigationTitle("Plan Meeting")
-            .navigationBarItems(trailing: Button("Save") {
-                saveMeeting()
-            })
         }
     }
     
