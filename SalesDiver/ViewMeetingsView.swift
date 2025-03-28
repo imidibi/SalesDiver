@@ -3,40 +3,30 @@ import CoreData
 
 struct ViewMeetingsView: View {
     @Environment(\.managedObjectContext) private var viewContext
-    @FetchRequest(
-        entity: MeetingsEntity.entity(),
-        sortDescriptors: [NSSortDescriptor(keyPath: \MeetingsEntity.date, ascending: false)]
-    ) private var meetings: FetchedResults<MeetingsEntity>
+    @State private var meetings: [MeetingsEntity] = []
+
+    private func fetchMeetings() {
+        let request: NSFetchRequest<MeetingsEntity> = MeetingsEntity.fetchRequest()
+        request.sortDescriptors = [NSSortDescriptor(keyPath: \MeetingsEntity.date, ascending: false)]
+
+        do {
+            meetings = try viewContext.fetch(request)
+        } catch {
+            print("Failed to fetch meetings: \(error.localizedDescription)")
+        }
+    }
 
     var body: some View {
         NavigationView {
             List {
                 ForEach(meetings, id: \.objectID) { meeting in
-                    HStack(alignment: .top, spacing: 16) {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(meeting.title ?? "Untitled Meeting")
-                                .font(.headline)
-
-                            Text("Date: \(meeting.date ?? Date(), formatter: dateFormatter)")
-                                .font(.subheadline)
-                                .foregroundColor(.gray)
-
-                            if let company = meeting.company {
-                                Text("Company: \(company.name ?? "Unknown Company")")
-                                    .font(.subheadline)
-                            }
-
-                            if let contacts = meeting.contacts as? Set<ContactsEntity>, !contacts.isEmpty {
-                                Text("Attendees: \(contacts.map { $0.firstName ?? "" + " " + ($0.lastName ?? "") }.joined(separator: ", "))")
-                                    .font(.subheadline)
-                            }
-
-                            Text("Objective: \(meeting.objective ?? "No objective specified.")")
-                                .font(.subheadline)
-                                .italic()
+                    HStack {
+                        NavigationLink(destination: PlanMeetingView(editingMeeting: meeting)) {
+                            MeetingRowView(meeting: meeting)
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-
+                        
+                        Spacer()
+                        
                         if let opportunity = meeting.opportunity {
                             VStack(alignment: .trailing, spacing: 4) {
                                 Text("Opportunity: \(opportunity.name ?? "Unknown")")
@@ -53,22 +43,24 @@ struct ViewMeetingsView: View {
                                         .foregroundColor(.gray)
                                 }
                                 
-                                // Add BANTIndicatorView below Expected Close date
                                 if let opportunityEntity = meeting.opportunity {
                                     let wrapper = OpportunityWrapper(managedObject: opportunityEntity)
                                     BANTIndicatorView(opportunity: wrapper, onBANTSelected: { _ in })
-                                        .scaleEffect(0.7) // Reduces the size by 30%
+                                        .scaleEffect(0.7)
+                                        .padding(.top, 4)
                                 }
                             }
                             .frame(maxWidth: .infinity, alignment: .trailing)
                         }
                     }
-                    .padding()
                 }
+            }
+            .onAppear {
+                fetchMeetings()
             }
             .navigationTitle("Meetings")
         }
-        .navigationViewStyle(.stack) // Ensures full-screen mode on iPad
+        .navigationViewStyle(.stack)
     }
 }
 
@@ -85,3 +77,38 @@ private let shortDateFormatter: DateFormatter = {
     formatter.timeStyle = .none
     return formatter
 }()
+
+struct MeetingRowView: View {
+    let meeting: MeetingsEntity
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(meeting.title ?? "Untitled Meeting")
+                .font(.headline)
+
+            if let date = meeting.date {
+                Text("Date: \(date, formatter: dateFormatter)")
+                    .font(.subheadline)
+                    .foregroundColor(.gray)
+            }
+
+            if let company = meeting.company {
+                Text("Company: \(company.name ?? "Unknown Company")")
+                    .font(.subheadline)
+            }
+
+            if let contacts = meeting.contacts as? Set<ContactsEntity>, !contacts.isEmpty {
+                let attendeeNames = contacts.map { "\($0.firstName ?? "") \($0.lastName ?? "")" }.joined(separator: ", ")
+                Text("Attendees: \(attendeeNames)")
+                    .font(.subheadline)
+            }
+
+            if let objective = meeting.objective {
+                Text("Objective: \(objective)")
+                    .font(.subheadline)
+                    .italic()
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}

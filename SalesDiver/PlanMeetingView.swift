@@ -5,6 +5,7 @@ import CoreData
 struct PlanMeetingView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.presentationMode) private var presentationMode
+    @State var editingMeeting: MeetingsEntity?
     @State private var meetingTitle: String = ""
     @State private var meetingDate: Date = Date()
     @FocusState private var isCompanySearchFocused: Bool
@@ -321,40 +322,26 @@ struct PlanMeetingView: View {
     }
     
     func saveMeeting() {
-        let newMeeting = MeetingsEntity(context: viewContext)
-        
-        // Assign properties
-        newMeeting.title = meetingTitle
         let calendar = Calendar.current
         let combinedDateTime = calendar.date(bySettingHour: calendar.component(.hour, from: meetingTime),
                                              minute: calendar.component(.minute, from: meetingTime),
                                              second: 0, of: meetingDate) ?? meetingDate
-        newMeeting.date = combinedDateTime
-        newMeeting.objective = meetingObjective
         
-        // Safely assign company (ensure relationship exists in Core Data)
-        if let company = selectedCompany {
-            if newMeeting.entity.attributesByName.keys.contains("company") || newMeeting.entity.relationshipsByName.keys.contains("company") {
-                newMeeting.company = company
-            } else {
-                print("Error: 'company' relationship does not exist in MeetingsEntity.")
-            }
-        }
-        
-        // Assign opportunity
-        if let opportunity = selectedOpportunity {
-            if newMeeting.entity.relationshipsByName.keys.contains("opportunity") {
-                newMeeting.opportunity = opportunity
-            } else {
-                print("Error: 'opportunity' relationship does not exist in MeetingsEntity.")
-            }
-        }
-        
-        // Assign contacts
-        if let contactsRelationship = newMeeting.entity.relationshipsByName["contacts"], contactsRelationship.isToMany {
-            newMeeting.setValue(selectedAttendees, forKey: "contacts")
+        if let editingMeeting = editingMeeting {
+            editingMeeting.title = meetingTitle
+            editingMeeting.date = combinedDateTime
+            editingMeeting.objective = meetingObjective
+            editingMeeting.company = selectedCompany
+            editingMeeting.opportunity = selectedOpportunity
+            editingMeeting.contacts = NSSet(set: selectedAttendees)
         } else {
-            print("Error: 'contacts' relationship does not support multiple values.")
+            let newMeeting = MeetingsEntity(context: viewContext)
+            newMeeting.title = meetingTitle
+            newMeeting.date = combinedDateTime
+            newMeeting.objective = meetingObjective
+            newMeeting.company = selectedCompany
+            newMeeting.opportunity = selectedOpportunity
+            newMeeting.contacts = NSSet(set: selectedAttendees)
         }
         
         // Save Core Data with error handling
@@ -396,4 +383,16 @@ struct PlanMeetingView: View {
             EmptyView()
         }
     }
+    
+    init(editingMeeting: MeetingsEntity? = nil) {
+        self.editingMeeting = editingMeeting
+        _meetingTitle = State(initialValue: editingMeeting?.title ?? "")
+        _meetingDate = State(initialValue: editingMeeting?.date ?? Date())
+        _meetingTime = State(initialValue: editingMeeting?.date ?? PlanMeetingView.computeDefaultMeetingTime())
+        _selectedCompany = State(initialValue: editingMeeting?.company)
+        _selectedOpportunity = State(initialValue: editingMeeting?.opportunity)
+        _selectedAttendees = State(initialValue: (editingMeeting?.contacts as? Set<ContactsEntity>) ?? [])
+        _meetingObjective = State(initialValue: editingMeeting?.objective ?? "")
+    }
+    
 }
