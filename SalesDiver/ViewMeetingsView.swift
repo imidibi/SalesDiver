@@ -43,7 +43,7 @@ struct ViewMeetingsView: View {
                                     .font(.subheadline)
                                     .foregroundColor(.blue)
 
-                              Text("Expected Value: $\(opportunity.customPrice, specifier: "%.2f")")
+                                Text("Expected Value: $\(opportunity.customPrice, specifier: "%.2f")")
                                     .font(.subheadline)
                                     .foregroundColor(.gray)
 
@@ -51,6 +51,13 @@ struct ViewMeetingsView: View {
                                     Text("Expected Close: \(closeDate, formatter: shortDateFormatter)")
                                         .font(.subheadline)
                                         .foregroundColor(.gray)
+                                }
+                                
+                                // Add BANTIndicatorView below Expected Close date
+                                if let opportunityEntity = meeting.opportunity {
+                                    let wrapper = OpportunityWrapper(managedObject: opportunityEntity)
+                                    BANTIndicatorView(opportunity: wrapper, onBANTSelected: { _ in })
+                                        .scaleEffect(0.7) // Reduces the size by 30%
                                 }
                             }
                             .frame(maxWidth: .infinity, alignment: .trailing)
