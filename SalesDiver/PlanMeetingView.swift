@@ -81,9 +81,8 @@ struct PlanMeetingView: View {
             ScrollView {
                 VStack(spacing: 20) {
                     meetingHeaderSection
-                    companySection
+                    companyAndOpportunitySection
                     if selectedCompany != nil {
-                        opportunitySection
                         attendeesSection
                     }
                     objectiveSection
@@ -92,6 +91,66 @@ struct PlanMeetingView: View {
                 .padding()
             }
             .navigationTitle("Plan Meeting")
+            .sheet(isPresented: $showCompanyPicker) {
+                NavigationStack {
+                    List {
+                        Section {
+                            TextField("Search Companies", text: $companySearchText)
+                                .textFieldStyle(.roundedBorder)
+                        }
+
+                        ForEach(companies.filter {
+                            companySearchText.isEmpty || ($0.name?.localizedCaseInsensitiveContains(companySearchText) ?? false)
+                        }, id: \.self) { company in
+                            Button(action: {
+                                selectedCompany = company
+                                companySearchText = ""
+                                showCompanyPicker = false
+                            }) {
+                                Text(company.name ?? "Unknown")
+                            }
+                        }
+                    }
+                    .listStyle(InsetGroupedListStyle())
+                    .navigationTitle("Select Company")
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Cancel") {
+                                showCompanyPicker = false
+                            }
+                        }
+                    }
+                }
+            }
+            .sheet(isPresented: $showOpportunityPicker) {
+                NavigationStack {
+                    List {
+                        Section {
+                            TextField("Search Opportunities", text: $opportunitySearchText)
+                                .textFieldStyle(.roundedBorder)
+                        }
+
+                        ForEach(visibleOpportunities, id: \.self) { opportunity in
+                            Button(action: {
+                                selectedOpportunity = opportunity
+                                opportunitySearchText = ""
+                                showOpportunityPicker = false
+                            }) {
+                                Text(opportunity.name ?? "Untitled")
+                            }
+                        }
+                    }
+                    .listStyle(InsetGroupedListStyle())
+                    .navigationTitle("Select Opportunity")
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Cancel") {
+                                showOpportunityPicker = false
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
     
@@ -167,9 +226,11 @@ struct PlanMeetingView: View {
         }
     }
 
-    private var companySection: some View {
-        GroupBox(label: Text("Company").bold()) {
+    private var companyAndOpportunitySection: some View {
+        HStack(alignment: .top, spacing: 20) {
             VStack(alignment: .leading, spacing: 10) {
+                Text("Company")
+                    .font(.headline)
                 Button(action: { showCompanyPicker = true }) {
                     HStack {
                         Text(selectedCompany?.name ?? "Select a Company")
@@ -183,43 +244,16 @@ struct PlanMeetingView: View {
                     .cornerRadius(8)
                 }
             }
-        }
-        .sheet(isPresented: $showCompanyPicker) {
-            NavigationStack {
-                List {
-                    Section {
-                        TextField("Search Companies", text: $companySearchText)
-                            .textFieldStyle(.roundedBorder)
-                    }
+            .frame(maxWidth: .infinity)
 
-                    ForEach(companies.filter {
-                        companySearchText.isEmpty || ($0.name?.localizedCaseInsensitiveContains(companySearchText) ?? false)
-                    }, id: \.self) { company in
-                        Button(action: {
-                            selectedCompany = company
-                            companySearchText = ""
-                            showCompanyPicker = false
-                        }) {
-                            Text(company.name ?? "Unknown")
-                        }
-                    }
-                }
-                .listStyle(InsetGroupedListStyle())
-                .navigationTitle("Select Company")
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Cancel") {
-                            showCompanyPicker = false
-                        }
-                    }
-                }
-            }
-        }
-    }
+            Rectangle()
+                .frame(width: 1)
+                .foregroundColor(.black)
+                .padding(.vertical)
 
-    private var opportunitySection: some View {
-        GroupBox(label: Text("Opportunity").bold()) {
             VStack(alignment: .leading, spacing: 10) {
+                Text("Opportunity")
+                    .font(.headline)
                 Button(action: { showOpportunityPicker = true }) {
                     HStack {
                         Text(selectedOpportunity?.name ?? "Select an Opportunity")
@@ -233,35 +267,15 @@ struct PlanMeetingView: View {
                     .cornerRadius(8)
                 }
             }
+            .frame(maxWidth: .infinity)
         }
-        .sheet(isPresented: $showOpportunityPicker) {
-            NavigationStack {
-                List {
-                    Section {
-                        TextField("Search Opportunities", text: $opportunitySearchText)
-                            .textFieldStyle(.roundedBorder)
-                    }
-
-                    ForEach(visibleOpportunities, id: \.self) { opportunity in
-                        Button(action: {
-                            selectedOpportunity = opportunity
-                            opportunitySearchText = ""
-                            showOpportunityPicker = false
-                        }) {
-                            Text(opportunity.name ?? "Untitled")
-                        }
-                    }
-                }
-                .listStyle(InsetGroupedListStyle())
-                .navigationTitle("Select Opportunity")
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Cancel") {
-                            showOpportunityPicker = false
-                        }
-                    }
-                }
-            }
+        .padding()
+        .background {
+            RoundedRectangle(cornerRadius: 12).fill(Color(.systemGray6))
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.gray.opacity(0.4), lineWidth: 1)
         }
     }
 
