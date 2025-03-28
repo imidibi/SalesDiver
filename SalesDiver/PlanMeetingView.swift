@@ -25,6 +25,7 @@ struct PlanMeetingView: View {
     @State private var showingDatePicker = false
     @State private var showingTimePicker = false
     @State private var showCompanyPicker = false
+    @State private var showOpportunityPicker = false
 
     @FetchRequest(entity: CompanyEntity.entity(), sortDescriptors: [NSSortDescriptor(keyPath: \CompanyEntity.name, ascending: true)])
     private var companies: FetchedResults<CompanyEntity>
@@ -219,23 +220,46 @@ struct PlanMeetingView: View {
     private var opportunitySection: some View {
         GroupBox(label: Text("Opportunity").bold()) {
             VStack(alignment: .leading, spacing: 10) {
-                TextField("Search Opportunity", text: $opportunitySearchText)
-                    .textFieldStyle(.roundedBorder)
-
-                Menu {
-                    ForEach(visibleOpportunities, id: \.self) { opportunity in
-                        Button(opportunity.name ?? "Untitled") {
-                            selectedOpportunity = opportunity
-                        }
+                Button(action: { showOpportunityPicker = true }) {
+                    HStack {
+                        Text(selectedOpportunity?.name ?? "Select an Opportunity")
+                            .foregroundColor(selectedOpportunity == nil ? .gray : .primary)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .foregroundColor(.gray)
                     }
-                } label: {
-                    Label(
-                        title: { Text(selectedOpportunity?.name ?? "Select an Opportunity") },
-                        icon: { Image(systemName: "briefcase.fill") }
-                    )
-                    .padding()
+                    .padding(10)
                     .background(Color(.systemGray6))
                     .cornerRadius(8)
+                }
+            }
+        }
+        .sheet(isPresented: $showOpportunityPicker) {
+            NavigationStack {
+                List {
+                    Section {
+                        TextField("Search Opportunities", text: $opportunitySearchText)
+                            .textFieldStyle(.roundedBorder)
+                    }
+
+                    ForEach(visibleOpportunities, id: \.self) { opportunity in
+                        Button(action: {
+                            selectedOpportunity = opportunity
+                            opportunitySearchText = ""
+                            showOpportunityPicker = false
+                        }) {
+                            Text(opportunity.name ?? "Untitled")
+                        }
+                    }
+                }
+                .listStyle(InsetGroupedListStyle())
+                .navigationTitle("Select Opportunity")
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") {
+                            showOpportunityPicker = false
+                        }
+                    }
                 }
             }
         }
