@@ -6,9 +6,11 @@
 //
 import Foundation
 import CoreData
+import SwiftUI
 
 class CompanyViewModel: ObservableObject {
     @Published var companies: [CompanyWrapper] = [] // ✅ Uses a wrapper instead of NSManagedObject
+    @Published var deletionErrorMessage: String? = nil // Add this line to hold error messages for the UI
 
     private let context = CoreDataManager.shared.context
 
@@ -55,8 +57,33 @@ class CompanyViewModel: ObservableObject {
     }
 
     func deleteCompany(company: CompanyWrapper) {
-        context.delete(company.managedObject) // ✅ Delete the actual NSManagedObject inside CompanyWrapper
-        saveData()
+        // Check for linked data before deletion
+        let opportunityRequest = NSFetchRequest<NSManagedObject>(entityName: "OpportunityEntity")
+        opportunityRequest.predicate = NSPredicate(format: "company == %@", company.managedObject)
+        
+        let meetingRequest = NSFetchRequest<NSManagedObject>(entityName: "MeetingsEntity")
+        meetingRequest.predicate = NSPredicate(format: "company == %@", company.managedObject)
+        
+        let contactRequest = NSFetchRequest<NSManagedObject>(entityName: "ContactsEntity")
+        contactRequest.predicate = NSPredicate(format: "company == %@", company.managedObject)
+        
+        do {
+            let linkedOpportunities = try context.fetch(opportunityRequest)
+            let linkedMeetings = try context.fetch(meetingRequest)
+            let linkedContacts = try context.fetch(contactRequest)
+            
+            if !linkedOpportunities.isEmpty || !linkedMeetings.isEmpty || !linkedContacts.isEmpty {
+                print("Linked data - cannot delete")
+                deletionErrorMessage = "Linked data exists - Company cannot be deleted."
+                return // Prevent deletion if linked data exists
+            }
+            
+            context.delete(company.managedObject) // Proceed with deletion if no linked data found
+            saveData()
+        } catch {
+            print("Error checking for linked data: \(error)")
+            deletionErrorMessage = "Error checking for linked data: \(error.localizedDescription)"
+        }
     }
 
     private func saveData() {
@@ -109,4 +136,3 @@ struct CompanyWrapper: Identifiable, Hashable {
         hasher.combine(id)
     }
 }
-

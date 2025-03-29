@@ -17,4 +17,8 @@ struct iPadtesterApp: App {
                 .environment(\.managedObjectContext, coreDataManager.persistentContainer.viewContext)
         }
     }
+    
+    init() {
+        coreDataManager.fetchEntityDescriptions()
+    }
 }

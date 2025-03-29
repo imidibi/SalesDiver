@@ -12,6 +12,7 @@ class CoreDataManager {
                 print("❌ Failed to load Core Data: \(error), \(error.userInfo)")
             }
         }
+        fetchEntityDescriptions()
     }
     
     var context: NSManagedObjectContext {
@@ -174,6 +175,7 @@ class CoreDataManager {
         }
         saveContext()
     }
+    
     func fetchOrCreateCompany(companyID: Int, companyName: String? = nil, completion: @escaping (CompanyEntity) -> Void) {
         let context = persistentContainer.viewContext
         let fetchRequest: NSFetchRequest<CompanyEntity> = CompanyEntity.fetchRequest()
@@ -196,6 +198,79 @@ class CoreDataManager {
             }
         } catch {
             print("❌ Failed to fetch or create company: \(error)")
+        }
+    }
+
+    func fetchEntityDescriptions() {
+        let context = persistentContainer.viewContext
+        let model = context.persistentStoreCoordinator?.managedObjectModel
+
+        if let entities = model?.entities {
+            for entity in entities {
+                print("✅ Loaded entity: \(entity.name ?? "Unnamed Entity")")
+            }
+        } else {
+            print("❌ No entities found in the Core Data model.")
+        }
+    }
+
+    func fetchOpportunities(for company: CompanyEntity) -> [OpportunityEntity] {
+        let request: NSFetchRequest<OpportunityEntity> = OpportunityEntity.fetchRequest()
+        request.predicate = NSPredicate(format: "company == %@", company)
+        
+        do {
+            return try context.fetch(request)
+        } catch {
+            print("❌ Error fetching opportunities: \(error)")
+            return []
+        }
+    }
+
+    func fetchContacts(for company: CompanyEntity) -> [ContactsEntity] {
+        let request: NSFetchRequest<ContactsEntity> = ContactsEntity.fetchRequest()
+        request.predicate = NSPredicate(format: "company == %@", company)
+        
+        do {
+            return try context.fetch(request)
+        } catch {
+            print("❌ Error fetching contacts: \(error)")
+            return []
+        }
+    }
+
+    func fetchMeetings(for company: CompanyEntity) -> [MeetingsEntity] {
+        let request: NSFetchRequest<MeetingsEntity> = MeetingsEntity.fetchRequest()
+        request.predicate = NSPredicate(format: "company == %@", company)
+        
+        do {
+            return try context.fetch(request)
+        } catch {
+            print("❌ Error fetching meetings: \(error)")
+            return []
+        }
+    }
+
+    func deleteCompany(company: CompanyEntity) {
+        let opportunities = fetchOpportunities(for: company)
+        let meetings = fetchMeetings(for: company)
+        let contacts = fetchContacts(for: company)
+
+        if !opportunities.isEmpty || !meetings.isEmpty || !contacts.isEmpty {
+            print("❌ Linked data - cannot delete company")
+            return
+        }
+        
+        context.delete(company)
+        saveContext()
+        print("✅ Company deleted successfully.")
+    }
+
+    func saveMeeting(meeting: MeetingsEntity) {
+        do {
+            try context.save()
+            print("✅ Meeting successfully saved!")
+        } catch {
+            print("❌ Failed to save meeting: \(error)")
         }
     }
 }

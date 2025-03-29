@@ -14,6 +14,7 @@ struct CompanyDataView: View {
     @State private var isShowingAddSheet = false
     @State private var selectedCompany: CompanyWrapper?
     @State private var searchText: String = ""  // ✅ Search state
+    @State private var showAlert = false // Add state to trigger the alert
 
     // 🔍 Filtered Companies
     var filteredCompanies: [CompanyWrapper] {
@@ -107,6 +108,20 @@ struct CompanyDataView: View {
             .sheet(isPresented: $isShowingAddSheet) {
                 AddCompanyView(viewModel: viewModel)
             }
+            .alert(isPresented: $showAlert) { // Display alert if there's an error message
+                Alert(
+                    title: Text("Error"),
+                    message: Text(viewModel.deletionErrorMessage ?? "Unknown error"),
+                    dismissButton: .default(Text("OK")) {
+                        viewModel.deletionErrorMessage = nil // Clear the message after showing
+                    }
+                )
+            }
+            .onChange(of: viewModel.deletionErrorMessage) { newValue in
+                if newValue != nil {
+                    showAlert = true
+                }
+            }
         }
     }
 
@@ -114,8 +129,10 @@ struct CompanyDataView: View {
         offsets.forEach { index in
             let company = viewModel.companies[index]
             viewModel.deleteCompany(company: company)
+            if viewModel.deletionErrorMessage == nil {
+                viewModel.companies.remove(atOffsets: offsets)
+            }
         }
-        viewModel.companies.remove(atOffsets: offsets)
     }
 
     // ✅ Function to Open in Apple Maps
