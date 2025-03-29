@@ -69,9 +69,11 @@ struct CompanyDataView: View {
                                     .font(.subheadline)
                                     .foregroundColor(.gray)
 
-                                Text("Contact: \(company.mainContact)")
-                                    .font(.subheadline)
-                                    .foregroundColor(.blue)
+                                if !company.mainContact.isEmpty {
+                                    Text("Contact: \(company.mainContact)")
+                                        .font(.subheadline)
+                                        .foregroundColor(.blue)
+                                }
                             }
                             .padding()
 
