@@ -28,6 +28,7 @@ struct PlanMeetingView: View {
     @State private var showingTimePicker = false
     @State private var showCompanyPicker = false
     @State private var showOpportunityPicker = false
+    @State private var showAttendeePicker = false
 
     @FetchRequest(entity: CompanyEntity.entity(), sortDescriptors: [NSSortDescriptor(keyPath: \CompanyEntity.name, ascending: true)])
     private var companies: FetchedResults<CompanyEntity>
@@ -66,16 +67,23 @@ struct PlanMeetingView: View {
     }
     
     var visibleContacts: [ContactsEntity] {
-        var result: [ContactsEntity] = []
-        for contact in filteredContacts {
-            let firstName = contact.firstName ?? ""
-            let lastName = contact.lastName ?? ""
-            let fullName = "\(firstName) \(lastName)"
-            if contactsSearchText.isEmpty || fullName.localizedCaseInsensitiveContains(contactsSearchText) {
-                result.append(contact)
+        guard let company = selectedCompany else { return [] }
+        guard let contacts = company.contacts as? Set<ContactsEntity> else { return [] }
+        
+        let sortedContacts = contacts.sorted {
+            let name1 = "\($0.firstName ?? "") \($0.lastName ?? "")"
+            let name2 = "\($1.firstName ?? "") \($1.lastName ?? "")"
+            return name1 < name2
+        }
+        
+        if contactsSearchText.isEmpty {
+            return sortedContacts
+        } else {
+            return sortedContacts.filter { contact in
+                let fullName = "\((contact.firstName ?? "")) \((contact.lastName ?? ""))"
+                return fullName.localizedCaseInsensitiveContains(contactsSearchText)
             }
         }
-        return result
     }
     
     var body: some View {
@@ -85,9 +93,8 @@ struct PlanMeetingView: View {
                     meetingHeaderSection
                     companyAndOpportunitySection
                     if selectedCompany != nil {
-                        attendeesSection
+                        attendeesAndObjectiveSection
                     }
-                    objectiveSection
                     saveButton
                 }
                 .padding()
@@ -284,30 +291,6 @@ struct PlanMeetingView: View {
         }
     }
 
-    private var attendeesSection: some View {
-        GroupBox(label: Text("Attendees").bold()) {
-            VStack(alignment: .leading, spacing: 5) {
-                TextField("Search Attendees", text: $contactsSearchText)
-                    .textFieldStyle(.roundedBorder)
-
-                ForEach(visibleContacts, id: \.self) { contact in
-                    let fullName = "\((contact.firstName ?? "")) \((contact.lastName ?? ""))"
-                    let isSelected = selectedAttendees.contains(contact)
-
-                    MultipleSelectionRow(title: fullName, isSelected: isSelected) {
-                        selectedAttendees.formSymmetricDifference([contact])
-                    }
-                }
-            }
-        }
-    }
-
-    private var objectiveSection: some View {
-        GroupBox(label: Text("Meeting Objective").bold()) {
-            TextField("Enter Objective", text: $meetingObjective)
-                .textFieldStyle(.roundedBorder)
-        }
-    }
 
     private var saveButton: some View {
         Button(action: saveMeeting) {
@@ -369,6 +352,7 @@ struct PlanMeetingView: View {
                             .foregroundColor(.blue)
                     }
                 }
+                .padding(.vertical, 5)
             }
         }
     }
@@ -394,5 +378,73 @@ struct PlanMeetingView: View {
         _selectedAttendees = State(initialValue: (editingMeeting?.contacts as? Set<ContactsEntity>) ?? [])
         _meetingObjective = State(initialValue: editingMeeting?.objective ?? "")
     }
-    
+    private var attendeesAndObjectiveSection: some View {
+        HStack(alignment: .top, spacing: 20) {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Attendees")
+                    .font(.headline)
+                Button(action: { showAttendeePicker = true }) {
+                    HStack {
+                        Text(selectedAttendees.isEmpty ? "Select Attendees" : selectedAttendees.map { "\($0.firstName ?? "") \($0.lastName ?? "")" }.joined(separator: ", "))
+                            .foregroundColor(selectedAttendees.isEmpty ? .gray : .primary)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .foregroundColor(.gray)
+                    }
+                    .padding(10)
+                    .background(Color(.systemGray6))
+                    .cornerRadius(8)
+                }
+            }
+            .sheet(isPresented: $showAttendeePicker) {
+                NavigationStack {
+                    List {
+                        TextField("Search Attendees", text: $contactsSearchText)
+                            .textFieldStyle(.roundedBorder)
+                        
+                        ForEach(visibleContacts, id: \.self) { contact in
+                            let fullName = "\((contact.firstName ?? "")) \((contact.lastName ?? ""))"
+                            let isSelected = selectedAttendees.contains(contact)
+                            
+                            MultipleSelectionRow(title: fullName, isSelected: isSelected) {
+                                selectedAttendees.formSymmetricDifference([contact])
+                            }
+                        }
+                    }
+                    .listStyle(InsetGroupedListStyle())
+                    .navigationTitle("Select Attendees")
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Done") {
+                                showAttendeePicker = false
+                            }
+                        }
+                    }
+                }
+            }
+            
+            Rectangle()
+                .frame(width: 1)
+                .foregroundColor(.black)
+                .padding(.vertical)
+            
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Meeting Objective")
+                    .font(.headline)
+                TextField("Enter Objective", text: $meetingObjective)
+                    .textFieldStyle(.roundedBorder)
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .padding()
+        .background {
+            RoundedRectangle(cornerRadius: 12).fill(Color(.systemGray6))
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.gray.opacity(0.4), lineWidth: 1)
+        }
+    }
 }
+
+    
