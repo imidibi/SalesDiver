@@ -150,13 +150,19 @@ struct SettingsView: View {
         Section(header: Text(searchHeaderText)) {
             TextField("Enter company name", text: $companyName, onCommit: handleSearchCommit)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
-
-            if selectedCategory == "Contact", selectedCompanyID != nil {
-                contactSearchField
+ 
+            if selectedCategory == "Contact" {
+                if selectedCompanyID == nil {
+                    resultsScrollView  // Display company list for selection
+                } else {
+                    contactSearchField  // Display contact search field after company is selected
+                }
             }
-
-            resultsScrollView
-
+ 
+            if selectedCategory == "Company" {
+                resultsScrollView  // Display resultsScrollView for Company search
+            }
+ 
             syncOrImportButton
         }
     }
@@ -193,24 +199,6 @@ struct SettingsView: View {
         }
     }
 
-    // Extracted ScrollView for results
-    private var resultsScrollView: some View {
-        ScrollView {
-            LazyVStack {
-                ForEach(searchResults, id: \.0) { result in
-                    Text("\(result.1) \(result.2)")
-                        .font(.body)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.vertical, 4)
-                        .onTapGesture {
-                            handleTap(for: result)
-                        }
-                        .background(backgroundColor(for: result))
-                }
-            }
-        }
-        .frame(maxHeight: 300)
-    }
 
     // Extracted Button for sync/import actions
     @ViewBuilder
@@ -220,7 +208,7 @@ struct SettingsView: View {
                 syncWithAutotask()
             }
             .padding()
-            .background(Color.green)
+            .background(Color.blue)
             .foregroundColor(.white)
             .cornerRadius(8)
         } else if selectedCategory == "Contact", !selectedContacts.isEmpty {
@@ -632,11 +620,32 @@ private func importSelectedContacts() {
         }
         .background(Color.white)
         .cornerRadius(12)
+        .frame(width: 600, height: 500)  // Adjusted size for smaller overlay
+        .shadow(radius: 20)
         .padding()
         .onAppear {
             fetchAllContactsForSelectedCompany()
         }
     }
+
+    private var resultsScrollView: some View {
+        ScrollView {
+            LazyVStack {
+                ForEach(searchResults, id: \.0) { result in
+                    Text("\(result.1) \(result.2)")
+                        .font(.body)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, 4)
+                        .onTapGesture {
+                            handleTap(for: result)
+                        }
+                        .background(backgroundColor(for: result))
+                }
+            }
+        }
+        .frame(maxHeight: 300)
+    }
+
     private func fetchAllContactsForSelectedCompany() {
         guard let companyID = selectedCompanyID else {
             print("❌ No company selected.")
