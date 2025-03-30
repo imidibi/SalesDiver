@@ -23,6 +23,9 @@ struct SettingsView: View {
     @State private var showContactSearch = false
     @State private var contactName: String = ""
     @State private var selectedCompanyID: Int? = nil
+    @State private var selectedOpportunities: [OpportunityEntity] = []
+    @State private var showOpportunitySearch = false
+    @State private var showSyncButton = false
     
     private var searchHeaderText: String {
         switch selectedCategory {
@@ -36,7 +39,132 @@ struct SettingsView: View {
             return "Search Companies in Autotask"
         }
     }
-    
+
+    private func fetchAllOpportunitiesForSelectedCompany() {
+        print("📡 Triggering Opportunities API Call...")  // Confirm function is called
+
+        guard let companyID = selectedCompanyID else {
+            print("❌ No company selected.")
+            return
+        }
+
+        let requestBody: [String: Any] = [
+            "MaxRecords": 100,
+            "IncludeFields": ["id", "description"],
+            "Filter": [
+                [
+                    "op": "and",
+                    "items": [
+                        ["op": "eq", "field": "CompanyID", "value": companyID]
+                    ]
+                ]
+            ]
+        ]
+
+        AutotaskAPIManager.shared.searchOpportunitiesFromBody(requestBody) { results in
+            DispatchQueue.main.async {
+                searchResults = results.map { ($0.0, $0.1, "") }
+                print("✅ Opportunities Fetched: \(searchResults.count)")
+            }
+        }
+    }
+
+    private var opportunitySearchField: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Opportunities")
+                .font(.headline)
+            
+            Button(action: {
+                showOpportunitySearch = true
+                fetchAllOpportunitiesForSelectedCompany()  // Trigger the API call when opening the overlay
+            }) {
+                HStack {
+                    Text(selectedOpportunities.isEmpty ? "Select Opportunities" : selectedOpportunities.map { "\($0.name ?? "Unnamed Opportunity")" }.joined(separator: ", "))
+                        .foregroundColor(selectedOpportunities.isEmpty ? .gray : .primary)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .foregroundColor(.gray)
+                }
+            }
+            .padding()
+            .background(Color(UIColor.systemGray6))
+            .cornerRadius(8)
+        }
+    }
+
+    private func importSelectedOpportunities() {
+        guard let selectedCompanyID = selectedCompanyID else {
+            print("❌ No company selected.")
+            return
+        }
+
+        let context = CoreDataManager.shared.persistentContainer.viewContext
+
+        // Fetch or create the company entity
+        CoreDataManager.shared.fetchOrCreateCompany(companyID: selectedCompanyID, companyName: companyName) { companyEntity in
+            for opportunity in selectedOpportunities {
+                opportunity.company = companyEntity  // Ensure the company relationship is set
+                context.insert(opportunity)
+            }
+
+            CoreDataManager.shared.saveContext()
+            print("✅ Imported \(selectedOpportunities.count) opportunities successfully and linked to company \(companyName).")
+            selectedOpportunities.removeAll()
+        }
+    }
+
+    private var opportunitySelectionOverlay: some View {
+        VStack {
+            Text("Select Opportunities")
+                .font(.headline)
+                .padding()
+            
+            ScrollView {
+                LazyVStack {
+                    ForEach(searchResults, id: \.0) { result in
+                        let opportunityName = result.1
+                        HStack {
+                            Text(opportunityName)
+                            Spacer()
+                            if selectedOpportunities.contains(where: { $0.name == opportunityName }) {
+                                Image(systemName: "checkmark")
+                                    .foregroundColor(.blue)
+                            }
+                        }
+                        .padding()
+                        .background(Color.white)
+                        .onTapGesture {
+                            if let index = selectedOpportunities.firstIndex(where: { $0.name == opportunityName }) {
+                                selectedOpportunities.remove(at: index)
+                            } else {
+                                let newOpportunity = OpportunityEntity(context: CoreDataManager.shared.persistentContainer.viewContext)
+                                newOpportunity.name = opportunityName
+                                selectedOpportunities.append(newOpportunity)
+                            }
+                        }
+                    }
+                }
+            }
+            
+            Button("Done") {
+                showOpportunitySearch = false
+                if !selectedOpportunities.isEmpty {
+                    // Trigger the display of the sync button
+                    showSyncButton = true
+                }
+            }
+            .padding()
+        }
+        .background(Color.white)
+        .cornerRadius(12)
+        .frame(width: 600, height: 500)
+        .shadow(radius: 20)
+        .padding()
+        .onAppear {
+            fetchAllOpportunitiesForSelectedCompany()
+        }
+    }
+
     private var gridColumns: [GridItem] {
         Array(repeating: GridItem(.flexible(), spacing: 10), count: 4)
     }
@@ -82,6 +210,9 @@ struct SettingsView: View {
             .navigationTitle("Settings")
             .overlay(
                 showContactSearch ? contactSelectionOverlay : nil
+            )
+            .overlay(
+                showOpportunitySearch ? opportunitySelectionOverlay : nil
             )
         }
     }
@@ -146,17 +277,22 @@ struct SettingsView: View {
     }
 
     // Extracted search and results section
-    private var searchAndResultsSection: some View {
+   private var searchAndResultsSection: some View {
         Section(header: Text(searchHeaderText)) {
             TextField("Enter company name", text: $companyName, onCommit: handleSearchCommit)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
  
-            if selectedCategory == "Contact" {
+            if selectedCategory == "Contact" || selectedCategory == "Opportunity" {
                 if selectedCompanyID == nil {
                     resultsScrollView  // Display company list for selection
-                } else {
+                } else if selectedCategory == "Contact" {
                     contactSearchField  // Display contact search field after company is selected
-                }
+            } else if selectedCategory == "Opportunity" {
+                    opportunitySearchField
+                        .onAppear {
+                            fetchAllOpportunitiesForSelectedCompany()  // Trigger the API call when the view appears
+                        }
+            }
             }
  
             if selectedCategory == "Company" {
@@ -214,6 +350,14 @@ struct SettingsView: View {
         } else if selectedCategory == "Contact", !selectedContacts.isEmpty {
             Button("Sync Contacts now") {
                 importSelectedContacts()
+            }
+            .padding()
+            .background(Color.blue)
+            .foregroundColor(.white)
+            .cornerRadius(8)
+        } else if selectedCategory == "Opportunity", !selectedOpportunities.isEmpty && showSyncButton {
+            Button("Sync Opportunities now") {
+                importSelectedOpportunities()
             }
             .padding()
             .background(Color.blue)
@@ -508,7 +652,6 @@ private func importSelectedContacts() {
     private func handleTap(for result: (Int, String, String)) {
         let tappedID = result.0
         let name1 = result.1
-        let name2 = result.2
 
         switch selectedCategory {
         case "Company":
@@ -516,24 +659,20 @@ private func importSelectedContacts() {
             if selectedCompanies.contains(company) {
                 selectedCompanies.remove(company)
             } else {
-                selectedCompanies.insert(company)
+                selectedCompanies = [company] // Allow only single selection for Company
             }
-
-        case "Contact":
-            if selectedCompanyID == nil {
-                // Initial selection: treat as selecting a company for contact search
+            selectedCompanyID = tappedID
+ 
+        case "Contact", "Opportunity":
+            if selectedCompanyID == nil || selectedCompanyID != tappedID {
+                // Selecting a company for contact or opportunity search
                 selectedCompanyID = tappedID
                 companyName = name1
-                contactName = ""
                 selectedContacts.removeAll()
+                selectedOpportunities.removeAll()
                 searchResults.removeAll()
-        } else if !name2.isEmpty {
-            // Selecting a contact (allow if last name is present)
-            contactName = "\(name1) \(name2)"
-            selectedContacts = [Contact(firstName: name1, lastName: name2)]
-            searchResults.removeAll()
-        }
-
+            }
+ 
         default:
             break
         }

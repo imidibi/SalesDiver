@@ -117,8 +117,8 @@ struct CompanyDataView: View {
                     }
                 )
             }
-            .onChange(of: viewModel.deletionErrorMessage) { newValue in
-                if newValue != nil {
+            .onChange(of: viewModel.deletionErrorMessage) {
+                if viewModel.deletionErrorMessage != nil {
                     showAlert = true
                 }
             }

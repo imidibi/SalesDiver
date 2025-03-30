@@ -349,10 +349,13 @@ class AutotaskAPIManager {
         request.setValue(apiTrackingID, forHTTPHeaderField: "ApiIntegrationCode")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
+        var modifiedRequestBody = requestBody
+        modifiedRequestBody["IncludeFields"] = ["id", "title"]
         do {
-            request.httpBody = try JSONSerialization.data(withJSONObject: requestBody, options: [])
+            request.httpBody = try JSONSerialization.data(withJSONObject: modifiedRequestBody, options: [])
         } catch {
-            print("❌ Failed to serialize request body: \(error)")
+            print("❌ Failed to encode request body: \(error.localizedDescription)")
+            completion([])
             return
         }
         
@@ -426,6 +429,78 @@ class AutotaskAPIManager {
             }
 
             completion(contacts)
+        }.resume()
+    }
+    func searchOpportunitiesFromBody(_ requestBody: [String: Any], completion: @escaping ([(Int, String)]) -> Void) {
+        guard let url = URL(string: "https://webservices24.autotask.net/ATServicesRest/V1.0/Opportunities/query") else {
+            print("❌ Invalid URL for Opportunities API")
+            return
+        }
+
+        print("📡 Sending Opportunities API Request to URL: \(url)")
+        print("📄 Request Body: \(requestBody)")
+        
+        var modifiedRequestBody = requestBody
+        modifiedRequestBody["IncludeFields"] = ["id", "title"]
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "accept")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        guard let (apiUsername, apiSecret, apiTrackingID) = getAutotaskCredentials() else {
+            print("❌ Missing Autotask credentials")
+            completion([])
+            return
+        }
+        
+        request.setValue(apiUsername, forHTTPHeaderField: "UserName")
+        request.setValue(apiSecret, forHTTPHeaderField: "Secret")
+        request.setValue(apiTrackingID, forHTTPHeaderField: "ApiIntegrationCode")
+        
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: modifiedRequestBody, options: [])
+        } catch {
+            print("❌ Failed to encode request body: \(error.localizedDescription)")
+            completion([])
+            return
+        }
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("❌ Request failed: \(error.localizedDescription)")
+                completion([])
+                return
+            }
+            
+            guard let data = data else {
+                print("❌ No data returned")
+                completion([])
+                return
+            }
+            
+            print("📥 Raw API Response: \(String(data: data, encoding: .utf8) ?? "Unable to decode response")")
+
+            do {
+                if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
+                   let items = json["items"] as? [[String: Any]] {
+                    
+                    let opportunities = items.compactMap { item -> (Int, String)? in
+                        if let id = item["id"] as? Int, let title = item["title"] as? String {
+                            return (id, title)
+                        }
+                        return nil
+                    }
+                    print("✅ Parsed Opportunities: \(opportunities)")
+                    completion(opportunities)
+                } else {
+                    print("❌ Invalid JSON structure.")
+                    completion([])
+                }
+            } catch {
+                print("❌ Failed to parse JSON: \(error.localizedDescription)")
+                completion([])
+            }
         }.resume()
     }
 }
