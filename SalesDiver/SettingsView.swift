@@ -650,6 +650,7 @@ private func importSelectedContacts() {
     }
     
     private func handleTap(for result: (Int, String, String)) {
+        print("handleTap(for:) invoked with result: \(result)")
         let tappedID = result.0
         let name1 = result.1
 
@@ -662,7 +663,8 @@ private func importSelectedContacts() {
                 selectedCompanies = [company] // Allow only single selection for Company
             }
             selectedCompanyID = tappedID
- 
+            print("Selected Company ID set to: \(selectedCompanyID)")
+            
         case "Contact", "Opportunity":
             if selectedCompanyID == nil || selectedCompanyID != tappedID {
                 // Selecting a company for contact or opportunity search
@@ -671,8 +673,9 @@ private func importSelectedContacts() {
                 selectedContacts.removeAll()
                 selectedOpportunities.removeAll()
                 searchResults.removeAll()
+                print("Selected Company ID updated for Contact/Opportunity to: \(selectedCompanyID)")
             }
- 
+            
         default:
             break
         }
@@ -786,14 +789,17 @@ private func importSelectedContacts() {
     }
 
     private func fetchAllContactsForSelectedCompany() {
+        print("Attempting to fetch contacts. Current selectedCompanyID: \(String(describing: selectedCompanyID))")
         guard let companyID = selectedCompanyID else {
             print("❌ No company selected.")
             return
         }
+        
+        print("Fetching contacts for companyID: \(companyID)")
 
         let requestBody: [String: Any] = [
-            "MaxRecords": 100,  // Adjust the number if needed
-            "IncludeFields": ["id", "firstName", "lastName", "emailAddress", "phone", "title"],
+            "MaxRecords": 100,
+            "IncludeFields": ["id", "firstName", "lastName"],
             "Filter": [
                 [
                     "op": "and",
@@ -803,9 +809,16 @@ private func importSelectedContacts() {
                 ]
             ]
         ]
+        
+        print("Contact Query Request Body: \(requestBody)")
 
         AutotaskAPIManager.shared.searchContactsFromBody(requestBody) { results in
             DispatchQueue.main.async {
+                if results.isEmpty {
+                    print("⚠️ No contacts found for companyID: \(companyID)")
+                } else {
+                    print("✅ Fetched \(results.count) contacts for companyID: \(companyID)")
+                }
                 searchResults = results.map { ($0.0, $0.1, $0.2) }
             }
         }

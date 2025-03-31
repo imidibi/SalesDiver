@@ -350,7 +350,7 @@ class AutotaskAPIManager {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
         var modifiedRequestBody = requestBody
-        modifiedRequestBody["IncludeFields"] = ["id", "title"]
+        modifiedRequestBody["IncludeFields"] = ["id", "firstName", "lastName"]
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: modifiedRequestBody, options: [])
         } catch {
