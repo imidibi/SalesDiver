@@ -35,7 +35,7 @@ class CoreDataManager {
         
         for company in companies {
             let fetchRequest: NSFetchRequest<CompanyEntity> = CompanyEntity.fetchRequest()
-            fetchRequest.predicate = NSPredicate(format: "name == %@", company.name)
+            fetchRequest.predicate = NSPredicate(format: "name ==[c] %@", company.name)
             
             do {
                 let results = try context.fetch(fetchRequest)
@@ -151,7 +151,7 @@ class CoreDataManager {
         }
     }
     
-    func importContacts(contacts: [String]) {
+    func importContacts(contacts: [String], company: CompanyEntity) {
         let context = persistentContainer.viewContext
         for contactName in contacts {
             let nameComponents = contactName.split(separator: " ", maxSplits: 1).map { String($0) }
@@ -168,6 +168,7 @@ class CoreDataManager {
                     newContact.id = UUID()
                     newContact.firstName = firstName
                     newContact.lastName = lastName
+                    newContact.company = company  // Link the contact to the existing company
                 }
             } catch {
                 print("Error fetching contact: \(error)")
@@ -179,19 +180,24 @@ class CoreDataManager {
     func fetchOrCreateCompany(companyID: Int, companyName: String? = nil, completion: @escaping (CompanyEntity) -> Void) {
         let context = persistentContainer.viewContext
         let fetchRequest: NSFetchRequest<CompanyEntity> = CompanyEntity.fetchRequest()
-        fetchRequest.predicate = NSPredicate(format: "id == %d", companyID)
 
+        // Search by name only
+        if let companyName = companyName {
+            fetchRequest.predicate = NSPredicate(format: "name ==[c] %@", companyName)
+        }
+        
         do {
             if let existingCompany = try context.fetch(fetchRequest).first {
-                // ✅ Update name if it was missing or empty
-                if let name = companyName, (existingCompany.name?.isEmpty ?? true) {
-                    existingCompany.name = name
+                // ✅ Update the Autotask CompanyID if it's missing or different
+                if existingCompany.id == 0 {
+                    existingCompany.id = Int64(companyID)
                     try context.save()
                 }
                 completion(existingCompany)
             } else {
+                // No existing company found, create a new one
                 let newCompany = CompanyEntity(context: context)
-                newCompany.id = Int64(companyID)
+                newCompany.id = Int64(companyID)  // Store the Autotask CompanyID
                 newCompany.name = companyName
                 try context.save()
                 completion(newCompany)

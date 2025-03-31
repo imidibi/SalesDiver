@@ -21,7 +21,16 @@ struct CompanyDataView: View {
         if searchText.isEmpty {
             return viewModel.companies
         } else {
-            return viewModel.companies.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+            let searchQuery = searchText.lowercased()
+            var filtered: [CompanyWrapper] = []
+            
+            for company in viewModel.companies {
+                if company.name.lowercased().contains(searchQuery) {
+                    filtered.append(company)
+                }
+            }
+            
+            return filtered
         }
     }
 
@@ -44,7 +53,9 @@ struct CompanyDataView: View {
                 .padding(.top)
 
                 List {
-                    ForEach(filteredCompanies) { company in
+                    ForEach(filteredCompanies.indices, id: \.self) { index in
+                        let company = filteredCompanies[index]
+                        
                         HStack {
                             VStack(alignment: .leading) {
                                 // ✅ Tap on Name to Open EditCompanyView
@@ -87,7 +98,14 @@ struct CompanyDataView: View {
                                 Image(systemName: "map.fill")
                                     .foregroundColor(.blue)
                             }
-                            .buttonStyle(PlainButtonStyle()) // ✅ Ensures only the icon is tappable
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                        .contextMenu {
+                            Button(role: .destructive) {
+                                deleteCompany(at: IndexSet(integer: index))
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
                         }
                     }
                     .onDelete(perform: deleteCompany)

@@ -663,7 +663,7 @@ private func importSelectedContacts() {
                 selectedCompanies = [company] // Allow only single selection for Company
             }
             selectedCompanyID = tappedID
-            print("Selected Company ID set to: \(selectedCompanyID)")
+            print("Attempting to fetch contacts. Current selectedCompanyID: \(selectedCompanyID ?? -1)")
             
         case "Contact", "Opportunity":
             if selectedCompanyID == nil || selectedCompanyID != tappedID {
@@ -673,7 +673,7 @@ private func importSelectedContacts() {
                 selectedContacts.removeAll()
                 selectedOpportunities.removeAll()
                 searchResults.removeAll()
-                print("Selected Company ID updated for Contact/Opportunity to: \(selectedCompanyID)")
+                
             }
             
         default:
@@ -789,7 +789,7 @@ private func importSelectedContacts() {
     }
 
     private func fetchAllContactsForSelectedCompany() {
-        print("Attempting to fetch contacts. Current selectedCompanyID: \(String(describing: selectedCompanyID))")
+        print("Attempting to fetch contacts. Current selectedCompanyID: \(selectedCompanyID ?? -1)")
         guard let companyID = selectedCompanyID else {
             print("❌ No company selected.")
             return
