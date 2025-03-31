@@ -50,7 +50,7 @@ struct SettingsView: View {
 
         let requestBody: [String: Any] = [
             "MaxRecords": 100,
-            "IncludeFields": ["id", "description"],
+            "IncludeFields": ["id", "title", "amount"],
             "Filter": [
                 [
                     "op": "and",

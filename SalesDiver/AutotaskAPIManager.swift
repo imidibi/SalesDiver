@@ -441,7 +441,7 @@ class AutotaskAPIManager {
         print("📄 Request Body: \(requestBody)")
         
         var modifiedRequestBody = requestBody
-        modifiedRequestBody["IncludeFields"] = ["id", "title"]
+        modifiedRequestBody["IncludeFields"] = ["id", "title", "amount"]
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
