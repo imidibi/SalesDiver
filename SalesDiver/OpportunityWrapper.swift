@@ -1,8 +1,12 @@
 import Foundation
 import CoreData
 
-struct OpportunityWrapper: Identifiable {
-    let managedObject: NSManagedObject
+class OpportunityWrapper: ObservableObject, Identifiable {
+    @Published var managedObject: NSManagedObject
+
+    init(managedObject: NSManagedObject) {
+        self.managedObject = managedObject
+    }
 
     var id: NSManagedObjectID { managedObject.objectID }
 

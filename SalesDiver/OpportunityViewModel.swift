@@ -77,21 +77,29 @@ class OpportunityViewModel: ObservableObject {
     }
 
     func updateBANT(opportunity: OpportunityWrapper, bantType: BANTIndicatorView.BANTType, status: Int, commentary: String) {
+        // Debug logging to help trace the issue
+        print("Debug (updateBANT): Received bantType: \(bantType), status: \(status), commentary: \(commentary)")
+        
         switch bantType {
         case .budget:
+            print("Debug (updateBANT): Updating budget qualification.")
             opportunity.managedObject.setValue(status, forKey: "budgetStatus")
             opportunity.managedObject.setValue(commentary, forKey: "budgetCommentary")
         case .authority:
+            print("Debug (updateBANT): Updating authority qualification.")
             opportunity.managedObject.setValue(status, forKey: "authorityStatus")
             opportunity.managedObject.setValue(commentary, forKey: "authorityCommentary")
         case .need:
+            print("Debug (updateBANT): Updating need qualification.")
             opportunity.managedObject.setValue(status, forKey: "needStatus")
             opportunity.managedObject.setValue(commentary, forKey: "needCommentary")
         case .timing:
+            print("Debug (updateBANT): Updating timing qualification.")
             opportunity.managedObject.setValue(status, forKey: "timingStatus")
             opportunity.managedObject.setValue(commentary, forKey: "timingCommentary")
         }
-
+        
+        print("Debug (updateBANT): Update complete. Saving data.")
         saveData()
     }
 

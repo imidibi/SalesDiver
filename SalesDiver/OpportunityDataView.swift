@@ -6,6 +6,13 @@
 //
 
 import SwiftUI
+import CoreData
+
+struct SelectedBANTItem: Identifiable {
+    var id: NSManagedObjectID { opportunity.id }
+    var opportunity: OpportunityWrapper
+    var bantType: BANTIndicatorView.BANTType
+}
 
 enum OpportunitySortOption: String, CaseIterable {
     case companyName = "Company Name"
@@ -19,10 +26,8 @@ struct OpportunityDataView: View {
     @State private var searchText: String = ""  // ✅ Search state
     @State private var sortOption: OpportunitySortOption = .companyName  // ✅ Default sorting
 
-    @State private var selectedOpportunity: OpportunityWrapper?  // ✅ Used for BANT Editing
+    @State private var selectedBANTItem: SelectedBANTItem? = nil  // Combined state for BANT Editing
     @State private var editingOpportunity: OpportunityWrapper?   // ✅ Used for Opportunity Editing
-    @State private var showingBANTEditor = false
-    @State private var selectedBANT: BANTIndicatorView.BANTType = .budget
     @State private var isPresentingAddOpportunity = false  // ✅ Added state for modal
     @State private var isPresentingEditOpportunity = false // ✅ Added state for editing
 
@@ -104,9 +109,8 @@ struct OpportunityDataView: View {
 
                         // ✅ BANT Indicator remains intact
                         BANTIndicatorView(opportunity: opportunity) { bantType in
-                            selectedOpportunity = opportunity
-                            selectedBANT = bantType
-                            showingBANTEditor = true
+                            print("BANT icon pressed: \(bantType)")
+                            selectedBANTItem = SelectedBANTItem(opportunity: opportunity, bantType: bantType)
                         }
                     }
                 }
@@ -122,9 +126,11 @@ struct OpportunityDataView: View {
             .onAppear {
                 viewModel.fetchOpportunities()
             }
-            .sheet(item: $selectedOpportunity) { opportunity in
-                BANTEditorView(viewModel: viewModel, opportunity: opportunity, bantType: selectedBANT) // ✅ Opens BANT Editor
+        
+            .sheet(item: $selectedBANTItem) { item in
+                BANTEditorView(viewModel: viewModel, opportunity: item.opportunity, bantType: item.bantType)
             }
+            
             .sheet(isPresented: $isPresentingAddOpportunity) {
                 AddOpportunityView(viewModel: viewModel)  // ✅ Opens Add Opportunity View
             }

@@ -10,11 +10,31 @@ import SwiftUI
 struct BANTEditorView: View {
     @Environment(\.dismiss) var dismiss
     @ObservedObject var viewModel: OpportunityViewModel
-    var opportunity: OpportunityWrapper  // ✅ FIX: Use global `OpportunityWrapper`
+    @ObservedObject var opportunity: OpportunityWrapper  // ✅ FIX: Use global `OpportunityWrapper`
     var bantType: BANTIndicatorView.BANTType
 
     @State private var selectedStatus: Int = 0
     @State private var commentary: String = ""
+
+    init(viewModel: OpportunityViewModel, opportunity: OpportunityWrapper, bantType: BANTIndicatorView.BANTType) {
+        self.viewModel = viewModel
+        self.opportunity = opportunity
+        self.bantType = bantType
+        switch bantType {
+        case .budget:
+            _selectedStatus = State(initialValue: opportunity.budgetStatus)
+            _commentary = State(initialValue: opportunity.budgetCommentary)
+        case .authority:
+            _selectedStatus = State(initialValue: opportunity.authorityStatus)
+            _commentary = State(initialValue: opportunity.authorityCommentary)
+        case .need:
+            _selectedStatus = State(initialValue: opportunity.needStatus)
+            _commentary = State(initialValue: opportunity.needCommentary)
+        case .timing:
+            _selectedStatus = State(initialValue: opportunity.timingStatus)
+            _commentary = State(initialValue: opportunity.timingCommentary)
+        }
+    }
 
     var title: String {
         switch bantType {
@@ -55,30 +75,26 @@ struct BANTEditorView: View {
                     }
                 }
             }
-            .onAppear {
-                loadExistingData()
-            }
-        }
-    }
-
-    private func loadExistingData() {
-        switch bantType {
-        case .budget:
-            selectedStatus = opportunity.budgetStatus
-            commentary = opportunity.budgetCommentary
-        case .authority:
-            selectedStatus = opportunity.authorityStatus
-            commentary = opportunity.authorityCommentary
-        case .need:
-            selectedStatus = opportunity.needStatus
-            commentary = opportunity.needCommentary
-        case .timing:
-            selectedStatus = opportunity.timingStatus
-            commentary = opportunity.timingCommentary
         }
     }
 
     private func saveQualification() {
+        // Debug logging to help trace the issue
+        print("Debug: Saving qualification for bantType: \(bantType)")
+        print("Debug: Selected status: \(selectedStatus)")
+        print("Debug: Commentary: \(commentary)")
+        
+        switch bantType {
+        case .budget:
+            print("Debug: Opportunity budgetStatus before update: \(opportunity.budgetStatus)")
+        case .authority:
+            print("Debug: Opportunity authorityStatus before update: \(opportunity.authorityStatus)")
+        case .need:
+            print("Debug: Opportunity needStatus before update: \(opportunity.needStatus)")
+        case .timing:
+            print("Debug: Opportunity timingStatus before update: \(opportunity.timingStatus)")
+        }
+        
         viewModel.updateBANT(opportunity: opportunity, bantType: bantType, status: selectedStatus, commentary: commentary)
     }
 }
