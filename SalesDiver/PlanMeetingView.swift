@@ -95,11 +95,18 @@ struct PlanMeetingView: View {
                     if selectedCompany != nil {
                         attendeesAndObjectiveSection
                     }
-                    saveButton
+                    
                 }
                 .padding()
             }
             .navigationTitle("Plan Meeting")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Save") {
+                        saveMeeting()
+                    }
+                }
+            }
             .sheet(isPresented: $showCompanyPicker) {
                 NavigationStack {
                     List {
@@ -292,17 +299,6 @@ struct PlanMeetingView: View {
     }
 
 
-    private var saveButton: some View {
-        Button(action: saveMeeting) {
-            Text("Save Meeting")
-                .fontWeight(.semibold)
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(Color.blue)
-                .foregroundColor(.white)
-                .cornerRadius(10)
-        }
-    }
     
     func saveMeeting() {
         let calendar = Calendar.current
