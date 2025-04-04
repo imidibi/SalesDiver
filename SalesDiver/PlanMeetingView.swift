@@ -16,6 +16,13 @@ struct PlanMeetingView: View {
         return calendar.date(bySettingHour: hour, minute: 0, second: 0, of: now) ?? now
     }
 
+    private func getRelevantQuestions(for categoryPrefix: String) -> [BANTQuestion] {
+        var questions: [BANTQuestion] = []
+        let fetchedQuestions = fetchQuestions(for: categoryPrefix)
+        questions.append(contentsOf: fetchedQuestions)
+        return questions
+    }
+
     @State private var meetingTime: Date = PlanMeetingView.computeDefaultMeetingTime()
     @State private var selectedCompany: CompanyEntity?
     @State private var selectedOpportunity: OpportunityEntity?
@@ -29,9 +36,21 @@ struct PlanMeetingView: View {
     @State private var showCompanyPicker = false
     @State private var showOpportunityPicker = false
     @State private var showAttendeePicker = false
+    
+    @State private var showingQuestions = false
+    @State private var displayedQuestions: [BANTQuestion] = []
+    @State private var selectedQuestions: Set<BANTQuestion> = []
+    @State private var currentCategoryIndex: Int = 0
+    @State private var currentCategory: String? = nil
+    @State private var showQuestionSelection: Bool = false
+    @State private var objectiveDefined: Bool = false
+    @State private var dialogueText: String = ""
 
     @FetchRequest(entity: CompanyEntity.entity(), sortDescriptors: [NSSortDescriptor(keyPath: \CompanyEntity.name, ascending: true)])
     private var companies: FetchedResults<CompanyEntity>
+    
+    @FetchRequest(entity: BANTQuestion.entity(), sortDescriptors: [])
+    private var allQuestions: FetchedResults<BANTQuestion>
     
     var filteredOpportunities: [OpportunityEntity] {
         guard let company = selectedCompany else { return [] }
@@ -42,6 +61,60 @@ struct PlanMeetingView: View {
             return name1 < name2
         }
         return sorted
+    }
+
+    private func toggleQuestionSelection(_ question: BANTQuestion) {
+        if selectedQuestions.contains(question) {
+            selectedQuestions.remove(question)
+        } else {
+            selectedQuestions.insert(question)
+        }
+    }
+    
+    private func getWorstQualifiedCategory() -> String? {
+        guard let opportunity = selectedOpportunity else { return nil }
+        
+        let categories = [
+            ("Budget", opportunity.budgetStatus),
+            ("Authority", opportunity.authorityStatus),
+            ("Need", opportunity.needStatus),
+            ("Timing", opportunity.timingStatus)
+        ]
+        
+        let sortedCategories = categories.sorted { (first, second) -> Bool in
+            return statusValue(first.1) > statusValue(second.1)
+        }
+        
+        return sortedCategories.first?.0
+    }
+    
+    private func statusValue(_ status: Int16) -> Int {
+        switch status {
+        case 0: return 3  // Red
+        case 1: return 2  // Yellow
+        case 2: return 1  // Green
+        default: return 0
+        }
+    }
+
+    private func proceedToNextCategory() {
+        if let nextCategory = getWorstQualifiedCategory() {
+            currentCategory = nextCategory
+            showQuestionSelection = true
+        } else {
+            showQuestionSelection = false
+        }
+    }
+
+    func completeObjective() {
+        objectiveDefined = true
+        proceedToNextCategory()
+    }
+
+    private func fetchQuestions(for category: String) -> [BANTQuestion] {
+        return allQuestions.filter { question in
+            question.category == category
+        }
     }
     
     var visibleOpportunities: [OpportunityEntity] {
@@ -85,7 +158,7 @@ struct PlanMeetingView: View {
             }
         }
     }
-    
+ 
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -94,6 +167,54 @@ struct PlanMeetingView: View {
                     companyAndOpportunitySection
                     if selectedCompany != nil {
                         attendeesAndObjectiveSection
+                    }
+                    
+                    if showQuestionSelection, let currentCategory = currentCategory {
+                        let prefix = currentCategory.prefix(1)
+                        let categoryPrefix = String(prefix)
+                        let relevantQuestions = getRelevantQuestions(for: categoryPrefix)
+                        
+                        VStack(alignment: .leading, spacing: 20) {
+                            Text("Let's discuss \(currentCategory)")
+                                .font(.headline)
+                            
+                            ForEach(relevantQuestions, id: \.self) { question in
+                                Button(action: { toggleQuestionSelection(question) }) {
+                                    HStack {
+                                        Text("• \(question.questionText ?? "Unknown Question")")
+                                            .padding(.leading, 10)
+                                        Spacer()
+                                        if selectedQuestions.contains(question) {
+                                            Image(systemName: "checkmark.circle.fill")
+                                                .foregroundColor(.blue)
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            Button("Save and Continue") {
+                                proceedToNextCategory()
+                            }
+                            .padding()
+                            .background(Color.blue)
+                            .foregroundColor(.white)
+                            .cornerRadius(8)
+                        }
+                        .padding()
+                        .background(RoundedRectangle(cornerRadius: 12).fill(Color(.systemGray6)))
+                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.gray.opacity(0.4), lineWidth: 1))
+                    }
+                    
+                    if showingQuestions {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("Select Questions for Qualification")
+                                .font(.headline)
+                            
+                            List(displayedQuestions, id: \.self, selection: $selectedQuestions) { question in
+                                Text(question.questionText ?? "No question text available")
+                            }
+                            .environment(\.editMode, .constant(.active))
+                        }
                     }
                     
                 }
@@ -233,9 +354,7 @@ struct PlanMeetingView: View {
             .frame(maxWidth: .infinity)
         }
         .padding()
-        .background {
-            RoundedRectangle(cornerRadius: 12).fill(Color(.systemGray6))
-        }
+        .background(RoundedRectangle(cornerRadius: 12).fill(Color(.systemGray6)))
         .overlay {
             RoundedRectangle(cornerRadius: 12)
                 .stroke(Color.gray.opacity(0.4), lineWidth: 1)
@@ -289,9 +408,7 @@ struct PlanMeetingView: View {
             .frame(maxWidth: .infinity)
         }
         .padding()
-        .background {
-            RoundedRectangle(cornerRadius: 12).fill(Color(.systemGray6))
-        }
+        .background(RoundedRectangle(cornerRadius: 12).fill(Color(.systemGray6)))
         .overlay {
             RoundedRectangle(cornerRadius: 12)
                 .stroke(Color.gray.opacity(0.4), lineWidth: 1)
@@ -375,70 +492,147 @@ struct PlanMeetingView: View {
         _meetingObjective = State(initialValue: editingMeeting?.objective ?? "")
     }
     private var attendeesAndObjectiveSection: some View {
-        HStack(alignment: .top, spacing: 20) {
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Attendees")
-                    .font(.headline)
-                Button(action: { showAttendeePicker = true }) {
-                    HStack {
-                        Text(selectedAttendees.isEmpty ? "Select Attendees" : selectedAttendees.map { "\($0.firstName ?? "") \($0.lastName ?? "")" }.joined(separator: ", "))
-                            .foregroundColor(selectedAttendees.isEmpty ? .gray : .primary)
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .foregroundColor(.gray)
+        VStack(alignment: .leading, spacing: 20) {
+            HStack(alignment: .top, spacing: 20) {
+                
+                // Attendees Selection
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Attendees")
+                        .font(.headline)
+                    Button(action: { showAttendeePicker = true }) {
+                        HStack {
+                            Text(selectedAttendees.isEmpty ? "Select Attendees" : selectedAttendees.map { "\($0.firstName ?? "") \($0.lastName ?? "")" }.joined(separator: ", "))
+                                .foregroundColor(selectedAttendees.isEmpty ? .gray : .primary)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .foregroundColor(.gray)
+                        }
+                        .padding(10)
+                        .background(RoundedRectangle(cornerRadius: 8).fill(Color(.systemGray6)))
                     }
-                    .padding(10)
-                    .background(Color(.systemGray6))
-                    .cornerRadius(8)
                 }
-            }
-            .sheet(isPresented: $showAttendeePicker) {
-                NavigationStack {
-                    List {
-                        TextField("Search Attendees", text: $contactsSearchText)
-                            .textFieldStyle(.roundedBorder)
-                        
-                        ForEach(visibleContacts, id: \.self) { contact in
-                            let fullName = "\((contact.firstName ?? "")) \((contact.lastName ?? ""))"
-                            let isSelected = selectedAttendees.contains(contact)
-                            
-                            MultipleSelectionRow(title: fullName, isSelected: isSelected) {
-                                selectedAttendees.formSymmetricDifference([contact])
+                .sheet(isPresented: $showAttendeePicker) {
+                    NavigationStack {
+                        List {
+                            TextField("Search Attendees", text: $contactsSearchText)
+                                .textFieldStyle(.roundedBorder)
+
+                            ForEach(visibleContacts, id: \.self) { contact in
+                                let fullName = "\(contact.firstName ?? "") \(contact.lastName ?? "")"
+                                let isSelected = selectedAttendees.contains(contact)
+
+                                MultipleSelectionRow(title: fullName, isSelected: isSelected) {
+                                    selectedAttendees.formSymmetricDifference([contact])
+                                }
+                            }
+                        }
+                        .listStyle(InsetGroupedListStyle())
+                        .navigationTitle("Select Attendees")
+                        .toolbar {
+                            ToolbarItem(placement: .cancellationAction) {
+                                Button("Done") {
+                                    showAttendeePicker = false
+                                }
                             }
                         }
                     }
-                    .listStyle(InsetGroupedListStyle())
-                    .navigationTitle("Select Attendees")
-                    .toolbar {
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button("Done") {
-                                showAttendeePicker = false
-                            }
-                        }
-                    }
                 }
+
+                Rectangle()
+                    .frame(width: 1)
+                    .foregroundColor(Color.gray.opacity(0.4))
+                    .padding(.vertical)
+
+                // Meeting Objective and AI Dialogue Button
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Meeting Objective")
+                        .font(.headline)
+                    TextField("Enter Objective", text: $meetingObjective)
+                        .textFieldStyle(.roundedBorder)
+                        .onSubmit {
+                            completeObjective()
+                        }
+
+                    generateAIDialogueButton
+                }
+                .frame(maxWidth: .infinity)
             }
-            
-            Rectangle()
-                .frame(width: 1)
-                .foregroundColor(.black)
-                .padding(.vertical)
-            
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Meeting Objective")
-                    .font(.headline)
-                TextField("Enter Objective", text: $meetingObjective)
-                    .textFieldStyle(.roundedBorder)
+            .padding()
+            .background(RoundedRectangle(cornerRadius: 12).fill(Color(.systemGray6)))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.gray.opacity(0.4), lineWidth: 1))
+
+            // Display AI Generated Dialogue
+            if !dialogueText.isEmpty {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("AI Generated Dialogue")
+                        .font(.headline)
+
+                    ScrollView {
+                        Text(dialogueText)
+                            .padding()
+                    }
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Color(.systemGray6)))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.gray.opacity(0.4), lineWidth: 1))
+                }
+                .padding(.horizontal)
             }
-            .frame(maxWidth: .infinity)
         }
-        .padding()
-        .background {
-            RoundedRectangle(cornerRadius: 12).fill(Color(.systemGray6))
+    }
+    private func generateBANTDialogue() {
+        guard let opportunity = selectedOpportunity else { return }
+
+        let wrapper = OpportunityWrapper(managedObject: opportunity)
+        let bantStatuses = [
+            ("Budget", wrapper.budgetStatus),
+            ("Authority", wrapper.authorityStatus),
+            ("Need", wrapper.needStatus),
+            ("Timing", wrapper.timingStatus)
+        ]
+
+        var dialogue = ""
+
+    for (bantArea, status) in bantStatuses.sorted(by: { statusValue(Int16($0.1)) > statusValue(Int16($1.1)) }) {
+            switch status {
+            case 0:
+                dialogue += "It looks like \(bantArea) is not qualified yet. Here are some questions to ask:\n"
+            case 1:
+                dialogue += "\(bantArea) is partially qualified. Consider asking the following questions:\n"
+            case 2:
+                dialogue += "I see you have fully qualified \(bantArea). What question would you like to ask to reconfirm that this area is well covered?\n"
+            default:
+                dialogue += "Unknown status for \(bantArea).\n"
+            }
+
+            let request: NSFetchRequest<BANTQuestion> = BANTQuestion.fetchRequest()
+            let prefix = String(bantArea.prefix(1))
+            request.predicate = NSPredicate(format: "category == %@", prefix)
+
+            do {
+                let questions = try viewContext.fetch(request)
+                for question in questions {
+                    dialogue += "- \(question.questionText ?? "No question text available")\n"
+                }
+            } catch {
+                dialogue += "Error fetching questions for \(bantArea).\n"
+            }
+            dialogue += "\n"
         }
-        .overlay {
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.gray.opacity(0.4), lineWidth: 1)
+
+        dialogueText = dialogue
+    }
+    
+    // Replace the entire `generateAIDialogueButton` definition with this:
+
+    private var generateAIDialogueButton: some View {
+        return Button(action: {
+            generateBANTDialogue()
+        }) {
+            Text("Generate AI Dialogue")
+                .font(.headline)
+                .padding()
+                .background(Color.blue)
+                .foregroundColor(.white)
+                .cornerRadius(8)
         }
     }
 }
