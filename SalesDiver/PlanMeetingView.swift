@@ -3,6 +3,7 @@ import CoreData
 
 
 struct PlanMeetingView: View {
+    
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.presentationMode) private var presentationMode
     @State var editingMeeting: MeetingsEntity?
@@ -65,6 +66,17 @@ struct PlanMeetingView: View {
     
     @FetchRequest(entity: BANTQuestion.entity(), sortDescriptors: [])
     private var allQuestions: FetchedResults<BANTQuestion>
+
+    init(editingMeeting: MeetingsEntity? = nil) {
+        self.editingMeeting = editingMeeting
+        _meetingTitle = State(initialValue: editingMeeting?.title ?? "")
+        _meetingDate = State(initialValue: editingMeeting?.date ?? Date())
+        _meetingTime = State(initialValue: editingMeeting?.date ?? PlanMeetingView.computeDefaultMeetingTime())
+        _selectedCompany = State(initialValue: editingMeeting?.company)
+        _selectedOpportunity = State(initialValue: editingMeeting?.opportunity)
+        _selectedAttendees = State(initialValue: (editingMeeting?.contacts as? Set<ContactsEntity>) ?? [])
+        _meetingObjective = State(initialValue: editingMeeting?.objective ?? "")
+    }
     
     var filteredOpportunities: [OpportunityEntity] {
         guard let company = selectedCompany else { return [] }
@@ -112,12 +124,76 @@ struct PlanMeetingView: View {
     }
 
     private func proceedToNextCategory() {
-        if let nextCategory = getWorstQualifiedCategory() {
-            currentCategory = nextCategory
-            showQuestionSelection = true
-        } else {
-            showQuestionSelection = false
+    print("DEBUG: proceedToNextCategory() called")  // Confirm the function is triggered
+ 
+    if editingMeeting == nil {
+        print("DEBUG: Creating new meeting since editingMeeting is nil")
+        
+        let newMeeting = MeetingsEntity(context: viewContext)
+        newMeeting.id = UUID()
+        newMeeting.title = meetingTitle
+        newMeeting.date = meetingDate
+        newMeeting.objective = meetingObjective
+        newMeeting.company = selectedCompany
+        newMeeting.opportunity = selectedOpportunity
+        newMeeting.contacts = NSSet(set: selectedAttendees)
+        
+        editingMeeting = newMeeting
+        
+        do {
+            try viewContext.save()
+            print("DEBUG: New meeting created and saved successfully.")
+        } catch {
+            print("DEBUG: Failed to save new meeting: \(error.localizedDescription)")
         }
+    }
+    
+    guard let editingMeeting = editingMeeting else { 
+        print("DEBUG: No editingMeeting found - exiting function")
+        return 
+    }
+ 
+    // Save selected questions to Core Data
+    for question in selectedQuestions {
+        saveSelectedQuestion(question: question, meeting: editingMeeting)
+        print("DEBUG: Saved question: \(question.questionText ?? "Unknown")")  // Confirm each question is saved
+    }
+    
+    selectedQuestions.removeAll() // Clear the current selection for the next category
+ 
+    // Define all BANT categories in the desired order
+    let categories = ["Budget", "Authority", "Need", "Timing"]
+    
+    if currentCategoryIndex < categories.count {
+        // Move to the next category
+        let nextCategory = categories[currentCategoryIndex]
+        currentCategory = nextCategory
+        displayedQuestions = getRelevantQuestions(for: nextCategory)
+        
+        // Update dialogueText based on qualification status
+        if let opportunity = selectedOpportunity {
+            let status = opportunity.value(forKey: "\(nextCategory.lowercased())Status") as? Int16 ?? -1
+            switch status {
+            case 0:
+                dialogueText = "It looks like \(nextCategory) is not qualified yet. Here are some questions to ask:"
+            case 1:
+                dialogueText = "\(nextCategory) is partially qualified. Consider asking the following questions:"
+            case 2:
+                dialogueText = "I see you have fully qualified \(nextCategory). What question would you like to ask to reconfirm that this area is well covered?"
+            default:
+                dialogueText = "Unknown status for \(nextCategory)."
+            }
+        }
+        
+        showQuestionSelection = true
+        currentCategoryIndex += 1
+        print("DEBUG: Moving to next category: \(nextCategory)")  // Confirm the category transition
+    } else {
+        // All categories processed
+        showQuestionSelection = false
+        dialogueText = "All categories have been processed. The AI dialogue generation is complete."
+        print("DEBUG: AI Dialogue process complete.")  // Confirm the end of the process
+    }
     }
 
     func completeObjective() {
@@ -177,10 +253,10 @@ struct PlanMeetingView: View {
         let context = viewContext
 
         // Check if the question is already associated with the meeting
-        if let existingQuestion = meeting.questions?.first(where: { ($0 as? MeetingQuestionEntity)?.questionID == question.id }) as? MeetingQuestionEntity {
-            print("Question already exists for this meeting.")
-            return
-        }
+    if meeting.questions?.contains(where: { ($0 as? MeetingQuestionEntity)?.questionID == question.id }) == true {
+        print("Question already exists for this meeting.")
+        return
+    }
 
         // Create a new MeetingQuestionEntity
         let newMeetingQuestion = MeetingQuestionEntity(context: context)
@@ -509,27 +585,19 @@ struct PlanMeetingView: View {
         }
     }
 
-    @ViewBuilder
+    
     private var bantIcons: some View {
-        if let opportunity = selectedOpportunity {
-            let wrapper = OpportunityWrapper(managedObject: opportunity)
-            BANTIndicatorView(opportunity: wrapper, onBANTSelected: { _ in })
-                .frame(height: 14)
-        } else {
-            EmptyView()
+        Group {
+            if let opportunity = selectedOpportunity {
+                let wrapper = OpportunityWrapper(managedObject: opportunity)
+                BANTIndicatorView(opportunity: wrapper, onBANTSelected: { _ in })
+                    .frame(height: 14)
+            } else {
+                EmptyView()
+            }
         }
     }
     
-    init(editingMeeting: MeetingsEntity? = nil) {
-        self.editingMeeting = editingMeeting
-        _meetingTitle = State(initialValue: editingMeeting?.title ?? "")
-        _meetingDate = State(initialValue: editingMeeting?.date ?? Date())
-        _meetingTime = State(initialValue: editingMeeting?.date ?? PlanMeetingView.computeDefaultMeetingTime())
-        _selectedCompany = State(initialValue: editingMeeting?.company)
-        _selectedOpportunity = State(initialValue: editingMeeting?.opportunity)
-        _selectedAttendees = State(initialValue: (editingMeeting?.contacts as? Set<ContactsEntity>) ?? [])
-        _meetingObjective = State(initialValue: editingMeeting?.objective ?? "")
-    }
     private var attendeesAndObjectiveSection: some View {
         VStack(alignment: .leading, spacing: 20) {
             HStack(alignment: .top, spacing: 20) {
@@ -620,12 +688,11 @@ struct PlanMeetingView: View {
     private func generateBANTDialogue() {
         guard let opportunity = selectedOpportunity else { return }
         
-        let wrapper = OpportunityWrapper(managedObject: opportunity)
         let bantStatuses = [
-            ("Budget", wrapper.budgetStatus),
-            ("Authority", wrapper.authorityStatus),
-            ("Need", wrapper.needStatus),
-            ("Timing", wrapper.timingStatus)
+            ("Budget", opportunity.budgetStatus),
+            ("Authority", opportunity.authorityStatus),
+            ("Need", opportunity.needStatus),
+            ("Timing", opportunity.timingStatus)
         ]
         
         // Sort categories so that the one with the highest status value is considered the worst-qualified.
@@ -668,7 +735,9 @@ struct PlanMeetingView: View {
                 .cornerRadius(8)
         }
     }
-    
 }
+
+    
+
 
     
