@@ -16,11 +16,25 @@ struct PlanMeetingView: View {
         return calendar.date(bySettingHour: hour, minute: 0, second: 0, of: now) ?? now
     }
 
-    private func getRelevantQuestions(for categoryPrefix: String) -> [BANTQuestion] {
-        var questions: [BANTQuestion] = []
-        let fetchedQuestions = fetchQuestions(for: categoryPrefix)
-        questions.append(contentsOf: fetchedQuestions)
-        return questions
+    // Update the getRelevantQuestions(for:) function:
+    private func getRelevantQuestions(for category: String) -> [BANTQuestion] {
+        let normalizedCategory = category.lowercased()  // Normalize the category to lowercase for case-insensitive matching
+        
+        print("DEBUG: Fetching questions for category '\(category)' (using normalized category: '\(normalizedCategory)')")
+
+        let fetchedQuestions = allQuestions.filter { question in
+            if let questionCategory = question.category?.lowercased() {
+                let matches = questionCategory == normalizedCategory
+                print("DEBUG: Checking question '\(question.questionText ?? "Unknown Question")' - Category: \(questionCategory) - Matches: \(matches)")
+                return matches
+            } else {
+                print("DEBUG: Question has no category - \(question.questionText ?? "Unknown Question")")
+                return false
+            }
+        }
+        
+        print("DEBUG: Fetched \(fetchedQuestions.count) questions for category '\(category)'")
+        return fetchedQuestions
     }
 
     @State private var meetingTime: Date = PlanMeetingView.computeDefaultMeetingTime()
@@ -169,11 +183,9 @@ struct PlanMeetingView: View {
                         attendeesAndObjectiveSection
                     }
                     
+                    // In the UI block that displays the questions, update it to use displayedQuestions
                     if showQuestionSelection, let currentCategory = currentCategory {
-                        let prefix = currentCategory.prefix(1)
-                        let categoryPrefix = String(prefix)
-                        let relevantQuestions = getRelevantQuestions(for: categoryPrefix)
-                        
+                        let relevantQuestions = displayedQuestions
                         VStack(alignment: .leading, spacing: 20) {
                             Text("Let's discuss \(currentCategory)")
                                 .font(.headline)
@@ -580,7 +592,7 @@ struct PlanMeetingView: View {
     }
     private func generateBANTDialogue() {
         guard let opportunity = selectedOpportunity else { return }
-
+        
         let wrapper = OpportunityWrapper(managedObject: opportunity)
         let bantStatuses = [
             ("Budget", wrapper.budgetStatus),
@@ -588,37 +600,31 @@ struct PlanMeetingView: View {
             ("Need", wrapper.needStatus),
             ("Timing", wrapper.timingStatus)
         ]
-
-        var dialogue = ""
-
-    for (bantArea, status) in bantStatuses.sorted(by: { statusValue(Int16($0.1)) > statusValue(Int16($1.1)) }) {
-            switch status {
-            case 0:
-                dialogue += "It looks like \(bantArea) is not qualified yet. Here are some questions to ask:\n"
-            case 1:
-                dialogue += "\(bantArea) is partially qualified. Consider asking the following questions:\n"
-            case 2:
-                dialogue += "I see you have fully qualified \(bantArea). What question would you like to ask to reconfirm that this area is well covered?\n"
-            default:
-                dialogue += "Unknown status for \(bantArea).\n"
-            }
-
-            let request: NSFetchRequest<BANTQuestion> = BANTQuestion.fetchRequest()
-            let prefix = String(bantArea.prefix(1))
-            request.predicate = NSPredicate(format: "category == %@", prefix)
-
-            do {
-                let questions = try viewContext.fetch(request)
-                for question in questions {
-                    dialogue += "- \(question.questionText ?? "No question text available")\n"
-                }
-            } catch {
-                dialogue += "Error fetching questions for \(bantArea).\n"
-            }
-            dialogue += "\n"
+        
+        // Sort categories so that the one with the highest status value is considered the worst-qualified.
+        let sortedStatuses = bantStatuses.sorted { statusValue(Int16($0.1)) > statusValue(Int16($1.1)) }
+        guard let worstCategory = sortedStatuses.first else { return }
+        
+        // Set state variables for UI
+        currentCategory = worstCategory.0  // e.g., "Budget"
+        showQuestionSelection = true
+        
+        // Set dialogue text based on the worst category's status
+        switch worstCategory.1 {
+        case 0:
+            dialogueText = "It looks like \(worstCategory.0) is not qualified yet. Here are some questions you may want to ask to qualify this further:"
+        case 1:
+            dialogueText = "\(worstCategory.0) is partially qualified. Consider asking the following questions:"
+        case 2:
+            dialogueText = "I see you have fully qualified \(worstCategory.0). What question would you like to ask to reconfirm that this area is well covered?"
+        default:
+            dialogueText = "Unknown status for \(worstCategory.0)."
         }
-
-        dialogueText = dialogue
+        
+        // Fetch questions using the full worst category name.
+        // The getRelevantQuestions function will extract the first letter.
+        displayedQuestions = getRelevantQuestions(for: worstCategory.0)
+//        print("Displayed Questions: \(displayedQuestions.map { $0.questionText ?? \"No text\" })")
     }
     
     // Replace the entire `generateAIDialogueButton` definition with this:
