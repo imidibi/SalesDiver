@@ -172,6 +172,33 @@ struct PlanMeetingView: View {
             }
         }
     }
+    
+    private func saveSelectedQuestion(question: BANTQuestion, meeting: MeetingsEntity, answer: String = "") {
+        let context = viewContext
+
+        // Check if the question is already associated with the meeting
+        if let existingQuestion = meeting.questions?.first(where: { ($0 as? MeetingQuestionEntity)?.questionID == question.id }) as? MeetingQuestionEntity {
+            print("Question already exists for this meeting.")
+            return
+        }
+
+        // Create a new MeetingQuestionEntity
+        let newMeetingQuestion = MeetingQuestionEntity(context: context)
+        newMeetingQuestion.id = UUID()
+        newMeetingQuestion.questionText = question.questionText ?? "Untitled Question"
+        newMeetingQuestion.answer = answer
+        newMeetingQuestion.category = question.category ?? "Unknown"
+        newMeetingQuestion.questionID = question.id ?? UUID() // Assuming BANTQuestion has a UUID `id`
+        newMeetingQuestion.meeting = meeting
+
+        // Save the context
+        do {
+            try context.save()
+            print("Question successfully saved to the meeting.")
+        } catch {
+            print("Failed to save question: \(error.localizedDescription)")
+        }
+    }
  
     var body: some View {
         NavigationStack {
@@ -641,6 +668,7 @@ struct PlanMeetingView: View {
                 .cornerRadius(8)
         }
     }
+    
 }
 
     

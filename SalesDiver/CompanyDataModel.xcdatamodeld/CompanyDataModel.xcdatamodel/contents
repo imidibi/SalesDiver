@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="23605" systemVersion="24D81" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithSwiftData="YES" userDefinedModelVersionIdentifier="">
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="23788" systemVersion="24E248" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithSwiftData="YES" userDefinedModelVersionIdentifier="">
     <entity name="AnswersEntity" representedClassName="AnswersEntity" syncable="YES" codeGenerationType="class">
         <attribute name="answer" optional="YES" attributeType="String"/>
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
@@ -54,6 +54,14 @@
         <attribute name="name" optional="YES" attributeType="String"/>
         <relationship name="meeting" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="MeetingsEntity" inverseName="followUps" inverseEntity="MeetingsEntity"/>
     </entity>
+    <entity name="MeetingQuestionEntity" representedClassName="MeetingQuestionEntity" syncable="YES" codeGenerationType="class">
+        <attribute name="answer" optional="YES" attributeType="String"/>
+        <attribute name="category" optional="YES" attributeType="String"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="questionID" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="questionText" optional="YES" attributeType="String"/>
+        <relationship name="meeting" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="MeetingsEntity" inverseName="questions" inverseEntity="MeetingsEntity"/>
+    </entity>
     <entity name="MeetingsEntity" representedClassName="MeetingsEntity" syncable="YES" codeGenerationType="class">
         <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="date" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
@@ -67,6 +75,7 @@
         <relationship name="contacts" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="ContactsEntity" inverseName="meetings" inverseEntity="ContactsEntity"/>
         <relationship name="followUps" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="FollowUpsEntity" inverseName="meeting" inverseEntity="FollowUpsEntity"/>
         <relationship name="opportunity" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="OpportunityEntity" inverseName="meetings" inverseEntity="OpportunityEntity"/>
+        <relationship name="questions" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="MeetingQuestionEntity" inverseName="meeting" inverseEntity="MeetingQuestionEntity"/>
     </entity>
     <entity name="OpportunityEntity" representedClassName="OpportunityEntity" syncable="YES" codeGenerationType="class">
         <attribute name="authorityCommentary" optional="YES" attributeType="String"/>
