@@ -9,6 +9,7 @@ struct PlanMeetingView: View {
     @State var editingMeeting: MeetingsEntity?
     @State private var meetingTitle: String = ""
     @State private var meetingDate: Date = Date()
+    @State private var processedCategories: [String] = [] // Track categories already processed
     @FocusState private var isCompanySearchFocused: Bool
     private static func computeDefaultMeetingTime() -> Date {
         let now = Date()
@@ -19,21 +20,20 @@ struct PlanMeetingView: View {
 
     // Update the getRelevantQuestions(for:) function:
     private func getRelevantQuestions(for category: String) -> [BANTQuestion] {
-        let normalizedCategory = category.lowercased()  // Normalize the category to lowercase for case-insensitive matching
-        
-        print("DEBUG: Fetching questions for category '\(category)' (using normalized category: '\(normalizedCategory)')")
+        // Trim whitespace and lower-case the category for a robust comparison
+        let normalizedCategory = category.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        print("DEBUG: Fetching questions for category '\(category)' (normalized: '\(normalizedCategory)')")
 
         let fetchedQuestions = allQuestions.filter { question in
-            if let questionCategory = question.category?.lowercased() {
+            if let questionCategory = question.category?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
                 let matches = questionCategory == normalizedCategory
-                print("DEBUG: Checking question '\(question.questionText ?? "Unknown Question")' - Category: \(questionCategory) - Matches: \(matches)")
+//                print("DEBUG: Checking question '\(question.questionText ?? \"Unknown Question\")' - Category: \(questionCategory) - Matches: \(matches)")
                 return matches
             } else {
-                print("DEBUG: Question has no category - \(question.questionText ?? "Unknown Question")")
+//                print("DEBUG: Question has no category - \(question.questionText ?? \"Unknown Question\")")
                 return false
             }
         }
-        
         print("DEBUG: Fetched \(fetchedQuestions.count) questions for category '\(category)'")
         return fetchedQuestions
     }
@@ -104,7 +104,7 @@ struct PlanMeetingView: View {
             ("Budget", opportunity.budgetStatus),
             ("Authority", opportunity.authorityStatus),
             ("Need", opportunity.needStatus),
-            ("Timing", opportunity.timingStatus)
+            ("Timescale", opportunity.timingStatus)
         ]
         
         let sortedCategories = categories.sorted { (first, second) -> Bool in
@@ -123,78 +123,6 @@ struct PlanMeetingView: View {
         }
     }
 
-    private func proceedToNextCategory() {
-    print("DEBUG: proceedToNextCategory() called")  // Confirm the function is triggered
- 
-    if editingMeeting == nil {
-        print("DEBUG: Creating new meeting since editingMeeting is nil")
-        
-        let newMeeting = MeetingsEntity(context: viewContext)
-        newMeeting.id = UUID()
-        newMeeting.title = meetingTitle
-        newMeeting.date = meetingDate
-        newMeeting.objective = meetingObjective
-        newMeeting.company = selectedCompany
-        newMeeting.opportunity = selectedOpportunity
-        newMeeting.contacts = NSSet(set: selectedAttendees)
-        
-        editingMeeting = newMeeting
-        
-        do {
-            try viewContext.save()
-            print("DEBUG: New meeting created and saved successfully.")
-        } catch {
-            print("DEBUG: Failed to save new meeting: \(error.localizedDescription)")
-        }
-    }
-    
-    guard let editingMeeting = editingMeeting else { 
-        print("DEBUG: No editingMeeting found - exiting function")
-        return 
-    }
- 
-    // Save selected questions to Core Data
-    for question in selectedQuestions {
-        saveSelectedQuestion(question: question, meeting: editingMeeting)
-        print("DEBUG: Saved question: \(question.questionText ?? "Unknown")")  // Confirm each question is saved
-    }
-    
-    selectedQuestions.removeAll() // Clear the current selection for the next category
- 
-    // Define all BANT categories in the desired order
-    let categories = ["Budget", "Authority", "Need", "Timing"]
-    
-    if currentCategoryIndex < categories.count {
-        // Move to the next category
-        let nextCategory = categories[currentCategoryIndex]
-        currentCategory = nextCategory
-        displayedQuestions = getRelevantQuestions(for: nextCategory)
-        
-        // Update dialogueText based on qualification status
-        if let opportunity = selectedOpportunity {
-            let status = opportunity.value(forKey: "\(nextCategory.lowercased())Status") as? Int16 ?? -1
-            switch status {
-            case 0:
-                dialogueText = "It looks like \(nextCategory) is not qualified yet. Here are some questions to ask:"
-            case 1:
-                dialogueText = "\(nextCategory) is partially qualified. Consider asking the following questions:"
-            case 2:
-                dialogueText = "I see you have fully qualified \(nextCategory). What question would you like to ask to reconfirm that this area is well covered?"
-            default:
-                dialogueText = "Unknown status for \(nextCategory)."
-            }
-        }
-        
-        showQuestionSelection = true
-        currentCategoryIndex += 1
-        print("DEBUG: Moving to next category: \(nextCategory)")  // Confirm the category transition
-    } else {
-        // All categories processed
-        showQuestionSelection = false
-        dialogueText = "All categories have been processed. The AI dialogue generation is complete."
-        print("DEBUG: AI Dialogue process complete.")  // Confirm the end of the process
-    }
-    }
 
     func completeObjective() {
         objectiveDefined = true
@@ -251,13 +179,13 @@ struct PlanMeetingView: View {
     
     private func saveSelectedQuestion(question: BANTQuestion, meeting: MeetingsEntity, answer: String = "") {
         let context = viewContext
-
+ 
         // Check if the question is already associated with the meeting
-    if meeting.questions?.contains(where: { ($0 as? MeetingQuestionEntity)?.questionID == question.id }) == true {
-        print("Question already exists for this meeting.")
-        return
-    }
-
+        if meeting.questions?.contains(where: { ($0 as? MeetingQuestionEntity)?.questionID == question.id }) == true {
+            print("Question already exists for this meeting.")
+            return
+        }
+ 
         // Create a new MeetingQuestionEntity
         let newMeetingQuestion = MeetingQuestionEntity(context: context)
         newMeetingQuestion.id = UUID()
@@ -266,7 +194,7 @@ struct PlanMeetingView: View {
         newMeetingQuestion.category = question.category ?? "Unknown"
         newMeetingQuestion.questionID = question.id ?? UUID() // Assuming BANTQuestion has a UUID `id`
         newMeetingQuestion.meeting = meeting
-
+ 
         // Save the context
         do {
             try context.save()
@@ -275,7 +203,95 @@ struct PlanMeetingView: View {
             print("Failed to save question: \(error.localizedDescription)")
         }
     }
- 
+
+    // MARK: - BANT Dialogue Functions
+
+    private func generateBANTDialogue() {
+        // Reset state for a new dialogue cycle.
+        currentCategoryIndex = 0
+        processedCategories.removeAll()
+        
+        // Create a meeting if one hasn't been created already.
+        if editingMeeting == nil {
+            let newMeeting = MeetingsEntity(context: viewContext)
+            newMeeting.id = UUID()
+            newMeeting.title = meetingTitle
+            newMeeting.date = meetingDate
+            newMeeting.objective = meetingObjective
+            newMeeting.company = selectedCompany
+            newMeeting.opportunity = selectedOpportunity
+            newMeeting.contacts = NSSet(set: selectedAttendees)
+            
+            editingMeeting = newMeeting
+            
+            do {
+                try viewContext.save()
+//                print("DEBUG: New meeting created and saved successfully.")
+            } catch {
+//                print("DEBUG: Failed to save new meeting: \(error.localizedDescription)")
+            }
+        }
+        
+        // Load questions for the first category.
+        loadQuestionsForCurrentCategory()
+    }
+    
+    private func loadQuestionsForCurrentCategory() {
+        let categories = ["Budget", "Authority", "Need", "Timescale"]
+        
+        // If we've processed all categories, finish the cycle.
+        guard currentCategoryIndex < categories.count else {
+            showQuestionSelection = false
+            dialogueText = "All categories have been processed. The AI dialogue generation is complete."
+//            print("DEBUG: AI Dialogue process complete.")
+            return
+        }
+        
+        let category = categories[currentCategoryIndex]
+        currentCategory = category
+        dialogueText = "Here are some \(category) questions to help you qualify the \(category) category."
+        
+        // Fetch questions from Core Data for this category.
+        displayedQuestions = getRelevantQuestions(for: category)
+        
+        // If there are no questions for this category, skip to the next one.
+        if displayedQuestions.isEmpty {
+//            print("DEBUG: No questions available for \(category), skipping...")
+            processedCategories.append(category)
+            currentCategoryIndex += 1
+            loadQuestionsForCurrentCategory()
+        } else {
+            showQuestionSelection = true
+//            print("DEBUG: Presenting questions for category: \(category)")
+        }
+    }
+    
+    private func proceedToNextCategory() {
+//        print("DEBUG: proceedToNextCategory() called")
+        
+        // Save selected questions to the meeting.
+        guard let meeting = editingMeeting else {
+//            print("DEBUG: Meeting not found.")
+            return
+        }
+        
+        for question in selectedQuestions {
+            saveSelectedQuestion(question: question, meeting: meeting)
+//            print("DEBUG: Saved question: \(question.questionText ?? \"Unknown\")")
+        }
+        // Clear the current selection.
+        selectedQuestions.removeAll()
+        
+        // Mark the current category as processed.
+        if let category = currentCategory, !processedCategories.contains(category) {
+            processedCategories.append(category)
+        }
+        
+        // Move on to the next category.
+        currentCategoryIndex += 1
+        loadQuestionsForCurrentCategory()
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -685,41 +701,6 @@ struct PlanMeetingView: View {
             }
         }
     }
-    private func generateBANTDialogue() {
-        guard let opportunity = selectedOpportunity else { return }
-        
-        let bantStatuses = [
-            ("Budget", opportunity.budgetStatus),
-            ("Authority", opportunity.authorityStatus),
-            ("Need", opportunity.needStatus),
-            ("Timing", opportunity.timingStatus)
-        ]
-        
-        // Sort categories so that the one with the highest status value is considered the worst-qualified.
-        let sortedStatuses = bantStatuses.sorted { statusValue(Int16($0.1)) > statusValue(Int16($1.1)) }
-        guard let worstCategory = sortedStatuses.first else { return }
-        
-        // Set state variables for UI
-        currentCategory = worstCategory.0  // e.g., "Budget"
-        showQuestionSelection = true
-        
-        // Set dialogue text based on the worst category's status
-        switch worstCategory.1 {
-        case 0:
-            dialogueText = "It looks like \(worstCategory.0) is not qualified yet. Here are some questions you may want to ask to qualify this further:"
-        case 1:
-            dialogueText = "\(worstCategory.0) is partially qualified. Consider asking the following questions:"
-        case 2:
-            dialogueText = "I see you have fully qualified \(worstCategory.0). What question would you like to ask to reconfirm that this area is well covered?"
-        default:
-            dialogueText = "Unknown status for \(worstCategory.0)."
-        }
-        
-        // Fetch questions using the full worst category name.
-        // The getRelevantQuestions function will extract the first letter.
-        displayedQuestions = getRelevantQuestions(for: worstCategory.0)
-//        print("Displayed Questions: \(displayedQuestions.map { $0.questionText ?? \"No text\" })")
-    }
     
     // Replace the entire `generateAIDialogueButton` definition with this:
 
@@ -737,7 +718,5 @@ struct PlanMeetingView: View {
     }
 }
 
-    
 
 
-    
