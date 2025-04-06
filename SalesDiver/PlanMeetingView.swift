@@ -549,37 +549,34 @@ struct PlanMeetingView: View {
 
     
     func saveMeeting() {
-        let calendar = Calendar.current
-        let combinedDateTime = calendar.date(bySettingHour: calendar.component(.hour, from: meetingTime),
-                                             minute: calendar.component(.minute, from: meetingTime),
-                                             second: 0, of: meetingDate) ?? meetingDate
-        
-        if let editingMeeting = editingMeeting {
-            editingMeeting.title = meetingTitle
-            editingMeeting.date = combinedDateTime
-            editingMeeting.objective = meetingObjective
-            editingMeeting.company = selectedCompany
-            editingMeeting.opportunity = selectedOpportunity
-            editingMeeting.contacts = NSSet(set: selectedAttendees)
-        } else {
-            let newMeeting = MeetingsEntity(context: viewContext)
-            newMeeting.title = meetingTitle
-            newMeeting.date = combinedDateTime
-            newMeeting.objective = meetingObjective
-            newMeeting.company = selectedCompany
-            newMeeting.opportunity = selectedOpportunity
-            newMeeting.contacts = NSSet(set: selectedAttendees)
-        }
-        
-        // Save Core Data with error handling
-        do {
-            try viewContext.save()
-            print("Meeting successfully saved!")
-            presentationMode.wrappedValue.dismiss() // Dismiss view after saving
-        } catch {
-            print("Failed to save meeting: \(error.localizedDescription)")
-        }
+    // Ensure that a meeting record has already been created (via generateBANTDialogue()).
+    guard let editingMeeting = editingMeeting else {
+        print("No meeting record found. Please generate AI dialogue first.")
+        return
     }
+    
+    let calendar = Calendar.current
+    let combinedDateTime = calendar.date(bySettingHour: calendar.component(.hour, from: meetingTime),
+                                         minute: calendar.component(.minute, from: meetingTime),
+                                         second: 0, of: meetingDate) ?? meetingDate
+    
+    // Update the existing meeting record with the current meeting details.
+    editingMeeting.title = meetingTitle
+    editingMeeting.date = combinedDateTime
+    editingMeeting.objective = meetingObjective
+    editingMeeting.company = selectedCompany
+    editingMeeting.opportunity = selectedOpportunity
+    editingMeeting.contacts = NSSet(set: selectedAttendees)
+    
+    // Save the updated meeting record to Core Data
+    do {
+        try viewContext.save()
+        print("Meeting successfully saved!")
+        presentationMode.wrappedValue.dismiss() // Dismiss view after saving
+    } catch {
+        print("Failed to save meeting: \(error.localizedDescription)")
+    }
+}
     
     struct MultipleSelectionRow: View {
         var title: String
