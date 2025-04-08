@@ -16,6 +16,20 @@ struct ViewMeetingsView: View {
         }
     }
 
+    private func deleteMeeting(at offsets: IndexSet) {
+        offsets.forEach { index in
+            let meetingToDelete = meetings[index]
+            viewContext.delete(meetingToDelete)
+            meetings.remove(at: index)
+        }
+
+        do {
+            try viewContext.save()
+        } catch {
+            print("Failed to delete meeting: \(error.localizedDescription)")
+        }
+    }
+
     var body: some View {
         NavigationView {
             List {
@@ -54,11 +68,15 @@ struct ViewMeetingsView: View {
                         }
                     }
                 }
+                .onDelete(perform: deleteMeeting) // Enables swipe-to-delete
             }
             .onAppear {
                 fetchMeetings()
             }
             .navigationTitle("Meetings")
+            .toolbar {
+                EditButton() // Allows toggling edit mode to enable deletion
+            }
         }
         .navigationViewStyle(.stack)
     }
