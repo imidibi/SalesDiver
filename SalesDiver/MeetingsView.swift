@@ -1,6 +1,10 @@
 import SwiftUI
 
+
+
 struct MeetingsView: View {
+    @State private var selectedMeeting: MeetingsEntity? = nil
+    
     let columns = [
         GridItem(.flexible(), spacing: 20),
         GridItem(.flexible(), spacing: 20),
@@ -26,9 +30,13 @@ struct MeetingsView: View {
                         MenuButton(icon: "calendar.badge.plus", label: "Plan")
                     }
 
-                    NavigationLink(destination: RecordMeetingView()) {
-                        MenuButton(icon: "pencil.and.outline", label: "Record")
-                    }
+//                    if let selectedMeeting = selectedMeeting {
+//                        NavigationLink(destination: RecordMeetingView(meeting: selectedMeeting)) {
+//                            MenuButton(icon: "pencil.and.outline", label: "Record")
+//                        }
+//                    
+//                        MenuButton(icon: "pencil.and.outline", label: "Record")
+//                    }
 
                     NavigationLink(destination: ViewMeetingsView()) {
                         MenuButton(icon: "doc.text.magnifyingglass", label: "View")
@@ -62,11 +70,5 @@ struct MenuButton: View {
         .background(Color(.systemGray6))
         .cornerRadius(15)
         .shadow(radius: 5)
-    }
-}
-
-struct RecordMeetingView: View {
-    var body: some View {
-        Text("Record Meeting Screen")
     }
 }

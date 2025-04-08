@@ -4,6 +4,8 @@ import CoreData
 struct ViewMeetingsView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @State private var meetings: [MeetingsEntity] = []
+    @State private var selectedMeeting: MeetingsEntity? = nil  // New state to track selected meeting
+    @State private var isEditSheetPresented = false
 
     private func fetchMeetings() {
         let request: NSFetchRequest<MeetingsEntity> = MeetingsEntity.fetchRequest()
@@ -32,53 +34,84 @@ struct ViewMeetingsView: View {
 
     var body: some View {
         NavigationView {
-            List {
-                ForEach(meetings, id: \.objectID) { meeting in
-                    HStack {
-                        NavigationLink(destination: PlanMeetingView(editingMeeting: meeting)) {
-                            MeetingRowView(meeting: meeting)
-                        }
-                        
-                        Spacer()
-                        
-                        if let opportunity = meeting.opportunity {
-                            VStack(alignment: .trailing, spacing: 4) {
-                                Text("Opportunity: \(opportunity.name ?? "Unknown")")
-                                    .font(.subheadline)
-                                    .foregroundColor(.blue)
+            VStack {
+                List {
+                    ForEach(meetings, id: \.objectID) { meeting in
+                        ZStack {
+                            HStack {
+                                MeetingRowView(meeting: meeting)
 
-                                Text("Expected Value: $\(opportunity.customPrice, specifier: "%.2f")")
-                                    .font(.subheadline)
-                                    .foregroundColor(.gray)
+                                Spacer()
 
-                                if let closeDate = opportunity.closeDate {
-                                    Text("Expected Close: \(closeDate, formatter: shortDateFormatter)")
-                                        .font(.subheadline)
-                                        .foregroundColor(.gray)
-                                }
-                                
-                                if let opportunityEntity = meeting.opportunity {
-                                    let wrapper = OpportunityWrapper(managedObject: opportunityEntity)
-                                    BANTIndicatorView(opportunity: wrapper, onBANTSelected: { _ in })
-                                        .scaleEffect(0.7)
-                                        .padding(.top, 4)
+                                VStack(alignment: .trailing, spacing: 4) {
+                                    if let opportunity = meeting.opportunity {
+                                        Text("Opportunity: \(opportunity.name ?? "Unknown")")
+                                            .font(.subheadline)
+                                            .foregroundColor(.blue)
+
+                                        Text("Expected Value: $\(opportunity.customPrice, specifier: "%.2f")")
+                                            .font(.subheadline)
+                                            .foregroundColor(.gray)
+
+                                        if let closeDate = opportunity.closeDate {
+                                            Text("Expected Close: \(closeDate, formatter: shortDateFormatter)")
+                                                .font(.subheadline)
+                                                .foregroundColor(.gray)
+                                        }
+
+                                        let wrapper = OpportunityWrapper(managedObject: opportunity)
+                                        BANTIndicatorView(opportunity: wrapper, onBANTSelected: { _ in })
+                                            .scaleEffect(0.7)
+                                            .padding(.top, 4)
+                                    }
                                 }
                             }
-                            .frame(maxWidth: .infinity, alignment: .trailing)
+                            .padding()
+                            .background(selectedMeeting == meeting ? Color.blue.opacity(0.1) : Color.clear)
+                            .cornerRadius(8)
+                            .onTapGesture {
+                                selectedMeeting = meeting
+                            }
                         }
                     }
+                    .onDelete(perform: deleteMeeting)
                 }
-                .onDelete(perform: deleteMeeting) // Enables swipe-to-delete
-            }
-            .onAppear {
-                fetchMeetings()
-            }
-            .navigationTitle("Meetings")
-            .toolbar {
-                EditButton() // Allows toggling edit mode to enable deletion
+                .onAppear {
+                    fetchMeetings()
+                }
+                .navigationTitle("View Meetings")
+                .toolbar {
+                    ToolbarItemGroup(placement: .navigationBarTrailing) {
+                        Button("Edit Meeting") {
+                            isEditSheetPresented = true
+                        }
+                        .disabled(selectedMeeting == nil)
+
+                        if let meetingToStart = selectedMeeting {
+                            NavigationLink(
+                                destination: RecordMeetingView(meeting: meetingToStart)
+                            ) {
+                                Text("Record Meeting")
+                            }
+                        } else {
+                            Text("Record Meeting")
+                                .foregroundColor(.gray)
+                        }
+                    }
+
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        EditButton()
+                    }
+                }
             }
         }
         .navigationViewStyle(.stack)
+        .sheet(isPresented: $isEditSheetPresented) {
+            if let meeting = selectedMeeting {
+                EditMeetingSheet(meeting: meeting, isPresented: $isEditSheetPresented)
+                    .environment(\.managedObjectContext, viewContext)
+            }
+        }
     }
 }
 
@@ -126,6 +159,7 @@ struct MeetingRowView: View {
                     .font(.subheadline)
                     .italic()
             }
+
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
