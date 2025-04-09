@@ -6,7 +6,7 @@ struct PlanMeetingView: View {
     
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.presentationMode) private var presentationMode
-    @State var editingMeeting: MeetingsEntity?
+    @State private var newMeeting: MeetingsEntity?
     @State private var meetingTitle: String = ""
     @State private var meetingDate: Date = Date()
     @State private var processedCategories: [String] = [] // Track categories already processed
@@ -67,15 +67,14 @@ struct PlanMeetingView: View {
     @FetchRequest(entity: BANTQuestion.entity(), sortDescriptors: [])
     private var allQuestions: FetchedResults<BANTQuestion>
 
-    init(editingMeeting: MeetingsEntity? = nil) {
-        self.editingMeeting = editingMeeting
-        _meetingTitle = State(initialValue: editingMeeting?.title ?? "")
-        _meetingDate = State(initialValue: editingMeeting?.date ?? Date())
-        _meetingTime = State(initialValue: editingMeeting?.date ?? PlanMeetingView.computeDefaultMeetingTime())
-        _selectedCompany = State(initialValue: editingMeeting?.company)
-        _selectedOpportunity = State(initialValue: editingMeeting?.opportunity)
-        _selectedAttendees = State(initialValue: (editingMeeting?.contacts as? Set<ContactsEntity>) ?? [])
-        _meetingObjective = State(initialValue: editingMeeting?.objective ?? "")
+    init() {
+        _meetingTitle = State(initialValue: "")
+        _meetingDate = State(initialValue: Date())
+        _meetingTime = State(initialValue: PlanMeetingView.computeDefaultMeetingTime())
+        _selectedCompany = State(initialValue: nil)
+        _selectedOpportunity = State(initialValue: nil)
+        _selectedAttendees = State(initialValue: [])
+        _meetingObjective = State(initialValue: "")
     }
     
     var filteredOpportunities: [OpportunityEntity] {
@@ -212,24 +211,17 @@ struct PlanMeetingView: View {
         processedCategories.removeAll()
         
         // Create a meeting if one hasn't been created already.
-        if editingMeeting == nil {
-            let newMeeting = MeetingsEntity(context: viewContext)
-            newMeeting.id = UUID()
-            newMeeting.title = meetingTitle
-            newMeeting.date = meetingDate
-            newMeeting.objective = meetingObjective
-            newMeeting.company = selectedCompany
-            newMeeting.opportunity = selectedOpportunity
-            newMeeting.contacts = NSSet(set: selectedAttendees)
+        if newMeeting == nil {
+            let meeting = MeetingsEntity(context: viewContext)
+            meeting.id = UUID()
+            meeting.title = meetingTitle
+            meeting.date = meetingDate
+            meeting.objective = meetingObjective
+            meeting.company = selectedCompany
+            meeting.opportunity = selectedOpportunity
+            meeting.contacts = NSSet(set: selectedAttendees)
             
-            editingMeeting = newMeeting
-            
-            do {
-                try viewContext.save()
-//                print("DEBUG: New meeting created and saved successfully.")
-            } catch {
-//                print("DEBUG: Failed to save new meeting: \(error.localizedDescription)")
-            }
+            newMeeting = meeting
         }
         
         // Load questions for the first category.
@@ -267,11 +259,8 @@ struct PlanMeetingView: View {
     }
     
     private func proceedToNextCategory() {
-//        print("DEBUG: proceedToNextCategory() called")
-        
         // Save selected questions to the meeting.
-        guard let meeting = editingMeeting else {
-//            print("DEBUG: Meeting not found.")
+        guard let meeting = newMeeting else {
             return
         }
         
@@ -549,34 +538,40 @@ struct PlanMeetingView: View {
 
     
     func saveMeeting() {
-    // Ensure that a meeting record has already been created (via generateBANTDialogue()).
-    guard let editingMeeting = editingMeeting else {
-        print("No meeting record found. Please generate AI dialogue first.")
-        return
+        // Use the existing newMeeting if available; otherwise, create a new meeting record.
+        let meeting: MeetingsEntity
+        if let existingMeeting = newMeeting {
+            meeting = existingMeeting
+        } else {
+            meeting = MeetingsEntity(context: viewContext)
+            meeting.id = UUID()
+        }
+        
+        let calendar = Calendar.current
+        let combinedDateTime = calendar.date(bySettingHour: calendar.component(.hour, from: meetingTime),
+                                             minute: calendar.component(.minute, from: meetingTime),
+                                             second: 0,
+                                             of: meetingDate) ?? meetingDate
+        
+        meeting.title = meetingTitle
+        meeting.date = combinedDateTime
+        meeting.objective = meetingObjective
+        meeting.company = selectedCompany
+        meeting.opportunity = selectedOpportunity
+        meeting.contacts = NSSet(set: selectedAttendees)
+        
+        do {
+            try viewContext.save()
+            print("Meeting successfully saved!")
+            
+            // Clear the newMeeting state after saving to prevent future updates from modifying this record.
+            newMeeting = nil
+            
+            presentationMode.wrappedValue.dismiss()
+        } catch {
+            print("Failed to save meeting: \(error.localizedDescription)")
+        }
     }
-    
-    let calendar = Calendar.current
-    let combinedDateTime = calendar.date(bySettingHour: calendar.component(.hour, from: meetingTime),
-                                         minute: calendar.component(.minute, from: meetingTime),
-                                         second: 0, of: meetingDate) ?? meetingDate
-    
-    // Update the existing meeting record with the current meeting details.
-    editingMeeting.title = meetingTitle
-    editingMeeting.date = combinedDateTime
-    editingMeeting.objective = meetingObjective
-    editingMeeting.company = selectedCompany
-    editingMeeting.opportunity = selectedOpportunity
-    editingMeeting.contacts = NSSet(set: selectedAttendees)
-    
-    // Save the updated meeting record to Core Data
-    do {
-        try viewContext.save()
-        print("Meeting successfully saved!")
-        presentationMode.wrappedValue.dismiss() // Dismiss view after saving
-    } catch {
-        print("Failed to save meeting: \(error.localizedDescription)")
-    }
-}
     
     struct MultipleSelectionRow: View {
         var title: String
