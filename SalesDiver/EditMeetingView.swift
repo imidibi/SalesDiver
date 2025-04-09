@@ -6,56 +6,65 @@
 //
 import Foundation
 import CoreData
+import SwiftUI
 
-class EditMeetingViewModel: ObservableObject {
-    @Published var title: String = ""
-    @Published var date: Date = Date()
-    @Published var objective: String = ""
-    @Published var attendeeList: String = ""
-    @Published var questions: [BANTQuestion] = []
-
-    private let meeting: MeetingsEntity
-    private let context: NSManagedObjectContext
-
-    init(meeting: MeetingsEntity, context: NSManagedObjectContext) {
-        self.meeting = meeting
-        self.context = context
-        loadData()
-    }
-
-    private func loadData() {
-        title = meeting.title ?? ""
-        date = meeting.date ?? Date()
-        objective = meeting.objective ?? ""
-
-        if let contacts = meeting.contacts as? Set<ContactsEntity> {
-            attendeeList = contacts.map {
-                [ $0.firstName, $0.lastName ]
-                    .compactMap { $0 }
-                    .joined(separator: " ")
-            }.joined(separator: ", ")
+struct EditMeetingView: View {
+    @Environment(\.presentationMode) var presentationMode
+    @ObservedObject var viewModel: EditMeetingViewModel
+    
+    var body: some View {
+        NavigationView {
+            Form {
+                Section(header: Text("Meeting Details")) {
+                    HStack {
+                        Text("Title")
+                        TextField("Enter meeting title", text: $viewModel.title)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                    }
+                    HStack {
+                        Text("Date")
+                        DatePicker("", selection: $viewModel.date, displayedComponents: [.date, .hourAndMinute])
+                            .labelsHidden()
+                    }
+                    HStack {
+                        Text("Objective")
+                        TextField("Enter meeting objective", text: $viewModel.objective)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                    }
+                }
+                
+                Section(header: Text("Attendees")) {
+                    HStack(alignment: .top) {
+                        Text("Attendee List")
+                        Text(viewModel.selectedAttendees.map {
+                            [ $0.firstName, $0.lastName ]
+                                .compactMap { $0 }
+                                .joined(separator: " ")
+                        }.joined(separator: ", "))
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.leading)
+                    }
+                }
+                
+                Section(header: Text("Questions")) {
+                    List {
+                        ForEach(viewModel.questions, id: \.self) { question in
+                            Text(question.questionText ?? "Untitled")
+                        }
+                        .onDelete(perform: deleteQuestions)
+                    }
+                }
+            }
+            .navigationBarTitle("Edit Meeting", displayMode: .inline)
+            .navigationBarItems(trailing: Button("Save") {
+                viewModel.saveChanges()
+                presentationMode.wrappedValue.dismiss()
+            })
         }
-
-        if let qSet = meeting.questions as? Set<BANTQuestion> {
-            questions = Array(qSet)
-        }
     }
-
-    func removeQuestion(_ question: BANTQuestion) {
-        if let index = questions.firstIndex(of: question) {
-            questions.remove(at: index)
-        }
-    }
-
-    func saveChanges() {
-        meeting.title = title
-        meeting.date = date
-        meeting.objective = objective
-
-        meeting.removeFromQuestions(meeting.questions ?? [])
-        let questionSet = NSSet(array: questions)
-        meeting.addToQuestions(questionSet)
-
-        try? context.save()
+    
+    private func deleteQuestions(at offsets: IndexSet) {
+        offsets.map { viewModel.questions[$0] }.forEach(viewModel.removeQuestion)
     }
 }
