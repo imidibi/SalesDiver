@@ -44,7 +44,7 @@
         <attribute name="state" optional="YES" attributeType="String"/>
         <attribute name="title" optional="YES" attributeType="String"/>
         <relationship name="company" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CompanyEntity" inverseName="contacts" inverseEntity="CompanyEntity"/>
-        <relationship name="meetings" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="MeetingsEntity" inverseName="contacts" inverseEntity="MeetingsEntity"/>
+        <relationship name="meetings" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="MeetingsEntity" inverseName="contacts" inverseEntity="MeetingsEntity"/>
     </entity>
     <entity name="FollowUpsEntity" representedClassName="FollowUpsEntity" syncable="YES" codeGenerationType="class">
         <attribute name="assignedTo" optional="YES" attributeType="String"/>

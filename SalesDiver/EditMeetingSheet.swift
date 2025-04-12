@@ -87,22 +87,20 @@ struct EditMeetingSheet: View {
                     ForEach(viewModel.questions, id: \.objectID) { question in
                         HStack {
                             Text(question.questionText ?? "")
+                                .foregroundColor(.primary)
                             Spacer()
                             Button(role: .destructive) {
                                 viewModel.removeQuestion(question)
                             } label: {
                                 Image(systemName: "trash")
                             }
+                            .buttonStyle(BorderlessButtonStyle()) // Prevents triggering actions on row
                         }
+                        .contentShape(Rectangle()) // Ensures only button is tappable
                     }
-                    .onDelete(perform: deleteQuestions)
                 }
             )
         }
-    }
-
-    private func deleteQuestions(at offsets: IndexSet) {
-        offsets.map { viewModel.questions[$0] }.forEach(viewModel.removeQuestion)
     }
 
     private var mainView: some View {
@@ -156,6 +154,7 @@ class EditMeetingViewModel: ObservableObject {
     }
 
     func saveChanges() {
+        objectWillChange.send()
         meeting.title = title
         meeting.date = date
         meeting.objective = objective
@@ -170,21 +169,21 @@ class EditMeetingViewModel: ObservableObject {
     }
 
     func toggleSelection(for contact: ContactsEntity) {
+        objectWillChange.send()
         if let index = selectedAttendees.firstIndex(of: contact) {
             selectedAttendees.remove(at: index)
         } else {
             selectedAttendees.append(contact)
         }
         meeting.contacts = NSSet(array: selectedAttendees)
-        objectWillChange.send()
     }
 
     func removeQuestion(_ question: MeetingQuestionEntity) {
+        objectWillChange.send()
         if let index = questions.firstIndex(of: question) {
             questions.remove(at: index)
+            meeting.questions = NSSet(array: questions)
         }
-        meeting.questions = NSSet(array: questions)
-        objectWillChange.send()
     }
 }
 

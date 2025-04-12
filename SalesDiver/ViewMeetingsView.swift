@@ -6,6 +6,7 @@ struct ViewMeetingsView: View {
     @State private var meetings: [MeetingsEntity] = []
     @State private var selectedMeeting: MeetingsEntity? = nil  // New state to track selected meeting
     @State private var isEditSheetPresented = false
+    @State private var refreshID = UUID()  // New state for refresh ID
 
     private func fetchMeetings() {
         let request: NSFetchRequest<MeetingsEntity> = MeetingsEntity.fetchRequest()
@@ -76,6 +77,7 @@ struct ViewMeetingsView: View {
                     }
                     .onDelete(perform: deleteMeeting)
                 }
+                .id(refreshID)  // Add ID to refresh the List
                 .onAppear {
                     fetchMeetings()
                 }
@@ -106,10 +108,21 @@ struct ViewMeetingsView: View {
             }
         }
         .navigationViewStyle(.stack)
-        .sheet(isPresented: $isEditSheetPresented) {
+        .sheet(isPresented: $isEditSheetPresented, onDismiss: {
+            fetchMeetings()
+        }) {
             if let meeting = selectedMeeting {
                 EditMeetingSheet(meeting: meeting, isPresented: $isEditSheetPresented)
                     .environment(\.managedObjectContext, viewContext)
+            }
+        }
+        .onChange(of: isEditSheetPresented) { newValue in
+            if newValue == false {
+                fetchMeetings()
+                if let id = selectedMeeting?.objectID {
+                    selectedMeeting = try? viewContext.existingObject(with: id) as? MeetingsEntity
+                }
+                refreshID = UUID()  // Update refresh ID
             }
         }
     }
