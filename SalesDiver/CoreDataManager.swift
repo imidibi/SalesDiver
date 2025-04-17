@@ -1,6 +1,6 @@
 import CoreData
 
-class CoreDataManager {
+class CoreDataManager: ObservableObject {
     static let shared = CoreDataManager()
     
     let persistentContainer: NSPersistentContainer
@@ -277,6 +277,68 @@ class CoreDataManager {
             print("✅ Meeting successfully saved!")
         } catch {
             print("❌ Failed to save meeting: \(error)")
+        }
+    }
+
+    func saveAssessmentFields(for company: String, fields: [(String, String?, Bool?)]) {
+        let request: NSFetchRequest<AssessmentEntity> = AssessmentEntity.fetchRequest()
+        request.predicate = NSPredicate(format: "companyName == %@", company)
+
+        let assessment = (try? context.fetch(request).first) ?? AssessmentEntity(context: context)
+        if assessment.companyName == nil {
+            assessment.id = UUID()
+            assessment.date = Date()
+            assessment.companyName = company
+        }
+
+        if let fieldSet = assessment.value(forKey: "fields") as? NSSet {
+            for case let field as AssessmentFieldEntity in fieldSet {
+                context.delete(field)
+            }
+        }
+
+        for field in fields {
+            let newField = AssessmentFieldEntity(context: context)
+            newField.id = UUID()
+            newField.category = "EndPoints"
+            newField.fieldName = field.0
+            if let num = field.1 { newField.valueNumber = Double(num) ?? 0 }
+            if let flag = field.2 { newField.valueString = flag ? "true" : "false" }
+            newField.assessment = assessment
+        }
+
+        saveContext()
+    }
+
+    func loadAssessmentFields(for company: String,
+                              into count1: inout String, _ count2: inout String, _ count3: inout String, _ count4: inout String,
+                              _ count5: inout String, _ count6: inout String, _ count7: inout String,
+                              _ toggle1: inout Bool, _ toggle2: inout Bool, _ toggle3: inout Bool, _ toggle4: inout Bool,
+                              _ toggle5: inout Bool, _ toggle6: inout Bool, _ toggle7: inout Bool) {
+        let request: NSFetchRequest<AssessmentEntity> = AssessmentEntity.fetchRequest()
+        request.predicate = NSPredicate(format: "companyName == %@", company)
+
+        guard let assessment = try? context.fetch(request).first else { return }
+        if let fieldSet = assessment.value(forKey: "fields") as? NSSet {
+            for case let field as AssessmentFieldEntity in fieldSet {
+                switch field.fieldName {
+                case "PC Count": count1 = String(Int(field.valueNumber))
+                case "Mac Count": count2 = String(Int(field.valueNumber))
+                case "Linux Count": count3 = String(Int(field.valueNumber))
+                case "iPhone Count": count4 = String(Int(field.valueNumber))
+                case "iPad Count": count5 = String(Int(field.valueNumber))
+                case "Chromebook Count": count6 = String(Int(field.valueNumber))
+                case "Android Count": count7 = String(Int(field.valueNumber))
+                case "Manage PCs": toggle1 = field.valueString == "true"
+                case "Manage Macs": toggle2 = field.valueString == "true"
+                case "Manage Linux": toggle3 = field.valueString == "true"
+                case "Manage iPhones": toggle4 = field.valueString == "true"
+                case "Manage iPads": toggle5 = field.valueString == "true"
+                case "Manage Chromebooks": toggle6 = field.valueString == "true"
+                case "Manage Android": toggle7 = field.valueString == "true"
+                default: break
+                }
+            }
         }
     }
 }

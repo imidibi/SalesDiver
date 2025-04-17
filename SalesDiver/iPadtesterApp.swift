@@ -15,6 +15,7 @@ struct iPadtesterApp: App {
         WindowGroup {
             ContentView()
                 .environment(\.managedObjectContext, coreDataManager.persistentContainer.viewContext)
+                .environmentObject(coreDataManager)
         }
     }
     

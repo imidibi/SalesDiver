@@ -6,18 +6,21 @@
 //
 
 import SwiftUI
+import CoreData
 
 struct AssessmentView: View {
     @State private var selectedCompany: String = ""
     @State private var assessmentDate: Date = Date()
     
-    @FetchRequest(
-        entity: CompanyEntity.entity(),
-        sortDescriptors: [NSSortDescriptor(keyPath: \CompanyEntity.name, ascending: true)]
-    ) private var allCompanies: FetchedResults<CompanyEntity>
+    @EnvironmentObject var coreDataManager: CoreDataManager
     
     @State private var showCompanySearch = false
     @State private var companySearchText = ""
+    
+    @FetchRequest(
+        entity: CompanyEntity.entity(),
+        sortDescriptors: []
+    ) var allCompanies: FetchedResults<CompanyEntity>
     
     let subjectAreas = [
         ("EndPoints", "desktopcomputer"),
@@ -68,7 +71,7 @@ struct AssessmentView: View {
                         LazyVGrid(columns: columns, spacing: 20) {
                             ForEach(subjectAreas, id: \.0) { area in
                                 if area.0 == "EndPoints" {
-                                    NavigationLink(destination: EndpointAssessmentView()) {
+                                    NavigationLink(destination: EndpointAssessmentView(selectedCompany: selectedCompany).environmentObject(coreDataManager)) {
                                         AssessmentGridItem(area: area, geometry: geometry)
                                     }
                                 } else {
@@ -85,9 +88,10 @@ struct AssessmentView: View {
                                 .padding()
 
                             ScrollView {
-                                ForEach(allCompanies.filter {
+                                let filteredCompanies = allCompanies.filter {
                                     companySearchText.isEmpty || ($0.name?.localizedCaseInsensitiveContains(companySearchText) ?? false)
-                                }, id: \.self) { company in
+                                }
+                                ForEach(filteredCompanies, id: \.self) { company in
                                     Button(action: {
                                         selectedCompany = company.name ?? ""
                                         showCompanySearch = false
@@ -149,6 +153,10 @@ struct AssessmentView: View {
     }
     
     struct EndpointAssessmentView: View {
+        var selectedCompany: String
+        
+        @EnvironmentObject var coreDataManager: CoreDataManager
+        
         @State private var pcCount: String = ""
         @State private var macCount: String = ""
         @State private var linuxCount: String = ""
@@ -168,29 +176,67 @@ struct AssessmentView: View {
         var body: some View {
             Form {
                 Section(header: Text("Endpoint Counts")) {
-                    deviceRow(label: "PCs", count: $pcCount, managed: $managePCs)
-                    deviceRow(label: "Macs", count: $macCount, managed: $manageMacs)
-                    deviceRow(label: "Linux Devices", count: $linuxCount, managed: $manageLinux)
-                    deviceRow(label: "iPhones", count: $iphoneCount, managed: $manageiPhones)
-                    deviceRow(label: "iPads", count: $ipadCount, managed: $manageiPads)
-                    deviceRow(label: "Chromebooks", count: $chromebookCount, managed: $manageChromebooks)
-                    deviceRow(label: "Android Devices", count: $androidCount, managed: $manageAndroid)
+                    deviceRow(label: "PCs", systemImage: "desktopcomputer", count: $pcCount, managed: $managePCs)
+                    deviceRow(label: "Macs", systemImage: "laptopcomputer", count: $macCount, managed: $manageMacs)
+                    deviceRow(label: "Linux Devices", systemImage: "terminal", count: $linuxCount, managed: $manageLinux)
+                    deviceRow(label: "iPhones", systemImage: "iphone", count: $iphoneCount, managed: $manageiPhones)
+                    deviceRow(label: "iPads", systemImage: "ipad", count: $ipadCount, managed: $manageiPads)
+                    deviceRow(label: "Chromebooks", systemImage: "display", count: $chromebookCount, managed: $manageChromebooks)
+                    deviceRow(label: "Android Devices", systemImage: "phone", count: $androidCount, managed: $manageAndroid)
                 }
             }
             .navigationTitle("Endpoint Assessment")
+            .onAppear {
+                coreDataManager.loadAssessmentFields(for: selectedCompany, into: &pcCount, &macCount, &linuxCount, &iphoneCount, &ipadCount, &chromebookCount, &androidCount, &managePCs, &manageMacs, &manageLinux, &manageiPhones, &manageiPads, &manageChromebooks, &manageAndroid)
+            }
+            .onDisappear {
+                coreDataManager.saveAssessmentFields(for: selectedCompany, fields: [
+                    ("PC Count", pcCount, nil),
+                    ("Mac Count", macCount, nil),
+                    ("Linux Count", linuxCount, nil),
+                    ("iPhone Count", iphoneCount, nil),
+                    ("iPad Count", ipadCount, nil),
+                    ("Chromebook Count", chromebookCount, nil),
+                    ("Android Count", androidCount, nil),
+                    ("Manage PCs", nil, managePCs),
+                    ("Manage Macs", nil, manageMacs),
+                    ("Manage Linux", nil, manageLinux),
+                    ("Manage iPhones", nil, manageiPhones),
+                    ("Manage iPads", nil, manageiPads),
+                    ("Manage Chromebooks", nil, manageChromebooks),
+                    ("Manage Android", nil, manageAndroid)
+                ])
+            }
         }
         
-        func deviceRow(label: String, count: Binding<String>, managed: Binding<Bool>) -> some View {
-            HStack {
+        func deviceRow(label: String, systemImage: String, count: Binding<String>, managed: Binding<Bool>) -> some View {
+            HStack(spacing: 16) {
+                Image(systemName: systemImage)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 28, height: 28)
+                    .foregroundColor(.blue)
+                
                 Text(label)
-                Spacer()
-                TextField("Count", text: count)
+                    .frame(width: 100, alignment: .leading)
+                
+                TextField("0", text: count)
                     .keyboardType(.numberPad)
-                    .frame(width: 80)
+                    .frame(width: 50)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
                     .multilineTextAlignment(.trailing)
-                Toggle("", isOn: managed)
-                    .labelsHidden()
+                
+                Spacer()
+                
+                VStack {
+                    Text("Managed")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                    Toggle("", isOn: managed)
+                        .labelsHidden()
+                }
             }
+            .padding(.vertical, 4)
         }
     }
 }
