@@ -25,7 +25,9 @@ struct AssessmentView: View {
     ]
 
     var body: some View {
-        NavigationView {
+        ZStack {
+            Color(.systemBackground).ignoresSafeArea()
+            
             VStack(alignment: .leading, spacing: 20) {
                 Text("Assessment")
                     .font(.largeTitle)
@@ -48,13 +50,19 @@ struct AssessmentView: View {
                                 .resizable()
                                 .scaledToFit()
                                 .frame(width: 40, height: 40)
-                                .padding()
+                                .foregroundColor(.blue)
+                                .padding(.top, 10)
                             Text(area.0)
                                 .font(.caption)
+                                .padding(.bottom, 10)
                         }
                         .frame(maxWidth: .infinity, minHeight: 100)
-                        .background(Color.blue.opacity(0.1))
-                        .cornerRadius(10)
+                        .background(Color.white)
+                        .cornerRadius(12)
+                        .shadow(radius: 3)
+                        .onTapGesture {
+                            // Placeholder for tap action
+                        }
                     }
                 }
 

@@ -76,7 +76,7 @@ struct GridView: View {
         ("Follow Ups", "checkmark.circle.fill", AnyView(FollowUpsView())),
         ("Security Assessment", "shield.fill", AnyView(SecurityAssessmentView())),
         ("Questions", "questionmark.circle.fill", AnyView(QuestionsView())),
-        ("Settings", "gearshape.fill", AnyView(SettingsView())) // ✅ Added Settings
+        ("Assessments", "doc.text.magnifyingglass", AnyView(AssessmentView())) // Updated Settings to Assessments
     ]
 
     let columns = [
