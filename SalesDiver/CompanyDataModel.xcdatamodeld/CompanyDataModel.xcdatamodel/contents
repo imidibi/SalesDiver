@@ -1,10 +1,24 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="23788" systemVersion="24E248" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithSwiftData="YES" userDefinedModelVersionIdentifier="">
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="23788" systemVersion="24E263" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithSwiftData="YES" userDefinedModelVersionIdentifier="">
     <entity name="AnswersEntity" representedClassName="AnswersEntity" syncable="YES" codeGenerationType="class">
         <attribute name="answer" optional="YES" attributeType="String"/>
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <relationship name="meeting" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="MeetingsEntity" inverseName="answers" inverseEntity="MeetingsEntity"/>
         <relationship name="questions" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="BANTQuestion" inverseName="answers" inverseEntity="BANTQuestion"/>
+    </entity>
+    <entity name="AssessmentEntity" representedClassName="AssessmentEntity" syncable="YES" codeGenerationType="class">
+        <attribute name="companyName" optional="YES" attributeType="String"/>
+        <attribute name="date" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <relationship name="fields" optional="YES" maxCount="1" deletionRule="Cascade" destinationEntity="AssessmentFieldEntity" inverseName="assessment" inverseEntity="AssessmentFieldEntity"/>
+    </entity>
+    <entity name="AssessmentFieldEntity" representedClassName="AssessmentFieldEntity" syncable="YES" codeGenerationType="class">
+        <attribute name="category" optional="YES" attributeType="String"/>
+        <attribute name="fieldName" optional="YES" attributeType="String"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="valueNumber" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="valueString" optional="YES" attributeType="String"/>
+        <relationship name="assessment" optional="YES" maxCount="1" deletionRule="Cascade" destinationEntity="AssessmentEntity" inverseName="fields" inverseEntity="AssessmentEntity"/>
     </entity>
     <entity name="BANTQuestion" representedClassName="BANTQuestion" syncable="YES" codeGenerationType="class">
         <attribute name="category" optional="YES" attributeType="String"/>
