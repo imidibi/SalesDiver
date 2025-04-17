@@ -11,6 +11,14 @@ struct AssessmentView: View {
     @State private var selectedCompany: String = ""
     @State private var assessmentDate: Date = Date()
     
+    @FetchRequest(
+        entity: CompanyEntity.entity(),
+        sortDescriptors: [NSSortDescriptor(keyPath: \CompanyEntity.name, ascending: true)]
+    ) private var allCompanies: FetchedResults<CompanyEntity>
+    
+    @State private var showCompanySearch = false
+    @State private var companySearchText = ""
+    
     let subjectAreas = [
         ("EndPoints", "desktopcomputer"),
         ("Servers", "server.rack"),
@@ -32,9 +40,21 @@ struct AssessmentView: View {
                         .font(.largeTitle)
                         .bold()
                     
-                    TextField("Select Company", text: $selectedCompany)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .padding(.trailing)
+                    Button(action: {
+                        showCompanySearch = true
+                    }) {
+                        HStack {
+                            Text(selectedCompany.isEmpty ? "Select Company" : selectedCompany)
+                                .foregroundColor(selectedCompany.isEmpty ? .gray : .primary)
+                            Spacer()
+                            Image(systemName: "magnifyingglass")
+                        }
+                        .padding(8)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.gray.opacity(0.4), lineWidth: 1)
+                        )
+                    }
                     
                     DatePicker("Date", selection: $assessmentDate, displayedComponents: .date)
                         .padding(.trailing)
@@ -57,7 +77,36 @@ struct AssessmentView: View {
                             }
                         }
                     }
-                    
+
+                    if showCompanySearch {
+                        VStack(alignment: .leading) {
+                            TextField("Search companies...", text: $companySearchText)
+                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                                .padding()
+
+                            ScrollView {
+                                ForEach(allCompanies.filter {
+                                    companySearchText.isEmpty || ($0.name?.localizedCaseInsensitiveContains(companySearchText) ?? false)
+                                }, id: \.self) { company in
+                                    Button(action: {
+                                        selectedCompany = company.name ?? ""
+                                        showCompanySearch = false
+                                    }) {
+                                        Text(company.name ?? "")
+                                            .padding()
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                    }
+                                    .background(Color.white)
+                                    .foregroundColor(.primary)
+                                }
+                            }
+                        }
+                        .background(Color(.systemGray6))
+                        .cornerRadius(12)
+                        .padding()
+                        .shadow(radius: 5)
+                    }
+
                     Spacer()
                 }
                 .padding()
