@@ -10,9 +10,22 @@
 		5F2775CF2D60E1AD00A30762 /* SalesDiver.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SalesDiver.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		5F1F519E2DACB5C800D3D4F2 /* Exceptions for "SalesDiver" folder in "SalesDiver" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 5F2775CE2D60E1AD00A30762 /* SalesDiver */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		5F2775D12D60E1AD00A30762 /* SalesDiver */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				5F1F519E2DACB5C800D3D4F2 /* Exceptions for "SalesDiver" folder in "SalesDiver" target */,
+			);
 			path = SalesDiver;
 			sourceTree = "<group>";
 		};
@@ -260,6 +273,7 @@
 				DEVELOPMENT_ASSET_PATHS = "\"SalesDiver/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = SalesDiver/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = SalesDiver;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -292,6 +306,7 @@
 				DEVELOPMENT_ASSET_PATHS = "\"SalesDiver/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = SalesDiver/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = SalesDiver;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
