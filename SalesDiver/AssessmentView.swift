@@ -37,11 +37,18 @@ struct AssessmentView: View {
     
     let columns = Array(repeating: GridItem(.flexible(minimum: 0)), count: 5)
     
+    var isValidCompanySelected: Bool {
+        guard !selectedCompany.isEmpty, !companySearchText.isEmpty else { return false }
+        let trimmedSelected = selectedCompany.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let trimmedSearch = companySearchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return allCompanies.contains(where: { ($0.name ?? "").trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == trimmedSelected && trimmedSelected == trimmedSearch })
+    }
+    
     var body: some View {
         NavigationStack {
             GeometryReader { geometry in
                 ZStack(alignment: .topLeading) {
-                    VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 20) {
                     Text("Assessment")
                         .font(.largeTitle)
                         .bold()
@@ -97,20 +104,29 @@ struct AssessmentView: View {
                         LazyVGrid(columns: columns, spacing: 20) {
                             ForEach(subjectAreas, id: \.0) { area in
                                 NavigationLink {
-                                    switch area.0 {
+                                switch area.0 {
                                     case "EndPoints":
                                         EndpointAssessmentView().environmentObject(coreDataManager)
                                     case "Servers":
                                         ServerAssessmentView().environmentObject(coreDataManager)
+                                    case "Network":
+                                        NetworkAssessmentView().environmentObject(coreDataManager)
                                     default:
                                         Text("Coming soon for \(area.0)")
-                                    }
+                                }
                                 } label: {
                                     AssessmentGridItem(area: area, geometry: geometry)
                                 }
+                                .disabled(!isValidCompanySelected)
                             }
                         }
                         .padding(.bottom, 32) // Prevent content from being clipped at bottom
+                    }
+                }
+                .onAppear {
+                    if !isValidCompanySelected {
+                        selectedCompany = ""
+                        companySearchText = ""
                     }
                 }
             }
@@ -183,6 +199,7 @@ struct AssessmentView: View {
         @State private var hasAUP = false
         @State private var allowsBYOD = false
         @State private var areEncrypted = false
+        @State private var isSaving = false
         
         var body: some View {
             ScrollView {
@@ -224,6 +241,8 @@ struct AssessmentView: View {
                     .padding(.horizontal)
                     
                     Button(action: {
+                        guard !selectedCompany.isEmpty, !isSaving else { return }
+                        isSaving = true
                         let fields: [(String, String?, Bool?)] = [
                             ("PC Count", pcCount, nil),
                             ("Mac Count", macCount, nil),
@@ -246,8 +265,10 @@ struct AssessmentView: View {
                             ("Allows BYOD", nil, allowsBYOD),
                             ("Encrypted Computers", nil, areEncrypted)
                         ]
-                        print("💾 Attempting to save assessment for: \(selectedCompany)")
                         coreDataManager.saveAssessmentFields(for: selectedCompany, category: "EndPoints", fields: fields)
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                            isSaving = false
+                        }
                     }) {
                         Text("Save")
                             .frame(maxWidth: .infinity)
@@ -256,24 +277,25 @@ struct AssessmentView: View {
                             .foregroundColor(.white)
                             .cornerRadius(10)
                     }
+                    .disabled(selectedCompany.isEmpty || isSaving)
                 }
                 .padding()
             }
             .navigationTitle("Endpoint Assessment")
             .onAppear {
-                print("📥 Loading saved endpoint assessment for: \(selectedCompany)")
+                // print("📥 Loading saved endpoint assessment for: \(selectedCompany)")
                 guard !selectedCompany.isEmpty else {
-                    print("❗️Skipping load — selectedCompany is empty")
+                    // print("❗️Skipping load — selectedCompany is empty")
                     return
                 }
  
                 let allFields: [AssessmentFieldEntity] = coreDataManager.loadAllAssessmentFields(for: selectedCompany, category: "EndPoints")
-                print("✅ Loaded assessment for company: \(selectedCompany)")
-                print("🧠 Loaded assessment: \(selectedCompany) with \(allFields.count) fields")
-                print("   → All loaded fields: \(allFields.map { $0.fieldName ?? "nil" })")
+                // print("✅ Loaded assessment for company: \(selectedCompany)")
+                // print("🧠 Loaded assessment: \(selectedCompany) with \(allFields.count) fields")
+                // print("   → All loaded fields: \(allFields.map { $0.fieldName ?? "nil" })")
  
                 for field in allFields {
-                    print("🔍 Inspecting field: \(field.fieldName ?? "nil"), valueNumber: \(field.valueNumber), valueString: \(field.valueString ?? "nil")")
+                    // print("🔍 Inspecting field: \(field.fieldName ?? "nil"), valueNumber: \(field.valueNumber), valueString: \(field.valueString ?? "nil")")
  
                     switch field.fieldName {
                     case "Windows 11 PCs": runsWindows11 = field.valueString == "true"
@@ -300,7 +322,7 @@ struct AssessmentView: View {
                     }
                 }
  
-                print("   → After load: PC Count = \(pcCount), Manage PCs = \(managePCs)")
+                // print("   → After load: PC Count = \(pcCount), Manage PCs = \(managePCs)")
             }
         }
         
@@ -355,6 +377,7 @@ struct ServerAssessmentView: View {
     @State private var migrationTimeframe = ""
     @State private var hadOutage = false
     @State private var recoveryTime = ""
+    @State private var isSaving = false
 
     var body: some View {
         ScrollView {
@@ -380,6 +403,8 @@ struct ServerAssessmentView: View {
                 }
                 
                 Button(action: {
+                    guard !selectedCompany.isEmpty, !isSaving else { return }
+                    isSaving = true
                     let fields: [(String, String?, Bool?)] = [
                         ("Physical Server Count", physicalCount, nil),
                         ("VM Count", vmCount, nil),
@@ -395,8 +420,10 @@ struct ServerAssessmentView: View {
                         ("Outage Experienced", nil, hadOutage),
                         ("Recovery Time", recoveryTime.isEmpty ? nil : recoveryTime, nil)
                     ]
-                    print("💾 Attempting to save assessment for: \(selectedCompany)")
                     coreDataManager.saveAssessmentFields(for: selectedCompany, category: "Servers", fields: fields)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                        isSaving = false
+                    }
                 }) {
                     Text("Save")
                         .frame(maxWidth: .infinity)
@@ -405,11 +432,12 @@ struct ServerAssessmentView: View {
                         .foregroundColor(.white)
                         .cornerRadius(10)
                 }
+                .disabled(selectedCompany.isEmpty || isSaving)
             }
             .padding()
         }
         .onAppear {
-            print("📥 Loading saved server assessment for: \(selectedCompany)")
+            // print("📥 Loading saved server assessment for: \(selectedCompany)")
             let fields = coreDataManager.loadAllAssessmentFields(for: selectedCompany, category: "Servers")
             for field in fields {
                 switch field.fieldName {
@@ -431,9 +459,94 @@ struct ServerAssessmentView: View {
             }
         }
     }
+    }
+
+struct NetworkAssessmentView: View {
+    @AppStorage("selectedCompany") private var selectedCompany: String = ""
+    @EnvironmentObject var coreDataManager: CoreDataManager
+
+    @State private var hasFirewall = false
+    @State private var firewallBrand = ""
+    @State private var firewallLicensed = false
+    @State private var hasSwitches = false
+    @State private var switchBrand = ""
+    @State private var hasWiFi = false
+    @State private var wifiBrand = ""
+    @State private var wiredOrWifi = ""
+    @State private var isSaving = false
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                Text("Network Assessment")
+                    .font(.title)
+                    .bold()
+
+                Toggle("Do you have a Firewall?", isOn: $hasFirewall)
+                TextField("What Brand is it?", text: $firewallBrand)
+                    .textFieldStyle(.roundedBorder)
+                Toggle("Is the software licensed and current?", isOn: $firewallLicensed)
+
+                Toggle("Do you have any network switches?", isOn: $hasSwitches)
+                TextField("If so, what brand?", text: $switchBrand)
+                    .textFieldStyle(.roundedBorder)
+
+                Toggle("Do you have a WiFi Network?", isOn: $hasWiFi)
+                TextField("What brand are the Access Points?", text: $wifiBrand)
+                    .textFieldStyle(.roundedBorder)
+                TextField("Are most users wired or on WiFi?", text: $wiredOrWifi)
+                    .textFieldStyle(.roundedBorder)
+
+                Button(action: {
+                    guard !selectedCompany.isEmpty, !isSaving else { return }
+                    isSaving = true
+                    let fields: [(String, String?, Bool?)] = [
+                        ("Has Firewall", nil, hasFirewall),
+                        ("Firewall Brand", firewallBrand.isEmpty ? nil : firewallBrand, nil),
+                        ("Firewall Licensed", nil, firewallLicensed),
+                        ("Has Switches", nil, hasSwitches),
+                        ("Switch Brand", switchBrand.isEmpty ? nil : switchBrand, nil),
+                        ("Has WiFi", nil, hasWiFi),
+                        ("WiFi Brand", wifiBrand.isEmpty ? nil : wifiBrand, nil),
+                        ("Wired or WiFi", wiredOrWifi.isEmpty ? nil : wiredOrWifi, nil)
+                    ]
+                    coreDataManager.saveAssessmentFields(for: selectedCompany, category: "Network", fields: fields)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                        isSaving = false
+                    }
+                }) {
+                    Text("Save")
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                }
+                .disabled(selectedCompany.isEmpty || isSaving)
+            }
+            .padding()
+        }
+        .onAppear {
+            guard !selectedCompany.isEmpty else { return }
+            let fields = coreDataManager.loadAllAssessmentFields(for: selectedCompany, category: "Network")
+            for field in fields {
+                switch field.fieldName {
+                case "Has Firewall": hasFirewall = field.valueString == "true"
+                case "Firewall Brand": firewallBrand = field.valueString ?? ""
+                case "Firewall Licensed": firewallLicensed = field.valueString == "true"
+                case "Has Switches": hasSwitches = field.valueString == "true"
+                case "Switch Brand": switchBrand = field.valueString ?? ""
+                case "Has WiFi": hasWiFi = field.valueString == "true"
+                case "WiFi Brand": wifiBrand = field.valueString ?? ""
+                case "Wired or WiFi": wiredOrWifi = field.valueString ?? ""
+                default: break
+                }
+            }
+        }
+    }
 }
 
-    struct IconCounterView: View {
+struct IconCounterView: View {
         var label: String
         var icon: String
         @Binding var count: String
