@@ -10,7 +10,7 @@
         <attribute name="companyName" optional="YES" attributeType="String"/>
         <attribute name="date" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
-        <relationship name="fields" optional="YES" maxCount="1" deletionRule="Cascade" destinationEntity="AssessmentFieldEntity" inverseName="assessment" inverseEntity="AssessmentFieldEntity"/>
+        <relationship name="fields" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="AssessmentFieldEntity" inverseName="assessment" inverseEntity="AssessmentFieldEntity"/>
     </entity>
     <entity name="AssessmentFieldEntity" representedClassName="AssessmentFieldEntity" syncable="YES" codeGenerationType="class">
         <attribute name="category" optional="YES" attributeType="String"/>

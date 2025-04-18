@@ -116,8 +116,8 @@ struct ViewMeetingsView: View {
                     .environment(\.managedObjectContext, viewContext)
             }
         }
-        .onChange(of: isEditSheetPresented) { newValue in
-            if newValue == false {
+        .onChange(of: isEditSheetPresented) {
+            if !isEditSheetPresented {
                 fetchMeetings()
                 if let id = selectedMeeting?.objectID {
                     selectedMeeting = try? viewContext.existingObject(with: id) as? MeetingsEntity
