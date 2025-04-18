@@ -111,8 +111,12 @@ struct AssessmentView: View {
                                         ServerAssessmentView().environmentObject(coreDataManager)
                                     case "Network":
                                         NetworkAssessmentView().environmentObject(coreDataManager)
-                                    default:
-                                        Text("Coming soon for \(area.0)")
+                                case "Phone System":
+                                    PhoneSystemAssessmentView().environmentObject(coreDataManager)
+                                case "Email":
+                                    EmailAssessmentView().environmentObject(coreDataManager)
+                                default:
+                                    Text("Coming soon for \(area.0)")
                                 }
                                 } label: {
                                     AssessmentGridItem(area: area, geometry: geometry)
@@ -123,11 +127,204 @@ struct AssessmentView: View {
                         .padding(.bottom, 32) // Prevent content from being clipped at bottom
                     }
                 }
+                .padding(.horizontal)
                 .onAppear {
                     if !isValidCompanySelected {
                         selectedCompany = ""
                         companySearchText = ""
                     }
+                }
+            }
+        }
+    }
+}
+
+struct EmailAssessmentView: View {
+    @AppStorage("selectedCompany") private var selectedCompany: String = ""
+    @EnvironmentObject var coreDataManager: CoreDataManager
+
+    @State private var selectedEmailProvider: String = ""
+    @State private var selectedAuthenticationMethod: String = ""
+    @State private var hasMFA = false
+    @State private var hasEmailSecurity = false
+    @State private var emailSecurityBrand = ""
+    @State private var experiencesPhishing = false
+    @State private var backsUpEmail = false
+    @State private var emailBackupMethod = ""
+    @State private var fileSharingMethod = ""
+    @State private var emailMalware = false
+    @State private var malwareDetails = ""
+    @State private var satisfactionText = ""
+    @State private var isSaving = false
+
+    let allEmailProviders = ["Microsoft 365", "Google Workspace", "GoDaddy", "Proton", "MS Exchange", "Other"]
+    let allAuthMethods = ["Active Directory", "Entra ID", "JumpCloud", "Other"]
+
+    func toggleSelection(set: inout Set<String>, value: String) {
+        if set.contains(value) {
+            set.remove(value)
+        } else {
+            set.insert(value)
+        }
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                Text("Email Assessment").font(.title).bold()
+
+                Text("Who is your email provider?")
+                Picker("Email Provider", selection: $selectedEmailProvider) {
+                    ForEach(allEmailProviders, id: \.self) { provider in
+                        Text(provider).tag(provider)
+                    }
+                }
+                .pickerStyle(.menu)
+
+                Text("How do you authenticate your users?")
+                Picker("Authentication Method", selection: $selectedAuthenticationMethod) {
+                    ForEach(allAuthMethods, id: \.self) { method in
+                        Text(method).tag(method)
+                    }
+                }
+                .pickerStyle(.menu)
+
+                Toggle("Do you have MFA on your email service?", isOn: $hasMFA)
+                Toggle("Do you have email security tools in place?", isOn: $hasEmailSecurity)
+                TextField("If so, which brand?", text: $emailSecurityBrand).textFieldStyle(.roundedBorder)
+
+                Toggle("Do you experience Phishing attempts?", isOn: $experiencesPhishing)
+                Toggle("Do you back up your email accounts?", isOn: $backsUpEmail)
+                TextField("If so, how?", text: $emailBackupMethod).textFieldStyle(.roundedBorder)
+
+                TextField("How does your team do file sharing?", text: $fileSharingMethod).textFieldStyle(.roundedBorder)
+                Toggle("Have you experienced email malware or an account takeover?", isOn: $emailMalware)
+                TextField("If so, what are the details?", text: $malwareDetails).textFieldStyle(.roundedBorder)
+                TextField("Are you happy with your email service?", text: $satisfactionText).textFieldStyle(.roundedBorder)
+
+                Button("Save") {
+                    guard !selectedCompany.isEmpty, !isSaving else { return }
+                    isSaving = true
+                    let fields: [(String, String?, Bool?)] = [
+                        ("Email Providers", selectedEmailProvider.isEmpty ? nil : selectedEmailProvider, nil),
+                        ("Authentication Methods", selectedAuthenticationMethod.isEmpty ? nil : selectedAuthenticationMethod, nil),
+                        ("Has MFA", nil, hasMFA),
+                        ("Has Email Security", nil, hasEmailSecurity),
+                        ("Email Security Brand", emailSecurityBrand.isEmpty ? nil : emailSecurityBrand, nil),
+                        ("Phishing Attempts", nil, experiencesPhishing),
+                        ("Backs Up Email", nil, backsUpEmail),
+                        ("Email Backup Method", emailBackupMethod.isEmpty ? nil : emailBackupMethod, nil),
+                        ("File Sharing Method", fileSharingMethod.isEmpty ? nil : fileSharingMethod, nil),
+                        ("Email Malware", nil, emailMalware),
+                        ("Malware Details", malwareDetails.isEmpty ? nil : malwareDetails, nil),
+                        ("Email Satisfaction", satisfactionText.isEmpty ? nil : satisfactionText, nil)
+                    ]
+                    coreDataManager.saveAssessmentFields(for: selectedCompany, category: "Email", fields: fields)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) { isSaving = false }
+                }
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(Color.blue)
+                .foregroundColor(.white)
+                .cornerRadius(10)
+                .disabled(selectedCompany.isEmpty || isSaving)
+            }
+            .padding()
+        }
+        .onAppear {
+            guard !selectedCompany.isEmpty else { return }
+            let fields = coreDataManager.loadAllAssessmentFields(for: selectedCompany, category: "Email")
+            for field in fields {
+                switch field.fieldName {
+                case "Email Providers":
+                    selectedEmailProvider = field.valueString ?? ""
+                case "Authentication Methods":
+                    selectedAuthenticationMethod = field.valueString ?? ""
+                case "Has MFA": hasMFA = field.valueString == "true"
+                case "Has Email Security": hasEmailSecurity = field.valueString == "true"
+                case "Email Security Brand": emailSecurityBrand = field.valueString ?? ""
+                case "Phishing Attempts": experiencesPhishing = field.valueString == "true"
+                case "Backs Up Email": backsUpEmail = field.valueString == "true"
+                case "Email Backup Method": emailBackupMethod = field.valueString ?? ""
+                case "File Sharing Method": fileSharingMethod = field.valueString ?? ""
+                case "Email Malware": emailMalware = field.valueString == "true"
+                case "Malware Details": malwareDetails = field.valueString ?? ""
+                case "Email Satisfaction": satisfactionText = field.valueString ?? ""
+                default: break
+                }
+            }
+        }
+    }
+}
+
+struct PhoneSystemAssessmentView: View {
+    @AppStorage("selectedCompany") private var selectedCompany: String = ""
+    @EnvironmentObject var coreDataManager: CoreDataManager
+
+    @State private var hasVoip = false
+    @State private var voipSoftware = ""
+    @State private var handsetBrand = ""
+    @State private var usesMobileAccess = false
+    @State private var satisfied = true
+    @State private var dissatisfactionReason = ""
+    @State private var isSaving = false
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                Text("Phone System Assessment")
+                    .font(.title)
+                    .bold()
+
+                Toggle("Do you have a VOIP Phone system?", isOn: $hasVoip)
+                TextField("What software are you using?", text: $voipSoftware)
+                    .textFieldStyle(.roundedBorder)
+                TextField("What brand are the handsets?", text: $handsetBrand)
+                    .textFieldStyle(.roundedBorder)
+                Toggle("Do employees use mobile devices to access the phone system?", isOn: $usesMobileAccess)
+                Toggle("Are you happy with your phone service?", isOn: $satisfied)
+                TextField("If not, why?", text: $dissatisfactionReason)
+                    .textFieldStyle(.roundedBorder)
+
+                Button(action: {
+                    guard !selectedCompany.isEmpty, !isSaving else { return }
+                    isSaving = true
+                    let fields: [(String, String?, Bool?)] = [
+                        ("Has VOIP", nil, hasVoip),
+                        ("VOIP Software", voipSoftware.isEmpty ? nil : voipSoftware, nil),
+                        ("Handset Brand", handsetBrand.isEmpty ? nil : handsetBrand, nil),
+                        ("Uses Mobile Access", nil, usesMobileAccess),
+                        ("Satisfied with Phone Service", nil, satisfied),
+                        ("Dissatisfaction Reason", dissatisfactionReason.isEmpty ? nil : dissatisfactionReason, nil)
+                    ]
+                    coreDataManager.saveAssessmentFields(for: selectedCompany, category: "Phone System", fields: fields)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                        isSaving = false
+                    }
+                }) {
+                    Text("Save")
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                }
+                .disabled(selectedCompany.isEmpty || isSaving)
+            }
+            .padding()
+        }
+        .onAppear {
+            guard !selectedCompany.isEmpty else { return }
+            let fields = coreDataManager.loadAllAssessmentFields(for: selectedCompany, category: "Phone System")
+            for field in fields {
+                switch field.fieldName {
+                case "Has VOIP": hasVoip = field.valueString == "true"
+                case "VOIP Software": voipSoftware = field.valueString ?? ""
+                case "Handset Brand": handsetBrand = field.valueString ?? ""
+                case "Uses Mobile Access": usesMobileAccess = field.valueString == "true"
+                case "Satisfied with Phone Service": satisfied = field.valueString != "false"
+                case "Dissatisfaction Reason": dissatisfactionReason = field.valueString ?? ""
+                default: break
                 }
             }
         }
