@@ -294,82 +294,67 @@ class CoreDataManager: ObservableObject {
             assessment.date = Date()
             assessment.companyName = normalizedCompanyName
         }
-        print("✅ Saving assessment for company: \(company)")
-
+        print("💾 Attempting to save assessment for: \(company)")
+ 
+        // Only delete existing fields in the matching category
         if let existingFields = assessment.fields as? Set<AssessmentFieldEntity> {
             for field in existingFields {
-                context.delete(field)
+                if field.category == category {
+                    print("🗑 Deleting old field in category '\(category)': \(field.fieldName ?? "Unnamed")")
+                    context.delete(field)
+                }
             }
-            assessment.fields = []
         }
-
-        var currentFields = NSMutableSet()
-        if let existing = assessment.value(forKey: "fields") as? NSSet {
-            currentFields = NSMutableSet(set: existing)
-        }
-
+ 
         for field in fields {
             let newField = AssessmentFieldEntity(context: context)
             newField.id = UUID()
-            newField.category = category
+            newField.assessment = assessment
             newField.fieldName = field.0
+            newField.category = category // Ensure this is always set
+
             if let stringValue = field.1, !stringValue.isEmpty {
                 newField.valueString = stringValue
-            } else if let boolValue = field.2 {
+            }
+            if let boolValue = field.2 {
                 newField.valueString = boolValue ? "true" : "false"
-            } else if let numericValue = field.1, let doubleValue = Double(numericValue) {
+            }
+            if let numericValue = field.1, let doubleValue = Double(numericValue) {
                 newField.valueNumber = doubleValue
+            } else {
+                newField.valueNumber = 0.0
             }
-            newField.assessment = assessment
-            currentFields.add(newField)
+ 
+            print("   - Field: \(newField.fieldName ?? "(unnamed)"), ValueNumber: \(newField.valueNumber), Managed: \(newField.valueString ?? "nil")")
         }
-
-        for field in currentFields {
-            if let f = field as? AssessmentFieldEntity {
-                f.assessment = assessment
-            }
-        }
-
+ 
         saveContext()
         context.refresh(assessment, mergeChanges: true)
         print("✅ Assessment fields saved successfully for company: \(company)")
     }
 
-    func loadAssessmentFields(for company: String,
-                              into count1: inout String, _ count2: inout String, _ count3: inout String, _ count4: inout String,
-                              _ count5: inout String, _ count6: inout String, _ count7: inout String,
-                              _ toggle1: inout Bool, _ toggle2: inout Bool, _ toggle3: inout Bool, _ toggle4: inout Bool,
-                              _ toggle5: inout Bool, _ toggle6: inout Bool, _ toggle7: inout Bool) {
+    func loadAssessmentFields(for company: String, category: String) -> [AssessmentFieldEntity] {
         let request: NSFetchRequest<AssessmentEntity> = AssessmentEntity.fetchRequest()
         let normalizedCompanyName = company.trimmingCharacters(in: .whitespacesAndNewlines)
         request.predicate = NSPredicate(format: "companyName == %@", normalizedCompanyName)
 
-        guard let assessment = try? context.fetch(request).first else { return }
-        print("✅ Loaded assessment for company: \(company)")
-        print("🧠 Loaded assessment: \(assessment.companyName ?? "nil") with \(assessment.fields?.count ?? 0) fields")
-        print("🔎 Looking for assessment for company: '\(normalizedCompanyName)'")
-        if let fieldSet = assessment.value(forKey: "fields") as? NSSet {
-            for case let field as AssessmentFieldEntity in fieldSet {
-                print("🔍 Inspecting field: \(field.fieldName ?? "nil"), valueNumber: \(field.valueNumber), valueString: \(field.valueString ?? "nil")")
-                switch field.fieldName {
-                case "PC Count": count1 = String(Int(field.valueNumber))
-                case "Mac Count": count2 = String(Int(field.valueNumber))
-                case "iPhone Count": count3 = String(Int(field.valueNumber))
-                case "iPad Count": count4 = String(Int(field.valueNumber))
-                case "Chromebook Count": count5 = String(Int(field.valueNumber))
-                case "Android Count": count6 = String(Int(field.valueNumber))
-                case "Manage PCs": toggle1 = field.valueString == "true"
-                case "Manage Macs": toggle2 = field.valueString == "true"
-                case "Manage iPhones": toggle3 = field.valueString == "true"
-                case "Manage iPads": toggle4 = field.valueString == "true"
-                case "Manage Chromebooks": toggle5 = field.valueString == "true"
-                case "Manage Android": toggle6 = field.valueString == "true"
-                default:
-                    print("⚠️ Unrecognized field name: \(field.fieldName ?? "nil")")
-                }
-            }
+        guard let assessment = try? context.fetch(request).first,
+              let fieldSet = assessment.fields as? Set<AssessmentFieldEntity> else {
+            return []
         }
+
+        print("📥 Loading saved \(category) assessment for: \(company)")
+        print("✅ Loaded assessment for company: \(company)")
+        print("🧠 Loaded assessment: \(company) with \(fieldSet.count) total fields")
+
+        for field in fieldSet {
+            print("🔍 Inspecting field: \(field.fieldName ?? "(unknown)"), valueNumber: \(field.valueNumber), valueString: \(field.valueString ?? "nil")")
+        }
+
+        let filteredFields = fieldSet.filter { $0.category == category }
+        return Array(filteredFields)
     }
+    
     func loadAllAssessmentFields(for company: String, category: String? = nil) -> [AssessmentFieldEntity] {
         let request: NSFetchRequest<AssessmentEntity> = AssessmentEntity.fetchRequest()
         let normalizedCompanyName = company.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -381,10 +366,9 @@ class CoreDataManager: ObservableObject {
         }
 
         if let category = category {
-            return fieldSet.filter { $0.category == category }
+            return Array(fieldSet.filter { $0.category == category })
         } else {
             return Array(fieldSet)
         }
     }
-
 }

@@ -51,8 +51,8 @@ struct AssessmentView: View {
                             TextField("Select Company", text: $companySearchText)
                                 .textFieldStyle(RoundedBorderTextFieldStyle())
                                 .padding(8)
-                                .onChange(of: companySearchText) { _, newValue in
-                                    showCompanySearch = newValue.count >= 2
+                                .onChange(of: companySearchText) {
+                                    showCompanySearch = companySearchText.count >= 2
                                 }
 
                             if showCompanySearch {
@@ -96,11 +96,16 @@ struct AssessmentView: View {
                     ScrollView {
                         LazyVGrid(columns: columns, spacing: 20) {
                             ForEach(subjectAreas, id: \.0) { area in
-                                if area.0 == "EndPoints" {
-                                    NavigationLink(destination: EndpointAssessmentView(selectedCompany: selectedCompany).environmentObject(coreDataManager)) {
-                                        AssessmentGridItem(area: area, geometry: geometry)
+                                NavigationLink {
+                                    switch area.0 {
+                                    case "EndPoints":
+                                        EndpointAssessmentView().environmentObject(coreDataManager)
+                                    case "Servers":
+                                        ServerAssessmentView().environmentObject(coreDataManager)
+                                    default:
+                                        Text("Coming soon for \(area.0)")
                                     }
-                                } else {
+                                } label: {
                                     AssessmentGridItem(area: area, geometry: geometry)
                                 }
                             }
@@ -112,7 +117,9 @@ struct AssessmentView: View {
         }
     }
 }
+
     
+
     struct AssessmentGridItem: View {
         let area: (String, String)
         let geometry: GeometryProxy
@@ -149,7 +156,7 @@ struct AssessmentView: View {
     }
     
     struct EndpointAssessmentView: View {
-        var selectedCompany: String
+        @AppStorage("selectedCompany") private var selectedCompany: String = ""
         
         @EnvironmentObject var coreDataManager: CoreDataManager
         
@@ -215,95 +222,85 @@ struct AssessmentView: View {
                         Toggle("Are your computers encrypted?", isOn: $areEncrypted)
                     }
                     .padding(.horizontal)
+                    
+                    Button(action: {
+                        let fields: [(String, String?, Bool?)] = [
+                            ("PC Count", pcCount, nil),
+                            ("Mac Count", macCount, nil),
+                            ("iPhone Count", iphoneCount, nil),
+                            ("iPad Count", ipadCount, nil),
+                            ("Chromebook Count", chromebookCount, nil),
+                            ("Android Count", androidCount, nil),
+                            ("Other Count", otherCount, nil),
+                            ("Manage PCs", nil, managePCs),
+                            ("Manage Macs", nil, manageMacs),
+                            ("Manage iPhones", nil, manageiPhones),
+                            ("Manage iPads", nil, manageiPads),
+                            ("Manage Chromebooks", nil, manageChromebooks),
+                            ("Manage Android", nil, manageAndroid),
+                            ("Manage Other", nil, manageOther),
+                            ("Windows 11 PCs", nil, runsWindows11),
+                            ("Other Windows Version", windowsVersion.isEmpty ? nil : windowsVersion, nil),
+                            ("MDM Provider", mdmProvider.isEmpty ? nil : mdmProvider, nil),
+                            ("Acceptable Use Policy", nil, hasAUP),
+                            ("Allows BYOD", nil, allowsBYOD),
+                            ("Encrypted Computers", nil, areEncrypted)
+                        ]
+                        print("💾 Attempting to save assessment for: \(selectedCompany)")
+                        coreDataManager.saveAssessmentFields(for: selectedCompany, category: "EndPoints", fields: fields)
+                    }) {
+                        Text("Save")
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.blue)
+                            .foregroundColor(.white)
+                            .cornerRadius(10)
+                    }
                 }
                 .padding()
             }
             .navigationTitle("Endpoint Assessment")
             .onAppear {
-                if !selectedCompany.isEmpty {
-                    let allFields: [AssessmentFieldEntity] = coreDataManager.loadAllAssessmentFields(for: selectedCompany, category: "EndPoints")
-                    for field in allFields {
-                        switch field.fieldName {
-                        case "Windows 11 PCs":
-                            runsWindows11 = field.valueString == "true" || field.valueNumber == 1
-                        case "Other Windows Version":
-                            windowsVersion = field.valueString ?? ""
-                        case "Devices MDM Managed":
-                            hasMDM = field.valueString == "true" || field.valueNumber == 1
-                        case "MDM Provider":
-                            mdmProvider = field.valueString ?? ""
-                        case "Acceptable Use Policy":
-                            hasAUP = field.valueString == "true" || field.valueNumber == 1
-                        case "Allows BYOD":
-                            allowsBYOD = field.valueString == "true" || field.valueNumber == 1
-                        case "Encrypted Computers":
-                            areEncrypted = field.valueString == "true" || field.valueNumber == 1
-                        case "PC Count":
-                            pcCount = field.valueString ?? String(Int(field.valueNumber))
-                        case "Mac Count":
-                            macCount = field.valueString ?? String(Int(field.valueNumber))
-                        case "iPhone Count":
-                            iphoneCount = field.valueString ?? String(Int(field.valueNumber))
-                        case "iPad Count":
-                            ipadCount = field.valueString ?? String(Int(field.valueNumber))
-                        case "Chromebook Count":
-                            chromebookCount = field.valueString ?? String(Int(field.valueNumber))
-                        case "Android Count":
-                            androidCount = field.valueString ?? String(Int(field.valueNumber))
-                        case "Other Count":
-                            otherCount = field.valueString ?? String(Int(field.valueNumber))
-                        case "Manage PCs":
-                            managePCs = field.valueString == "true" || field.valueNumber == 1
-                        case "Manage Macs":
-                            manageMacs = field.valueString == "true" || field.valueNumber == 1
-                        case "Manage iPhones":
-                            manageiPhones = field.valueString == "true" || field.valueNumber == 1
-                        case "Manage iPads":
-                            manageiPads = field.valueString == "true" || field.valueNumber == 1
-                        case "Manage Chromebooks":
-                            manageChromebooks = field.valueString == "true" || field.valueNumber == 1
-                        case "Manage Android":
-                            manageAndroid = field.valueString == "true" || field.valueNumber == 1
-                        case "Manage Other":
-                            manageOther = field.valueString == "true" || field.valueNumber == 1
-                        default:
-                            break
-                        }
-                    }
-                } else {
+                print("📥 Loading saved endpoint assessment for: \(selectedCompany)")
+                guard !selectedCompany.isEmpty else {
                     print("❗️Skipping load — selectedCompany is empty")
+                    return
                 }
-            }
-            .onDisappear {
-                let assessmentFieldData: [(String, String?, Bool?)] = [
-                    ("PC Count", pcCount, nil),
-                    ("Mac Count", macCount, nil),
-                    ("iPhone Count", iphoneCount, nil),
-                    ("iPad Count", ipadCount, nil),
-                    ("Chromebook Count", chromebookCount, nil),
-                    ("Android Count", androidCount, nil),
-                    ("Other Count", otherCount, nil),
-                    ("Manage PCs", nil, managePCs),
-                    ("Manage Macs", nil, manageMacs),
-                    ("Manage iPhones", nil, manageiPhones),
-                    ("Manage iPads", nil, manageiPads),
-                    ("Manage Chromebooks", nil, manageChromebooks),
-                    ("Manage Android", nil, manageAndroid),
-                    ("Manage Other", nil, manageOther),
-                    ("Windows 11 PCs", nil, runsWindows11),
-                    ("Other Windows Version", windowsVersion.isEmpty ? nil : windowsVersion, nil),
-                    ("MDM Provider", mdmProvider.isEmpty ? nil : mdmProvider, nil),
-                    ("MDM Provider", mdmProvider, nil),
-                    ("Acceptable Use Policy", nil, hasAUP),
-                    ("Allows BYOD", nil, allowsBYOD),
-                    ("Encrypted Computers", nil, areEncrypted)
-                ]
-
-                print("💾 Attempting to save assessment for: \(selectedCompany)")
-                for field in assessmentFieldData {
-                    print("   - Field: \(field.0), ValueNumber: \(field.1 ?? "nil"), Managed: \(String(describing: field.2))")
+ 
+                let allFields: [AssessmentFieldEntity] = coreDataManager.loadAllAssessmentFields(for: selectedCompany, category: "EndPoints")
+                print("✅ Loaded assessment for company: \(selectedCompany)")
+                print("🧠 Loaded assessment: \(selectedCompany) with \(allFields.count) fields")
+                print("   → All loaded fields: \(allFields.map { $0.fieldName ?? "nil" })")
+ 
+                for field in allFields {
+                    print("🔍 Inspecting field: \(field.fieldName ?? "nil"), valueNumber: \(field.valueNumber), valueString: \(field.valueString ?? "nil")")
+ 
+                    switch field.fieldName {
+                    case "Windows 11 PCs": runsWindows11 = field.valueString == "true"
+                    case "Other Windows Version": windowsVersion = field.valueString ?? ""
+                    case "MDM Provider": mdmProvider = field.valueString ?? ""
+                    case "Acceptable Use Policy": hasAUP = field.valueString == "true"
+                    case "Allows BYOD": allowsBYOD = field.valueString == "true"
+                    case "Encrypted Computers": areEncrypted = field.valueString == "true"
+                    case "PC Count": pcCount = field.valueString ?? String(Int(field.valueNumber))
+                    case "Mac Count": macCount = field.valueString ?? String(Int(field.valueNumber))
+                    case "iPhone Count": iphoneCount = field.valueString ?? String(Int(field.valueNumber))
+                    case "iPad Count": ipadCount = field.valueString ?? String(Int(field.valueNumber))
+                    case "Chromebook Count": chromebookCount = field.valueString ?? String(Int(field.valueNumber))
+                    case "Android Count": androidCount = field.valueString ?? String(Int(field.valueNumber))
+                    case "Other Count": otherCount = field.valueString ?? String(Int(field.valueNumber))
+                    case "Manage PCs": managePCs = field.valueString == "true"
+                    case "Manage Macs": manageMacs = field.valueString == "true"
+                    case "Manage iPhones": manageiPhones = field.valueString == "true"
+                    case "Manage iPads": manageiPads = field.valueString == "true"
+                    case "Manage Chromebooks": manageChromebooks = field.valueString == "true"
+                    case "Manage Android": manageAndroid = field.valueString == "true"
+                    case "Manage Other": manageOther = field.valueString == "true"
+                    default: break
+                    }
                 }
-                coreDataManager.saveAssessmentFields(for: selectedCompany, category: "EndPoints", fields: assessmentFieldData)
+ 
+                print("   → After load: PC Count = \(pcCount), Manage PCs = \(managePCs)")
             }
         }
         
@@ -338,3 +335,136 @@ struct AssessmentView: View {
         }
     }
 }
+struct ServerAssessmentView: View {
+    @EnvironmentObject var coreDataManager: CoreDataManager
+    @AppStorage("selectedCompany") private var selectedCompany: String = ""
+    
+
+    @State private var physicalCount = ""
+    @State private var vmCount = ""
+    @State private var hypervisorCount = ""
+
+    @State private var managePhysical = false
+    @State private var manageVM = false
+    @State private var manageHypervisor = false
+
+    @State private var serverOS = ""
+    @State private var hypervisorOS = ""
+    @State private var serverApps = ""
+    @State private var migrateToCloud = false
+    @State private var migrationTimeframe = ""
+    @State private var hadOutage = false
+    @State private var recoveryTime = ""
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 30) {
+                HStack(spacing: 20) {
+                    IconCounterView(label: "Physical", icon: "internaldrive", count: $physicalCount, isManaged: $managePhysical)
+                    IconCounterView(label: "VMs", icon: "macpro.gen3", count: $vmCount, isManaged: $manageVM)
+                    IconCounterView(label: "Hypervisors", icon: "cpu", count: $hypervisorCount, isManaged: $manageHypervisor)
+                }
+
+                GroupBox(label: Text("Server Questions")) {
+                    VStack(alignment: .leading, spacing: 15) {
+                        TextField("What operating systems are on your servers?", text: $serverOS)
+                        TextField("What Hypervisor OS do you use?", text: $hypervisorOS)
+                        TextField("What are the main apps or services run on your servers?", text: $serverApps)
+                        Toggle("Do you plan to migrate your servers to the cloud?", isOn: $migrateToCloud)
+                        TextField("Timeframe for migration?", text: $migrationTimeframe)
+                        Toggle("Experienced a major server outage?", isOn: $hadOutage)
+                        TextField("How long did it take to recover?", text: $recoveryTime)
+                    }
+                    .textFieldStyle(.roundedBorder)
+                    .padding()
+                }
+                
+                Button(action: {
+                    let fields: [(String, String?, Bool?)] = [
+                        ("Physical Server Count", physicalCount, nil),
+                        ("VM Count", vmCount, nil),
+                        ("Hypervisor Count", hypervisorCount, nil),
+                        ("Manage Physical", nil, managePhysical),
+                        ("Manage VM", nil, manageVM),
+                        ("Manage Hypervisor", nil, manageHypervisor),
+                        ("Server OS", serverOS.isEmpty ? nil : serverOS, nil),
+                        ("Hypervisor OS", hypervisorOS.isEmpty ? nil : hypervisorOS, nil),
+                        ("Server Apps", serverApps.isEmpty ? nil : serverApps, nil),
+                        ("Cloud Migration", nil, migrateToCloud),
+                        ("Migration Timeframe", migrationTimeframe.isEmpty ? nil : migrationTimeframe, nil),
+                        ("Outage Experienced", nil, hadOutage),
+                        ("Recovery Time", recoveryTime.isEmpty ? nil : recoveryTime, nil)
+                    ]
+                    print("💾 Attempting to save assessment for: \(selectedCompany)")
+                    coreDataManager.saveAssessmentFields(for: selectedCompany, category: "Servers", fields: fields)
+                }) {
+                    Text("Save")
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                }
+            }
+            .padding()
+        }
+        .onAppear {
+            print("📥 Loading saved server assessment for: \(selectedCompany)")
+            let fields = coreDataManager.loadAllAssessmentFields(for: selectedCompany, category: "Servers")
+            for field in fields {
+                switch field.fieldName {
+                case "Physical Server Count": physicalCount = field.valueString ?? String(Int(field.valueNumber))
+                case "VM Count": vmCount = field.valueString ?? String(Int(field.valueNumber))
+                case "Hypervisor Count": hypervisorCount = field.valueString ?? String(Int(field.valueNumber))
+                case "Manage Physical": managePhysical = field.valueString == "true"
+                case "Manage VM": manageVM = field.valueString == "true"
+                case "Manage Hypervisor": manageHypervisor = field.valueString == "true"
+                case "Server OS": serverOS = field.valueString ?? ""
+                case "Hypervisor OS": hypervisorOS = field.valueString ?? ""
+                case "Server Apps": serverApps = field.valueString ?? ""
+                case "Cloud Migration": migrateToCloud = field.valueString == "true"
+                case "Migration Timeframe": migrationTimeframe = field.valueString ?? ""
+                case "Outage Experienced": hadOutage = field.valueString == "true"
+                case "Recovery Time": recoveryTime = field.valueString ?? ""
+                default: break
+                }
+            }
+        }
+    }
+}
+
+    struct IconCounterView: View {
+        var label: String
+        var icon: String
+        @Binding var count: String
+        @Binding var isManaged: Bool
+
+        var body: some View {
+            VStack(spacing: 8) {
+                Image(systemName: icon)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: 30)
+                    .foregroundColor(.blue)
+
+                Text(label)
+                    .font(.subheadline)
+
+                TextField("0", text: $count)
+                    .keyboardType(.numberPad)
+                    .multilineTextAlignment(.center)
+                    .padding(8)
+                    .frame(maxWidth: .infinity)
+                    .background(Color(.systemGray6))
+                    .cornerRadius(8)
+                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray.opacity(0.3)))
+
+                Toggle("Managed", isOn: $isManaged)
+                    .labelsHidden()
+            }
+            .padding()
+            .background(Color.white)
+            .cornerRadius(12)
+            .shadow(color: .gray.opacity(0.15), radius: 4, x: 0, y: 2)
+        }
+    }
