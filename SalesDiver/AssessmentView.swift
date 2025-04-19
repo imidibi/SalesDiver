@@ -156,6 +156,7 @@ struct EmailAssessmentView: View {
     @State private var malwareDetails = ""
     @State private var satisfactionText = ""
     @State private var isSaving = false
+    @State private var showSaveConfirmation = false
 
     let allEmailProviders = ["Microsoft 365", "Google Workspace", "GoDaddy", "Proton", "MS Exchange", "Other"]
     let allAuthMethods = ["Active Directory", "Entra ID", "JumpCloud", "Other"]
@@ -202,7 +203,7 @@ struct EmailAssessmentView: View {
                 TextField("If so, what are the details?", text: $malwareDetails).textFieldStyle(.roundedBorder)
                 TextField("Are you happy with your email service?", text: $satisfactionText).textFieldStyle(.roundedBorder)
 
-                Button("Save") {
+                Button(action: {
                     guard !selectedCompany.isEmpty, !isSaving else { return }
                     isSaving = true
                     let fields: [(String, String?, Bool?)] = [
@@ -220,13 +221,19 @@ struct EmailAssessmentView: View {
                         ("Email Satisfaction", satisfactionText.isEmpty ? nil : satisfactionText, nil)
                     ]
                     coreDataManager.saveAssessmentFields(for: selectedCompany, category: "Email", fields: fields)
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) { isSaving = false }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                        isSaving = false
+                    }
+                }) {
+                    Text("Save")
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(isSaving ? Color.gray : Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                        .scaleEffect(isSaving ? 0.97 : 1.0)
+                        .animation(.easeInOut(duration: 0.2), value: isSaving)
                 }
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(Color.blue)
-                .foregroundColor(.white)
-                .cornerRadius(10)
                 .disabled(selectedCompany.isEmpty || isSaving)
             }
             .padding()
@@ -470,9 +477,11 @@ struct PhoneSystemAssessmentView: View {
                         Text("Save")
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(Color.blue)
+                            .background(isSaving ? Color.gray : Color.blue)
                             .foregroundColor(.white)
                             .cornerRadius(10)
+                            .scaleEffect(isSaving ? 0.97 : 1.0)
+                            .animation(.easeInOut(duration: 0.2), value: isSaving)
                     }
                     .disabled(selectedCompany.isEmpty || isSaving)
                 }
@@ -625,9 +634,11 @@ struct ServerAssessmentView: View {
                     Text("Save")
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(Color.blue)
+                        .background(isSaving ? Color.gray : Color.blue)
                         .foregroundColor(.white)
                         .cornerRadius(10)
+                        .scaleEffect(isSaving ? 0.97 : 1.0)
+                        .animation(.easeInOut(duration: 0.2), value: isSaving)
                 }
                 .disabled(selectedCompany.isEmpty || isSaving)
             }
@@ -715,9 +726,11 @@ struct NetworkAssessmentView: View {
                     Text("Save")
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(Color.blue)
+                        .background(isSaving ? Color.gray : Color.blue)
                         .foregroundColor(.white)
                         .cornerRadius(10)
+                        .scaleEffect(isSaving ? 0.97 : 1.0)
+                        .animation(.easeInOut(duration: 0.2), value: isSaving)
                 }
                 .disabled(selectedCompany.isEmpty || isSaving)
             }
