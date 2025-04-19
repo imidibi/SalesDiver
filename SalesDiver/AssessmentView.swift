@@ -157,6 +157,10 @@ struct EmailAssessmentView: View {
     @State private var satisfactionText = ""
     @State private var isSaving = false
     @State private var showSaveConfirmation = false
+    @State private var employeeCount = ""
+    @State private var allHaveEmail = true
+    @State private var withEmailCount = ""
+    @State private var licenseTypes = ""
 
     let allEmailProviders = ["Microsoft 365", "Google Workspace", "GoDaddy", "Proton", "MS Exchange", "Other"]
     let allAuthMethods = ["Active Directory", "Entra ID", "JumpCloud", "Other"]
@@ -171,71 +175,90 @@ struct EmailAssessmentView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                Text("Email Assessment").font(.title).bold()
+            VStack(alignment: .leading, spacing: 30) {
+                Text("Email Assessment")
+                    .font(.largeTitle)
+                    .bold()
 
-                Text("Who is your email provider?")
-                Picker("Email Provider", selection: $selectedEmailProvider) {
-                    ForEach(allEmailProviders, id: \.self) { provider in
-                        Text(provider).tag(provider)
+                GroupBox(label: Label("Email Platform", systemImage: "envelope")) {
+                    VStack(alignment: .leading, spacing: 15) {
+                        Text("Who is your email provider?")
+                        Picker("Email Provider", selection: $selectedEmailProvider) {
+                            ForEach(allEmailProviders, id: \.self) { provider in
+                                Text(provider).tag(provider)
+                            }
+                        }
+                        .pickerStyle(.menu)
+
+                        Text("How do you authenticate your users?")
+                        Picker("Authentication Method", selection: $selectedAuthenticationMethod) {
+                            ForEach(allAuthMethods, id: \.self) { method in
+                                Text(method).tag(method)
+                            }
+                        }
+                        .pickerStyle(.menu)
+
+                        Toggle("Do you have MFA on your email service?", isOn: $hasMFA)
+                    }
+                    .padding(.top, 5)
+                }
+
+                GroupBox(label: Label("Security & Backup", systemImage: "lock.shield")) {
+                    VStack(alignment: .leading, spacing: 15) {
+                        Toggle("Do you have email security tools in place?", isOn: $hasEmailSecurity)
+                        Text("If so, which brand?")
+                        TextField("", text: $emailSecurityBrand).textFieldStyle(.roundedBorder)
+
+                        Toggle("Do you experience phishing attempts?", isOn: $experiencesPhishing)
+
+                        Toggle("Do you back up your email accounts?", isOn: $backsUpEmail)
+                        Text("If so, how?")
+                        TextField("", text: $emailBackupMethod).textFieldStyle(.roundedBorder)
                     }
                 }
-                .pickerStyle(.menu)
 
-                Text("How do you authenticate your users?")
-                Picker("Authentication Method", selection: $selectedAuthenticationMethod) {
-                    ForEach(allAuthMethods, id: \.self) { method in
-                        Text(method).tag(method)
+                GroupBox(label: Label("Usage & Satisfaction", systemImage: "person.3")) {
+                    VStack(alignment: .leading, spacing: 15) {
+                        Text("How does your team do file sharing?")
+                        TextField("", text: $fileSharingMethod).textFieldStyle(.roundedBorder)
+
+                        Toggle("Have you experienced email malware or account takeover?", isOn: $emailMalware)
+                        Text("If so, what are the details?")
+                        TextField("", text: $malwareDetails).textFieldStyle(.roundedBorder)
+
+                        Text("Are you happy with your email service?")
+                        TextField("", text: $satisfactionText).textFieldStyle(.roundedBorder)
                     }
                 }
-                .pickerStyle(.menu)
 
-                Toggle("Do you have MFA on your email service?", isOn: $hasMFA)
-                Toggle("Do you have email security tools in place?", isOn: $hasEmailSecurity)
-                TextField("If so, which brand?", text: $emailSecurityBrand).textFieldStyle(.roundedBorder)
+                GroupBox(label: Label("Licensing", systemImage: "person.crop.rectangle.stack")) {
+                    VStack(alignment: .leading, spacing: 15) {
+                        Text("How many employees do you have?")
+                        TextField("", text: $employeeCount).keyboardType(.numberPad).textFieldStyle(.roundedBorder)
 
-                Toggle("Do you experience Phishing attempts?", isOn: $experiencesPhishing)
-                Toggle("Do you back up your email accounts?", isOn: $backsUpEmail)
-                TextField("If so, how?", text: $emailBackupMethod).textFieldStyle(.roundedBorder)
+                        Toggle("Do all employees have an email account?", isOn: $allHaveEmail)
 
-                TextField("How does your team do file sharing?", text: $fileSharingMethod).textFieldStyle(.roundedBorder)
-                Toggle("Have you experienced email malware or an account takeover?", isOn: $emailMalware)
-                TextField("If so, what are the details?", text: $malwareDetails).textFieldStyle(.roundedBorder)
-                TextField("Are you happy with your email service?", text: $satisfactionText).textFieldStyle(.roundedBorder)
+                        Text("If not, how many do?")
+                        TextField("", text: $withEmailCount).keyboardType(.numberPad).textFieldStyle(.roundedBorder)
 
-                Button(action: {
-                    guard !selectedCompany.isEmpty, !isSaving else { return }
-                    isSaving = true
-                    let fields: [(String, String?, Bool?)] = [
-                        ("Email Providers", selectedEmailProvider.isEmpty ? nil : selectedEmailProvider, nil),
-                        ("Authentication Methods", selectedAuthenticationMethod.isEmpty ? nil : selectedAuthenticationMethod, nil),
-                        ("Has MFA", nil, hasMFA),
-                        ("Has Email Security", nil, hasEmailSecurity),
-                        ("Email Security Brand", emailSecurityBrand.isEmpty ? nil : emailSecurityBrand, nil),
-                        ("Phishing Attempts", nil, experiencesPhishing),
-                        ("Backs Up Email", nil, backsUpEmail),
-                        ("Email Backup Method", emailBackupMethod.isEmpty ? nil : emailBackupMethod, nil),
-                        ("File Sharing Method", fileSharingMethod.isEmpty ? nil : fileSharingMethod, nil),
-                        ("Email Malware", nil, emailMalware),
-                        ("Malware Details", malwareDetails.isEmpty ? nil : malwareDetails, nil),
-                        ("Email Satisfaction", satisfactionText.isEmpty ? nil : satisfactionText, nil)
-                    ]
-                    coreDataManager.saveAssessmentFields(for: selectedCompany, category: "Email", fields: fields)
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                        isSaving = false
+                        Text("What license types (e.g. Business Basic, Premium, etc) do you have?")
+                        TextField("", text: $licenseTypes).textFieldStyle(.roundedBorder)
                     }
-                }) {
-                    Text("Save")
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(isSaving ? Color.gray : Color.blue)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
-                        .scaleEffect(isSaving ? 0.97 : 1.0)
-                        .animation(.easeInOut(duration: 0.2), value: isSaving)
                 }
+
+                Button("Save") {
+                    // Your save logic here
+                }
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(isSaving ? Color.gray : Color.blue)
+                .foregroundColor(.white)
+                .cornerRadius(10)
+                .scaleEffect(isSaving ? 0.97 : 1.0)
+                .animation(.easeInOut(duration: 0.2), value: isSaving)
                 .disabled(selectedCompany.isEmpty || isSaving)
             }
+            .padding()
             .padding()
         }
         .onAppear {
@@ -257,6 +280,11 @@ struct EmailAssessmentView: View {
                 case "Email Malware": emailMalware = field.valueString == "true"
                 case "Malware Details": malwareDetails = field.valueString ?? ""
                 case "Email Satisfaction": satisfactionText = field.valueString ?? ""
+                case "Employee Count": employeeCount = field.valueString ?? ""
+                case "All Have Email": allHaveEmail = field.valueString != "false"
+                case "With Email Count": withEmailCount = field.valueString ?? ""
+                case "Email License Types": licenseTypes = field.valueString ?? ""
+                // Duplicate cases removed
                 default: break
                 }
             }
@@ -284,13 +312,16 @@ struct PhoneSystemAssessmentView: View {
                     .bold()
 
                 Toggle("Do you have a VOIP Phone system?", isOn: $hasVoip)
-                TextField("What software are you using?", text: $voipSoftware)
+                Text("What software are you using?")
+                TextField("", text: $voipSoftware)
                     .textFieldStyle(.roundedBorder)
-                TextField("What brand are the handsets?", text: $handsetBrand)
+                Text("What brand are the handsets?")
+                TextField("", text: $handsetBrand)
                     .textFieldStyle(.roundedBorder)
                 Toggle("Do employees use mobile devices to access the phone system?", isOn: $usesMobileAccess)
                 Toggle("Are you happy with your phone service?", isOn: $satisfied)
-                TextField("If not, why?", text: $dissatisfactionReason)
+                Text("If not, why?")
+                TextField("", text: $dissatisfactionReason)
                     .textFieldStyle(.roundedBorder)
 
                 Button(action: {
@@ -596,13 +627,18 @@ struct ServerAssessmentView: View {
 
                 GroupBox(label: Text("Server Questions")) {
                     VStack(alignment: .leading, spacing: 15) {
-                        TextField("What operating systems are on your servers?", text: $serverOS)
-                        TextField("What Hypervisor OS do you use?", text: $hypervisorOS)
-                        TextField("What are the main apps or services run on your servers?", text: $serverApps)
+                        Text("What operating systems are on your servers?")
+                        TextField("", text: $serverOS)
+                        Text("What Hypervisor OS do you use?")
+                        TextField("", text: $hypervisorOS)
+                        Text("What are the main apps or services run on your servers?")
+                        TextField("", text: $serverApps)
                         Toggle("Do you plan to migrate your servers to the cloud?", isOn: $migrateToCloud)
-                        TextField("Timeframe for migration?", text: $migrationTimeframe)
+                        Text("Timeframe for migration?")
+                        TextField("", text: $migrationTimeframe)
                         Toggle("Experienced a major server outage?", isOn: $hadOutage)
-                        TextField("How long did it take to recover?", text: $recoveryTime)
+                        Text("How long did it take to recover?")
+                        TextField("", text: $recoveryTime)
                     }
                     .textFieldStyle(.roundedBorder)
                     .padding()
@@ -691,18 +727,22 @@ struct NetworkAssessmentView: View {
                     .bold()
 
                 Toggle("Do you have a Firewall?", isOn: $hasFirewall)
-                TextField("What Brand is it?", text: $firewallBrand)
+                Text("What Brand is it?")
+                TextField("", text: $firewallBrand)
                     .textFieldStyle(.roundedBorder)
                 Toggle("Is the software licensed and current?", isOn: $firewallLicensed)
 
                 Toggle("Do you have any network switches?", isOn: $hasSwitches)
-                TextField("If so, what brand?", text: $switchBrand)
+                Text("If so, what brand?")
+                TextField("", text: $switchBrand)
                     .textFieldStyle(.roundedBorder)
 
                 Toggle("Do you have a WiFi Network?", isOn: $hasWiFi)
-                TextField("What brand are the Access Points?", text: $wifiBrand)
+                Text("What brand are the Access Points?")
+                TextField("", text: $wifiBrand)
                     .textFieldStyle(.roundedBorder)
-                TextField("Are most users wired or on WiFi?", text: $wiredOrWifi)
+                Text("Are most users wired or on WiFi?")
+                TextField("", text: $wiredOrWifi)
                     .textFieldStyle(.roundedBorder)
 
                 Button(action: {
