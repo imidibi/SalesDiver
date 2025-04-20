@@ -40,6 +40,17 @@ struct AssessmentView: View {
         })
     }
 
+    private func updateAssessmentDate() {
+        let request: NSFetchRequest<AssessmentEntity> = AssessmentEntity.fetchRequest()
+        request.predicate = NSPredicate(format: "companyName == %@", selectedCompany.trimmingCharacters(in: .whitespacesAndNewlines))
+
+        if let existing = try? coreDataManager.context.fetch(request).first {
+            assessmentDate = existing.date ?? Date()
+        } else {
+            assessmentDate = Date()
+        }
+    }
+
     var body: some View {
         NavigationStack {
             GeometryReader { geometry in
@@ -122,6 +133,8 @@ struct AssessmentView: View {
                                         EmailAssessmentView().environmentObject(coreDataManager)
                                     case "Security & Compliance":
                                         ProspectSecurityAssessmentView().environmentObject(coreDataManager)
+                                    case "Directory Services":
+                                        DirectoryServicesAssessmentView(companyName: selectedCompany).environmentObject(coreDataManager)
                                     default:
                                         Text("Coming soon for \(area.0)")
                                     }
@@ -141,6 +154,7 @@ struct AssessmentView: View {
                         selectedCompany = ""
                         companySearchText = ""
                     }
+                    updateAssessmentDate()
                 }
             }
         }
