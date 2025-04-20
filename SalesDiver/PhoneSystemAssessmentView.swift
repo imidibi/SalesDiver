@@ -14,7 +14,7 @@ struct PhoneSystemAssessmentView: View {
     @State private var voipSoftware = ""
     @State private var handsetBrand = ""
     @State private var usesMobileAccess = false
-    @State private var satisfied = true
+    @State private var satisfied = false
     @State private var dissatisfactionReason = ""
     @State private var isSaving = false
 

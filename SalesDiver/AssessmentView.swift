@@ -51,7 +51,49 @@ struct AssessmentView: View {
         }
     }
 
-    var body: some View {
+    @ViewBuilder
+    func destinationView(for area: String) -> some View {
+        switch area {
+        case "EndPoints":
+            VStack {
+                Image(systemName: "desktopcomputer")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: 40)
+                    .padding(.top)
+                EndpointAssessmentView().environmentObject(coreDataManager)
+            }
+        case "Servers":
+            VStack {
+                Image(systemName: "server.rack")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: 40)
+                    .padding(.top)
+                ServerAssessmentView().environmentObject(coreDataManager)
+            }
+        case "Network":
+            NetworkAssessmentView().environmentObject(coreDataManager)
+        case "Phone System":
+            PhoneSystemAssessmentView().environmentObject(coreDataManager)
+        case "Email":
+            EmailAssessmentView().environmentObject(coreDataManager)
+        case "Security & Compliance":
+            ProspectSecurityAssessmentView().environmentObject(coreDataManager)
+        case "Directory Services":
+            DirectoryServicesAssessmentView(companyName: selectedCompany).environmentObject(coreDataManager)
+        case "Infrastructure":
+            InfrastructureAssessmentView(companyName: selectedCompany).environmentObject(coreDataManager)
+        case "Cloud Services":
+            CloudServicesAssessmentView(companyName: selectedCompany).environmentObject(coreDataManager)
+        case "Backup":
+            BackupAssessmentView(companyName: selectedCompany).environmentObject(coreDataManager)
+        default:
+            Text("Coming soon for \(area)")
+        }
+    }
+
+    var body: some View  {
         NavigationStack {
             GeometryReader { geometry in
                 VStack(alignment: .leading, spacing: 20) {
@@ -106,38 +148,7 @@ struct AssessmentView: View {
                         LazyVGrid(columns: columns, spacing: 20) {
                             ForEach(subjectAreas, id: \.0) { area in
                                 NavigationLink {
-                                    switch area.0 {
-                                    case "EndPoints":
-                                        VStack {
-                                            Image(systemName: "desktopcomputer")
-                                                .resizable()
-                                                .scaledToFit()
-                                                .frame(height: 40)
-                                                .padding(.top)
-                                            EndpointAssessmentView().environmentObject(coreDataManager)
-                                        }
-                                    case "Servers":
-                                        VStack {
-                                            Image(systemName: "server.rack")
-                                                .resizable()
-                                                .scaledToFit()
-                                                .frame(height: 40)
-                                                .padding(.top)
-                                            ServerAssessmentView().environmentObject(coreDataManager)
-                                        }
-                                    case "Network":
-                                        NetworkAssessmentView().environmentObject(coreDataManager)
-                                    case "Phone System":
-                                        PhoneSystemAssessmentView().environmentObject(coreDataManager)
-                                    case "Email":
-                                        EmailAssessmentView().environmentObject(coreDataManager)
-                                    case "Security & Compliance":
-                                        ProspectSecurityAssessmentView().environmentObject(coreDataManager)
-                                    case "Directory Services":
-                                        DirectoryServicesAssessmentView(companyName: selectedCompany).environmentObject(coreDataManager)
-                                    default:
-                                        Text("Coming soon for \(area.0)")
-                                    }
+                                    destinationView(for: area.0)
                                 } label: {
                                     AssessmentGridItem(area: area, geometry: geometry)
                                 }
