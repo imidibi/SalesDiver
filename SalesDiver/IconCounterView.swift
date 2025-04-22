@@ -32,8 +32,15 @@ struct IconCounterView: View {
                 .cornerRadius(8)
                 .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray.opacity(0.3)))
 
-            Toggle("Managed", isOn: $isManaged)
-                .labelsHidden()
+            VStack(spacing: 4) {
+                Text("Managed?")
+                    .font(.caption)
+                    .foregroundColor(.primary)
+                Toggle("", isOn: $isManaged)
+                    .labelsHidden()
+                    .frame(maxWidth: .infinity)
+            }
+            .frame(maxWidth: .infinity)
         }
         .padding()
         .background(Color.white)
