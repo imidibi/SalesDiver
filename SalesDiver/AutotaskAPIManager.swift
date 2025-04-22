@@ -5,6 +5,13 @@ class AutotaskAPIManager {
     
     private init() {}
     
+    private let session: URLSession = {
+        let configuration = URLSessionConfiguration.default
+        let queue = OperationQueue()
+        queue.maxConcurrentOperationCount = 2
+        return URLSession(configuration: configuration, delegate: nil, delegateQueue: queue)
+    }()
+    
     private func getAutotaskCredentials() -> (String, String, String)? {
         let apiUsername = UserDefaults.standard.string(forKey: "autotaskAPIUsername") ?? ""
         let apiSecret = UserDefaults.standard.string(forKey: "autotaskAPISecret") ?? ""
@@ -62,7 +69,6 @@ class AutotaskAPIManager {
             return
         }
         
-        let session = URLSession.shared
         session.dataTask(with: request) { data, response, error in
             if let error = error {
                 print("🔴 API Request Error: \(error.localizedDescription)")
@@ -138,7 +144,7 @@ class AutotaskAPIManager {
             return
         }
         
-        URLSession.shared.dataTask(with: request) { data, response, error in
+        session.dataTask(with: request) { data, response, error in
             if let error = error {
                 print("API error: \(error.localizedDescription)")
                 completion([])
@@ -222,7 +228,7 @@ class AutotaskAPIManager {
         
         print("Performing GET request: \(urlString)")
         
-        URLSession.shared.dataTask(with: request) { data, response, error in
+        session.dataTask(with: request) { data, response, error in
             if let error = error {
                 print("API Request Error: \(error.localizedDescription)")
                 completion([])
@@ -296,7 +302,7 @@ class AutotaskAPIManager {
         request.setValue(apiSecret, forHTTPHeaderField: "Secret")
         request.setValue(apiTrackingID, forHTTPHeaderField: "ApiIntegrationCode")
         
-        URLSession.shared.dataTask(with: request) { data, response, error in
+        session.dataTask(with: request) { data, response, error in
             if let error = error {
                 print("API Request Error: \(error.localizedDescription)")
                 completion([])
@@ -359,7 +365,7 @@ class AutotaskAPIManager {
             return
         }
         
-        URLSession.shared.dataTask(with: request) { data, response, error in
+        session.dataTask(with: request) { data, response, error in
             if let error = error {
                 print("❌ Network error: \(error)")
                 completion([])
@@ -408,7 +414,7 @@ class AutotaskAPIManager {
             return
         }
 
-        URLSession.shared.dataTask(with: request) { data, response, error in
+        session.dataTask(with: request) { data, response, error in
             guard let data = data,
                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                   let items = json["items"] as? [[String: Any]] else {

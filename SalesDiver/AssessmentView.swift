@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreData
+import PDFKit
 
 struct AssessmentView: View {
     @AppStorage("selectedCompany") private var selectedCompany: String = ""
@@ -104,6 +105,117 @@ struct AssessmentView: View {
         }
     }
 
+
+    func exportAssessmentAsPDF() {
+        let pdfMetaData = [
+            kCGPDFContextCreator: "SalesDiver25",
+            kCGPDFContextAuthor: "CMIT Solutions",
+            kCGPDFContextTitle: "Assessment Report"
+        ]
+        let format = UIGraphicsPDFRendererFormat()
+        format.documentInfo = pdfMetaData as [String: Any]
+
+        let pageWidth = 612.0
+        let pageHeight = 792.0
+        let pageRect = CGRect(x: 0, y: 0, width: pageWidth, height: pageHeight)
+        let renderer = UIGraphicsPDFRenderer(bounds: pageRect, format: format)
+
+        let categories: [(String, String)] = [
+            ("🖥️ Endpoint", "Endpoint"),
+            ("🗄️ Servers", "Servers"),
+            ("🌐 Network", "Network"),
+            ("📞 Phone System", "Phone System"),
+            ("📧 Email", "Email"),
+            ("🛡️ Security & Compliance", "Security & Compliance"),
+            ("📂 Directory Services", "Directory Services"),
+            ("☁️ Infrastructure", "Infrastructure"),
+            ("🧩 Cloud Services", "Cloud Services"),
+            ("💾 Backup", "Backup")
+        ]
+
+        let data = renderer.pdfData { context in
+            for (sectionTitle, categoryKey) in categories {
+                context.beginPage()
+
+                let titleFont = UIFont.boldSystemFont(ofSize: 20)
+                let contentFont = UIFont.systemFont(ofSize: 14)
+                let paragraphStyle = NSMutableParagraphStyle()
+                paragraphStyle.alignment = .left
+
+                let titleAttributes: [NSAttributedString.Key: Any] = [
+                    .font: titleFont,
+                    .paragraphStyle: paragraphStyle
+                ]
+
+                let contentAttributes: [NSAttributedString.Key: Any] = [
+                    .font: contentFont,
+                    .paragraphStyle: paragraphStyle
+                ]
+
+                sectionTitle.draw(at: CGPoint(x: 50, y: 50), withAttributes: titleAttributes)
+
+                let fields = coreDataManager
+                    .loadAllAssessmentFields(for: selectedCompany, category: categoryKey)
+                    .sorted { ($0.fieldName ?? "").localizedCaseInsensitiveCompare($1.fieldName ?? "") == .orderedAscending }
+                print("Loaded \(fields.count) fields for \(categoryKey)")
+
+                for (index, field) in fields.enumerated() {
+                    let yPosition = CGFloat(100 + (index * 30))
+                    guard yPosition.isFinite else { continue }
+                    let fieldName = (field.fieldName ?? "Unknown").trimmingCharacters(in: .whitespacesAndNewlines)
+                    let valueRaw = field.valueString?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                    let label = "Q: \(fieldName)"
+                    let answer: String
+
+                    if valueRaw == "true" {
+                        answer = "✅ Yes"
+                    } else if valueRaw == "false" {
+                        answer = "❌ No"
+                    } else if valueRaw.isEmpty {
+                        answer = "—"
+                    } else {
+                        answer = valueRaw
+                    }
+
+                    label.draw(at: CGPoint(x: 50, y: yPosition), withAttributes: contentAttributes)
+                    answer.draw(at: CGPoint(x: 300, y: yPosition), withAttributes: contentAttributes)
+                }
+            }
+        }
+        print("PDF generated with \(data.count) bytes.")
+
+        let safeCompany = selectedCompany.replacingOccurrences(of: " ", with: "_")
+        let fileName = "\(safeCompany)-Assessment.pdf"
+        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+        print("Saving PDF to:", tempURL.path)
+        do {
+            try data.write(to: tempURL)
+            print("PDF successfully saved.")
+            presentShareSheet(url: tempURL)
+        } catch {
+            print("Failed to write PDF: \(error.localizedDescription)")
+        }
+    }
+
+    func formattedDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        return formatter.string(from: date)
+    }
+
+    func presentShareSheet(url: URL) {
+        let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+
+        if let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let rootVC = scene.windows.first?.rootViewController {
+            activityVC.popoverPresentationController?.sourceView = rootVC.view
+            activityVC.popoverPresentationController?.sourceRect = CGRect(x: rootVC.view.bounds.midX, y: rootVC.view.bounds.midY, width: 0, height: 0)
+            activityVC.popoverPresentationController?.permittedArrowDirections = []
+
+            rootVC.present(activityVC, animated: true, completion: nil)
+        }
+    }
+
     var body: some View  {
         NavigationStack {
             GeometryReader { geometry in
@@ -181,6 +293,15 @@ struct AssessmentView: View {
                     } else {
                         selectedCompany = ""
                         companySearchText = ""
+                    }
+                }
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button(action: {
+                            exportAssessmentAsPDF()
+                        }) {
+                            Label("Export", systemImage: "square.and.arrow.up")
+                        }
                     }
                 }
             }
