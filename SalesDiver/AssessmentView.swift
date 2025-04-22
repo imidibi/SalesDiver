@@ -227,6 +227,7 @@ struct AssessmentView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         TextField("Select Company", text: $companySearchText)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .foregroundColor(.primary)
                             .padding(.horizontal, 8)
                             .onChange(of: companySearchText) {
                                 let trimmedSearch = companySearchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
@@ -252,12 +253,12 @@ struct AssessmentView: View {
                                         Text(company.name ?? "")
                                             .padding()
                                             .frame(maxWidth: .infinity, alignment: .leading)
-                                            .background(Color.white)
+                                            .background(Color(UIColor.systemBackground))
                                             .foregroundColor(.primary)
                                     }
                                 }
                             }
-                            .background(Color(.systemGray6))
+                            .background(Color(UIColor.systemBackground))
                             .cornerRadius(8)
                             .shadow(radius: 4)
                             .padding(.horizontal, 8)
@@ -332,7 +333,7 @@ struct AssessmentGridItem: View {
                 .multilineTextAlignment(.center)
         }
         .frame(width: itemWidth, height: itemWidth)
-        .background(Color(.systemGray6))
+        .background(Color(UIColor.secondarySystemBackground))
         .cornerRadius(10)
         .padding(4)
     }
