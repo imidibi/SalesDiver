@@ -4,6 +4,7 @@ import CoreData
 struct AssessmentView: View {
     @AppStorage("selectedCompany") private var selectedCompany: String = ""
     @State private var assessmentDate: Date = Date()
+    @State private var currentAssessmentID: String = ""
 
     @EnvironmentObject var coreDataManager: CoreDataManager
 
@@ -41,13 +42,22 @@ struct AssessmentView: View {
     }
 
     private func updateAssessmentDate() {
+        let trimmedName = selectedCompany.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard let matchedCompany = allCompanies.first(where: { ($0.name ?? "").trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == trimmedName }) else {
+            assessmentDate = Date()
+            currentAssessmentID = ""
+            return
+        }
+        
         let request: NSFetchRequest<AssessmentEntity> = AssessmentEntity.fetchRequest()
-        request.predicate = NSPredicate(format: "companyName == %@", selectedCompany.trimmingCharacters(in: .whitespacesAndNewlines))
-
+        request.predicate = NSPredicate(format: "company == %@", matchedCompany)
+        
         if let existing = try? coreDataManager.context.fetch(request).first {
             assessmentDate = existing.date ?? Date()
+            currentAssessmentID = existing.id?.uuidString ?? ""
         } else {
             assessmentDate = Date()
+            currentAssessmentID = ""
         }
     }
 
@@ -87,7 +97,8 @@ struct AssessmentView: View {
         case "Cloud Services":
             CloudServicesAssessmentView(companyName: selectedCompany).environmentObject(coreDataManager)
         case "Backup":
-            BackupAssessmentView(companyName: selectedCompany).environmentObject(coreDataManager)
+            BackupAssessmentWrapperView(companyName: selectedCompany)
+                .environmentObject(coreDataManager)
         default:
             Text("Coming soon for \(area)")
         }
@@ -106,7 +117,9 @@ struct AssessmentView: View {
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                             .padding(.horizontal, 8)
                             .onChange(of: companySearchText) {
-                                showCompanySearch = companySearchText.count >= 2
+                                let trimmedSearch = companySearchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+                                let matched = allCompanies.contains { ($0.name ?? "").trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == trimmedSearch }
+                                showCompanySearch = companySearchText.count >= 2 && !matched
                             }
 
                         if showCompanySearch {
@@ -117,10 +130,12 @@ struct AssessmentView: View {
                             VStack(alignment: .leading, spacing: 0) {
                                 ForEach(filtered, id: \.self) { company in
                                     Button(action: {
-                                        let name = company.name ?? ""
-                                        selectedCompany = name
-                                        companySearchText = name
-                                        showCompanySearch = false
+                                        DispatchQueue.main.async {
+                                            showCompanySearch = false
+                                            let name = company.name ?? ""
+                                            selectedCompany = name
+                                            companySearchText = name
+                                        }
                                     }) {
                                         Text(company.name ?? "")
                                             .padding()
@@ -161,11 +176,12 @@ struct AssessmentView: View {
                 }
                 .padding()
                 .onAppear {
-                    if !isValidCompanySelected {
+                    if isValidCompanySelected {
+                        updateAssessmentDate()
+                    } else {
                         selectedCompany = ""
                         companySearchText = ""
                     }
-                    updateAssessmentDate()
                 }
             }
         }
@@ -198,5 +214,16 @@ struct AssessmentGridItem: View {
         .background(Color(.systemGray6))
         .cornerRadius(10)
         .padding(4)
+    }
+}
+
+
+struct BackupAssessmentWrapperView: View {
+    @EnvironmentObject var coreDataManager: CoreDataManager
+    let companyName: String
+
+    var body: some View {
+        BackupAssessmentView(companyName: companyName)
+            .environmentObject(coreDataManager)
     }
 }

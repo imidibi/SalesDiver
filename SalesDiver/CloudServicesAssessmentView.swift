@@ -85,15 +85,18 @@ struct CloudServicesAssessmentView: View {
                         .textFieldStyle(.roundedBorder)
                 }
             }
-        }
-        .navigationTitle("Cloud Services Assessment")
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
+            Section {
                 Button("Save") {
                     saveCloudServicesAssessment()
                 }
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(Color.blue)
+                .foregroundColor(.white)
+                .cornerRadius(10)
             }
         }
+        .navigationTitle("Cloud Services Assessment")
         .onAppear {
             loadCloudServicesAssessment()
         }

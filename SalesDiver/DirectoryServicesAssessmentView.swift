@@ -63,26 +63,27 @@ struct DirectoryServicesAssessmentView: View {
             }
             
             Section {
-                HStack {
-                    Spacer()
-                    Button("Save Assessment") {
-                        coreDataManager.saveAssessmentFields(
-                            for: companyName,
-                            category: "Directory Services",
-                            fields: [
-                                ("Workgroup or Domain", assessment.workgroupOrDomain, nil),
-                                ("Authentication Method", assessment.authenticationMethod, nil),
-                                ("Password Policy", nil, assessment.hasPasswordPolicy),
-                                ("Encryption Policy", nil, assessment.hasEncryptionPolicy),
-                                ("MFA Enforced", nil, assessment.hasMFA),
-                                ("SSO in Place", nil, assessment.hasSSO),
-                                ("Which SSO", assessment.whichSSO, nil),
-                                ("Last Policy Review", assessment.lastPolicyReview, nil)
-                            ]
-                        )
-                    }
-                    Spacer()
+                Button("Save") {
+                    coreDataManager.saveAssessmentFields(
+                        for: companyName,
+                        category: "Directory Services",
+                        fields: [
+                            ("Workgroup or Domain", assessment.workgroupOrDomain, nil),
+                            ("Authentication Method", assessment.authenticationMethod, nil),
+                            ("Password Policy", nil, assessment.hasPasswordPolicy),
+                            ("Encryption Policy", nil, assessment.hasEncryptionPolicy),
+                            ("MFA Enforced", nil, assessment.hasMFA),
+                            ("SSO in Place", nil, assessment.hasSSO),
+                            ("Which SSO", assessment.whichSSO, nil),
+                            ("Last Policy Review", assessment.lastPolicyReview, nil)
+                        ]
+                    )
                 }
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(Color.blue)
+                .foregroundColor(.white)
+                .cornerRadius(10)
             }
         }
         .onAppear {

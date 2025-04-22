@@ -89,15 +89,21 @@ struct InfrastructureAssessmentView: View {
                 }
             }
             .navigationTitle("Infrastructure Assessment")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Save") {
-                        saveInfrastructureAssessment()
-                    }
-                }
-            }
+
             .onAppear {
                 loadInfrastructureAssessment()
+            }
+        // END of main Section
+
+            Section {
+                Button("Save") {
+                    saveInfrastructureAssessment()
+                }
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(Color.blue)
+                .foregroundColor(.white)
+                .cornerRadius(10)
             }
         }
         

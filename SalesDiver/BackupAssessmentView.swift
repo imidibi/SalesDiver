@@ -8,6 +8,7 @@ import SwiftUI
 struct BackupAssessmentView: View {
     let coreDataManager = CoreDataManager.shared
     let companyName: String
+    @State private var currentAssessment: AssessmentEntity?
     @State private var backupEndpoints = false
     @State private var backupEndpointsHow = ""
     @State private var backupCloudServices = false
@@ -81,44 +82,55 @@ struct BackupAssessmentView: View {
 
                 Toggle("Are you comfortable your backup approach protects you from disaster or cyber-security threats?", isOn: $confidentInBackup)
             }
-        }
-        .navigationTitle("Backup Assessment")
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
+            Section {
                 Button("Save") {
                     saveBackupAssessment()
                 }
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(Color.blue)
+                .foregroundColor(.white)
+                .cornerRadius(10)
             }
         }
+        .navigationTitle("Backup Assessment")
         .onAppear {
+            print("Loading Backup assessment for company: \(companyName)")
             loadBackupAssessment()
+        }
+        .onDisappear {
+            print("Auto-saving Backup assessment for company: \(companyName)")
+            saveBackupAssessment()
         }
     }
 
     func saveBackupAssessment() {
+        print("💾 Calling saveBackupAssessment for \(companyName)")
         let fields: [(String, String?, Bool?)] = [
             ("backupEndpoints", nil, backupEndpoints),
-            ("backupEndpointsHow", backupEndpointsHow, nil),
+            ("backupEndpointsHow", backupEndpointsHow.isEmpty ? nil : backupEndpointsHow, nil),
             ("backupCloudServices", nil, backupCloudServices),
-            ("backupCloudServicesHow", backupCloudServicesHow, nil),
+            ("backupCloudServicesHow", backupCloudServicesHow.isEmpty ? nil : backupCloudServicesHow, nil),
             ("backupServers", nil, backupServers),
-            ("backupServersHow", backupServersHow, nil),
+            ("backupServersHow", backupServersHow.isEmpty ? nil : backupServersHow, nil),
             ("hasOffsiteBackup", nil, hasOffsiteBackup),
-            ("offsiteLocation", offsiteLocation, nil),
+            ("offsiteLocation", offsiteLocation.isEmpty ? nil : offsiteLocation, nil),
             ("hasCloudBackup", nil, hasCloudBackup),
-            ("cloudBackupLocation", cloudBackupLocation, nil),
+            ("cloudBackupLocation", cloudBackupLocation.isEmpty ? nil : cloudBackupLocation, nil),
             ("cloudBackupsBootable", nil, cloudBackupsBootable),
-            ("cloudBootableHow", cloudBootableHow, nil),
+            ("cloudBootableHow", cloudBootableHow.isEmpty ? nil : cloudBootableHow, nil),
             ("canContinueAfterDisaster", nil, canContinueAfterDisaster),
             ("hasBackupTest", nil, hasBackupTest),
-            ("backupTestWhen", backupTestWhen, nil),
+            ("backupTestWhen", backupTestWhen.isEmpty ? nil : backupTestWhen, nil),
             ("confidentInBackup", nil, confidentInBackup)
         ]
         coreDataManager.saveAssessmentFields(for: companyName, category: "Backup", fields: fields)
     }
 
     func loadBackupAssessment() {
+        currentAssessment = coreDataManager.getOrCreateAssessment(for: companyName)
         let fields = coreDataManager.loadAssessmentFields(for: companyName, category: "Backup")
+        print("Loaded fields: \(fields)")
 
         for field in fields {
             switch field.fieldName {
