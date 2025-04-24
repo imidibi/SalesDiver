@@ -1,60 +1,55 @@
 import SwiftUI
 import CoreData
 
-struct FollowUpsView: View {
+struct AddFollowUpView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
 
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \CompanyEntity.name, ascending: true)],
-        animation: .default)
-    private var companies: FetchedResults<CompanyEntity>
-
     @State private var selectedCompany: CompanyEntity?
     @State private var selectedOpportunity: OpportunityEntity?
+    @State private var showingOpportunitySheet: Bool = false
+
     @State private var name: String = ""
     @State private var assignedTo: String = ""
-    @State private var dueDate: Date = Date()
+    @State private var dueDate: Date = .now
     @State private var completed: Bool = false
     @State private var searchText: String = ""
-    @State private var showingOpportunitySheet: Bool = false
+
+    @FetchRequest(entity: CompanyEntity.entity(), sortDescriptors: []) var companies: FetchedResults<CompanyEntity>
 
     var body: some View {
         NavigationView {
             Form {
-                companyPicker
-                opportunityPicker
-                followUpDetails
-                saveSection
+                companySection
+                opportunitySection
+                detailsSection
+                saveButtonSection
             }
             .navigationTitle("New Follow Up")
-            .navigationBarTitleDisplayMode(.inline)
         }
     }
 
-    private var filteredCompanies: [CompanyEntity] {
-        companies.filter {
+    private var companySection: some View {
+        let filteredCompanies = companies.filter {
             searchText.isEmpty || ($0.name?.localizedCaseInsensitiveContains(searchText) ?? false)
         }
-    }
 
-    private var companyPicker: some View {
-        Section(header: Text("Select Company")) {
+        return Section(header: Text("Select Company")) {
             Picker("Company", selection: $selectedCompany) {
-                Text("None").tag(nil as CompanyEntity?)
                 ForEach(filteredCompanies, id: \.self) { company in
-                    Text(company.name ?? "Unknown").tag(company as CompanyEntity?)
+                    Text(company.name ?? "Unknown")
                 }
             }
-            TextField("Search Company", text: $searchText)
+            TextField("Search", text: $searchText)
         }
     }
 
-    private var opportunityPicker: some View {
-        Section(header: Text("Select Opportunity")) {
-            if let company = selectedCompany {
-                let opportunities = getOpportunities(for: company)
+    @ViewBuilder
+    private var opportunitySection: some View {
+        if let company = selectedCompany {
+            let opportunities = company.opportunities?.allObjects as? [OpportunityEntity] ?? []
 
+            Section(header: Text("Select Opportunity")) {
                 Button(action: {
                     showingOpportunitySheet = true
                 }) {
@@ -87,17 +82,11 @@ struct FollowUpsView: View {
                         }
                     }
                 }
-            } else {
-                Text("Select a company first to see opportunities.")
             }
         }
     }
 
-    private func getOpportunities(for company: CompanyEntity) -> [OpportunityEntity] {
-        company.opportunities?.allObjects as? [OpportunityEntity] ?? []
-    }
-
-    private var followUpDetails: some View {
+    private var detailsSection: some View {
         Section(header: Text("Follow Up Details")) {
             TextField("Name", text: $name)
             TextField("Assigned To", text: $assignedTo)
@@ -106,28 +95,24 @@ struct FollowUpsView: View {
         }
     }
 
-    private var saveSection: some View {
+    private var saveButtonSection: some View {
         Section {
             Button("Save") {
-                saveFollowUp()
+                let newFollowUp = FollowUpsEntity(context: viewContext)
+                newFollowUp.name = name
+                newFollowUp.assignedTo = assignedTo
+                newFollowUp.dueDate = dueDate
+                newFollowUp.completed = completed
+                newFollowUp.id = UUID()
+                newFollowUp.opportunity = selectedOpportunity
+
+                do {
+                    try viewContext.save()
+                    dismiss()
+                } catch {
+                    print("Save failed: \(error.localizedDescription)")
+                }
             }
-        }
-    }
-
-    private func saveFollowUp() {
-        let newFollowUp = FollowUpsEntity(context: viewContext)
-        newFollowUp.name = name
-        newFollowUp.assignedTo = assignedTo
-        newFollowUp.dueDate = dueDate
-        newFollowUp.completed = completed
-        newFollowUp.id = UUID()
-        newFollowUp.opportunity = selectedOpportunity
-
-        do {
-            try viewContext.save()
-            dismiss()
-        } catch {
-            print("Failed to save follow-up: \(error.localizedDescription)")
         }
     }
 }

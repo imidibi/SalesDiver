@@ -67,7 +67,7 @@
         <attribute name="dueDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="name" optional="YES" attributeType="String"/>
-        <relationship name="meeting" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="MeetingsEntity" inverseName="followUps" inverseEntity="MeetingsEntity"/>
+        <relationship name="opportunity" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="OpportunityEntity" inverseName="followups" inverseEntity="OpportunityEntity"/>
     </entity>
     <entity name="MeetingQuestionEntity" representedClassName="MeetingQuestionEntity" syncable="YES" codeGenerationType="class">
         <attribute name="answer" optional="YES" attributeType="String"/>
@@ -88,7 +88,6 @@
         <relationship name="answers" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="AnswersEntity" inverseName="meeting" inverseEntity="AnswersEntity"/>
         <relationship name="company" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CompanyEntity" inverseName="meetings" inverseEntity="CompanyEntity"/>
         <relationship name="contacts" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="ContactsEntity" inverseName="meetings" inverseEntity="ContactsEntity"/>
-        <relationship name="followUps" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="FollowUpsEntity" inverseName="meeting" inverseEntity="FollowUpsEntity"/>
         <relationship name="opportunity" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="OpportunityEntity" inverseName="meetings" inverseEntity="OpportunityEntity"/>
         <relationship name="questions" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="MeetingQuestionEntity" inverseName="meeting" inverseEntity="MeetingQuestionEntity"/>
     </entity>
@@ -107,6 +106,7 @@
         <attribute name="timingStatus" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="totalPrice" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <relationship name="company" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CompanyEntity" inverseName="opportunities" inverseEntity="CompanyEntity"/>
+        <relationship name="followups" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="FollowUpsEntity" inverseName="opportunity" inverseEntity="FollowUpsEntity"/>
         <relationship name="meetings" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="MeetingsEntity" inverseName="opportunity" inverseEntity="MeetingsEntity"/>
         <relationship name="product" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="ProductEntity" inverseName="opportunities" inverseEntity="ProductEntity"/>
     </entity>

@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreData
+// No import needed — just ensure FollowUpsView.swift is in the same target
 
 struct ContentView: View {
     var body: some View {
