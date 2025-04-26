@@ -1,7 +1,7 @@
 import SwiftUI
 import CoreData
 
-struct FollowUpsView: View {
+struct NewFollowUpView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
 
@@ -20,16 +20,14 @@ struct FollowUpsView: View {
     @State private var showingOpportunitySheet: Bool = false
 
     var body: some View {
-        NavigationView {
-            Form {
-                companyPicker
-                opportunityPicker
-                followUpDetails
-                saveSection
-            }
-            .navigationTitle("New Follow Up")
-            .navigationBarTitleDisplayMode(.inline)
+        Form {
+            companyPicker
+            opportunityPicker
+            followUpDetails
+            saveSection
         }
+        .navigationTitle("New Follow Up")
+        .navigationBarTitleDisplayMode(.inline)
     }
 
     private var filteredCompanies: [CompanyEntity] {
@@ -129,5 +127,78 @@ struct FollowUpsView: View {
         } catch {
             print("Failed to save follow-up: \(error.localizedDescription)")
         }
+    }
+}
+
+struct FollowUpsView: View {
+    @Environment(\.managedObjectContext) private var viewContext
+    @FetchRequest(
+        sortDescriptors: [NSSortDescriptor(keyPath: \FollowUpsEntity.dueDate, ascending: true)],
+        animation: .default)
+    private var followUps: FetchedResults<FollowUpsEntity>
+
+    @State private var showingNewFollowUp = false
+    @State private var selectedFollowUp: FollowUpsEntity?
+
+    var body: some View {
+        List {
+            ForEach(followUps) { followUp in
+                VStack(alignment: .leading) {
+                    Text(followUp.name ?? "Untitled")
+                        .font(.headline)
+                    Text("Assigned to: \(followUp.assignedTo ?? "N/A")")
+                        .font(.subheadline)
+                    Text("Due: \(followUp.dueDate ?? Date(), formatter: dateFormatter)")
+                        .font(.caption)
+                }
+                .onTapGesture {
+                    selectedFollowUp = followUp
+                }
+            }
+            .onDelete(perform: deleteFollowUp)
+        }
+        .navigationTitle("Follow Ups")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(action: { showingNewFollowUp.toggle() }) {
+                    Image(systemName: "plus")
+                }
+            }
+        }
+        .sheet(isPresented: $showingNewFollowUp) {
+            NavigationView {
+                NewFollowUpView()
+            }
+        }
+        .sheet(item: $selectedFollowUp) { followUp in
+            NavigationView {
+                EditFollowUpView(followUp: followUp)
+            }
+        }
+    }
+
+    private func deleteFollowUp(at offsets: IndexSet) {
+        for index in offsets {
+            let followUp = followUps[index]
+            viewContext.delete(followUp)
+        }
+        try? viewContext.save()
+    }
+}
+
+private let dateFormatter: DateFormatter = {
+    let formatter = DateFormatter()
+    formatter.dateStyle = .short
+    return formatter
+}()
+
+
+extension Binding {
+    init(_ source: Binding<Value?>, replacingNilWith defaultValue: Value) {
+        self.init(
+            get: { source.wrappedValue ?? defaultValue },
+            set: { newValue in source.wrappedValue = newValue }
+        )
     }
 }
