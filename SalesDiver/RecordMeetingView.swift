@@ -67,8 +67,6 @@ struct RecordMeetingView: View {
                         .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray))
                         .onChange(of: speechManager.transcribedText) {
                             currentAnswer = speechManager.transcribedText
-                            question.answer = speechManager.transcribedText
-                            try? viewContext.save()
                         }
 
                     HStack {
@@ -77,18 +75,45 @@ struct RecordMeetingView: View {
                         }
                         Button("Stop Recording") {
                             speechManager.stopTranscribing()
+                            // Do not clear transcribedText here
                         }
                     }
 
-                    Button("Next Question") {
-                        question.answer = currentAnswer
-                        do {
-                            try viewContext.save()
-                        } catch {
-                            print("Error saving answer: \(error.localizedDescription)")
+                    HStack {
+                        Button("Previous Question") {
+                            if currentQuestionIndex > 0 {
+                                currentQuestionIndex -= 1
+                                let previousQuestion = sortedQuestions[currentQuestionIndex]
+                                currentAnswer = previousQuestion.answer ?? ""
+                                speechManager.transcribedText = currentAnswer
+                            }
                         }
-                        currentAnswer = ""
-                        currentQuestionIndex += 1
+                        .buttonStyle(.borderedProminent)
+                        .tint(.blue)
+                        .padding(.trailing, 8)
+
+                        Button("Next Question") {
+                            if currentQuestionIndex < sortedQuestions.count {
+                                let question = sortedQuestions[currentQuestionIndex]
+                                question.answer = currentAnswer
+                                do {
+                                    try viewContext.save()
+                                } catch {
+                                    print("Error saving answer: \(error.localizedDescription)")
+                                }
+                                currentQuestionIndex += 1
+                                if currentQuestionIndex < sortedQuestions.count {
+                                    let nextQuestion = sortedQuestions[currentQuestionIndex]
+                                    currentAnswer = nextQuestion.answer ?? ""
+                                    speechManager.transcribedText = currentAnswer
+                                } else {
+                                    currentAnswer = ""
+                                    speechManager.transcribedText = ""
+                                }
+                            }
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.blue)
                     }
                     .padding(.top)
                 }

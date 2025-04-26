@@ -18,17 +18,18 @@ struct IconCounterView: View {
                 .resizable()
                 .scaledToFit()
                 .frame(height: 30)
-                .foregroundColor(.blue)
+                .foregroundColor(.accentColor)
 
             Text(label)
                 .font(.subheadline)
+                .foregroundColor(.primary)
 
             TextField("0", text: $count)
                 .keyboardType(.numberPad)
                 .multilineTextAlignment(.center)
                 .padding(8)
                 .frame(maxWidth: .infinity)
-                .background(Color(.systemGray6))
+                .background(Color(.secondarySystemBackground))
                 .cornerRadius(8)
                 .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray.opacity(0.3)))
 
@@ -43,7 +44,7 @@ struct IconCounterView: View {
             .frame(maxWidth: .infinity)
         }
         .padding()
-        .background(Color.white)
+        .background(Color(.systemBackground))
         .cornerRadius(12)
         .shadow(color: .gray.opacity(0.15), radius: 4, x: 0, y: 2)
     }
