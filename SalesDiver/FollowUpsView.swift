@@ -143,13 +143,25 @@ struct FollowUpsView: View {
     var body: some View {
         List {
             ForEach(followUps) { followUp in
-                VStack(alignment: .leading) {
-                    Text(followUp.name ?? "Untitled")
-                        .font(.headline)
-                    Text("Assigned to: \(followUp.assignedTo ?? "N/A")")
-                        .font(.subheadline)
-                    Text("Due: \(followUp.dueDate ?? Date(), formatter: dateFormatter)")
-                        .font(.caption)
+                HStack {
+                    VStack(alignment: .leading) {
+                        Text(followUp.name ?? "Untitled")
+                            .font(.headline)
+                        Text("Assigned to: \(followUp.assignedTo ?? "N/A")")
+                            .font(.subheadline)
+                        Text("Due: \(followUp.dueDate ?? Date(), formatter: dateFormatter)")
+                            .font(.caption)
+                    }
+                    Spacer()
+                    VStack(alignment: .trailing) {
+                        Text(followUp.opportunity?.company?.name ?? "No Company")
+                            .font(.headline)
+                        Text(followUp.opportunity?.name ?? "No Opportunity")
+                            .font(.subheadline)
+                        if let opportunity = followUp.opportunity {
+                            BANTIndicatorView(opportunity: OpportunityWrapper(managedObject: opportunity), onBANTSelected: { _ in })
+                        }
+                    }
                 }
                 .onTapGesture {
                     selectedFollowUp = followUp
