@@ -17,6 +17,8 @@ struct AddCompanyView: View {
     @State private var state = ""
     @State private var zipCode = ""
     @State private var mainContact = ""
+    @State private var webAddress = ""
+    @State private var companyType = 1
 
     var body: some View {
         NavigationStack {
@@ -29,6 +31,13 @@ struct AddCompanyView: View {
                     TextField("State", text: $state)
                     TextField("Zip Code", text: $zipCode)
                     TextField("Main Contact", text: $mainContact)
+                    TextField("Web Address", text: $webAddress)
+                    Picker("Company Type", selection: $companyType) {
+                        Text("Customer").tag(1)
+                        Text("Lead").tag(2)
+                        Text("Prospect").tag(3)
+                    }
+                    .pickerStyle(.segmented)
                 }
             }
             .navigationTitle("Add Company")
@@ -38,7 +47,7 @@ struct AddCompanyView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Save") {
-                        viewModel.addCompany(name: name, address: address, address2: address2, city: city, state: state, zipCode: zipCode, mainContact: mainContact)
+                        viewModel.addCompany(name: name, address: address, address2: address2, city: city, state: state, zipCode: zipCode, mainContact: mainContact, webAddress: webAddress, companyType: companyType)
                         dismiss()
                     }
                     .disabled(name.isEmpty /*|| address.isEmpty || address2.isEmpty || city.isEmpty || state.isEmpty || zipCode.isEmpty || mainContact.isEmpty*/)

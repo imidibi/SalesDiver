@@ -19,6 +19,8 @@ struct EditCompanyView: View {
     @State private var state: String
     @State private var zipCode: String
     @State private var mainContact: String
+    @State private var webAddress: String
+    @State private var companyType: Int
 
     init(viewModel: CompanyViewModel, company: CompanyWrapper) { // ✅ Expecting CompanyWrapper
         self.viewModel = viewModel
@@ -30,6 +32,8 @@ struct EditCompanyView: View {
         _state = State(initialValue: company.state)
         _zipCode = State(initialValue: company.zipCode)
         _mainContact = State(initialValue: company.mainContact)
+        _webAddress = State(initialValue: company.webAddress)
+        _companyType = State(initialValue: company.companyType)
     }
 
     var body: some View {
@@ -43,6 +47,13 @@ struct EditCompanyView: View {
                     TextField("State", text: $state)
                     TextField("zipCode", text: $zipCode)
                     TextField("Main Contact", text: $mainContact)
+                    TextField("Web Address", text: $webAddress)
+                    Picker("Company Type", selection: $companyType) {
+                        Text("Customer").tag(1)
+                        Text("Lead").tag(2)
+                        Text("Prospect").tag(3)
+                    }
+                    .pickerStyle(.segmented)
                 }
             }
             .navigationTitle("Edit Company")
@@ -53,7 +64,7 @@ struct EditCompanyView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Save") {
-                        viewModel.updateCompany (company: company, name: name, address: address, address2: address2, city: city, state: state, zipCode: zipCode, mainContact: mainContact)
+                        viewModel.updateCompany(company: company, name: name, address: address, address2: address2, city: city, state: state, zipCode: zipCode, mainContact: mainContact, webAddress: webAddress, companyType: companyType)
                         dismiss()
                     }
                 }

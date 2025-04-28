@@ -52,29 +52,31 @@ func saveContext() {
         }
     }
 
-func syncCompaniesFromAutotask(companies: [(name: String, address1: String?, address2: String?, city: String?, state: String?, zipCode: String?)]) {
+func syncCompaniesFromAutotask(companies: [(name: String, address1: String?, address2: String?, city: String?, state: String?, zipCode: String?, webAddress: String?, companyType: Int?)]) {
     let context = persistentContainer.viewContext
-    
+
     for company in companies {
         let fetchRequest: NSFetchRequest<CompanyEntity> = CompanyEntity.fetchRequest()
         fetchRequest.predicate = NSPredicate(format: "name ==[c] %@", company.name)
-        
+
         do {
             let results = try context.fetch(fetchRequest)
             let companyEntity = results.first ?? CompanyEntity(context: context)
-            
+
             companyEntity.name = company.name
             companyEntity.address = company.address1
             companyEntity.address2 = company.address2
             companyEntity.city = company.city
             companyEntity.state = company.state
             companyEntity.zipCode = company.zipCode
-            
+            companyEntity.webAddress = company.webAddress
+            companyEntity.companyType = Int16(company.companyType ?? 0)
+
         } catch {
             print("Error fetching company: \(error)")
         }
     }
-    
+
     saveContext()
 }
 

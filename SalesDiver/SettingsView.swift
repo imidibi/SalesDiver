@@ -394,7 +394,7 @@ struct SettingsView: View {
         
         let requestBody: [String: Any] = [
             "MaxRecords": 50,
-            "IncludeFields": ["id", "companyName", "address1", "address2", "city", "state", "postalCode", "phone"],
+            "IncludeFields": ["id", "companyName", "address1", "address2", "city", "state", "postalCode", "phone", "webAddress", "companyType"],
             "Filter": [
                 [
                     "op": "or",
@@ -444,7 +444,7 @@ struct SettingsView: View {
             if let companies = jsonResponse?["items"] as? [[String: Any]] {
                 print("Fetched Companies from API: \(companies.compactMap { $0["companyName"] as? String })")
                 
-                var companiesToSync: [(name: String, address1: String?, address2: String?, city: String?, state: String?, zipCode: String?)] = []
+                var companiesToSync: [(name: String, address1: String?, address2: String?, city: String?, state: String?, zipCode: String?, webAddress: String?, companyType: Int?)] = []
                 
                 for company in companies {
                     if let name = company["companyName"] as? String {
@@ -456,15 +456,16 @@ struct SettingsView: View {
                             let address2 = company["address2"] as? String
                             let city = company["city"] as? String
                             let state = company["state"] as? String
-
                             let zipCode = company["postalCode"] as? String
-                            companiesToSync.append((name, address1, address2, city, state, zipCode))
+                            let webAddress = company["webAddress"] as? String
+                            let companyType = company["companyType"] as? Int
+                            companiesToSync.append((name, address1, address2, city, state, zipCode, webAddress, companyType))
                         }
                     }
                 }
                 
                 if !companiesToSync.isEmpty {
-                    // Updated to pass tuple with zipCode to the Core Data manager method
+                    // Updated to pass tuple with zipCode, webAddress, companyType to the Core Data manager method
                     CoreDataManager.shared.syncCompaniesFromAutotask(companies: companiesToSync)
                     testResult = "Synced \(companiesToSync.count) companies successfully."
                 } else {

@@ -29,7 +29,7 @@ class CompanyViewModel: ObservableObject {
         }
     }
 
-    func addCompany(name: String, address: String, address2: String, city: String, state: String, zipCode: String, mainContact: String) {
+    func addCompany(name: String, address: String, address2: String, city: String, state: String, zipCode: String, mainContact: String, webAddress: String, companyType: Int) {
         let entity = NSEntityDescription.entity(forEntityName: "CompanyEntity", in: context)!
         let newCompany = NSManagedObject(entity: entity, insertInto: context)
 
@@ -40,11 +40,13 @@ class CompanyViewModel: ObservableObject {
         newCompany.setValue(state, forKey: "state")
         newCompany.setValue(zipCode, forKey: "zipCode")
         newCompany.setValue(mainContact, forKey: "mainContact")
+        newCompany.setValue(webAddress, forKey: "webAddress")
+        newCompany.setValue(companyType, forKey: "companyType")
 
         saveData()
     }
 
-    func updateCompany(company: CompanyWrapper, name: String, address: String, address2: String, city: String, state: String, zipCode: String, mainContact: String) {
+    func updateCompany(company: CompanyWrapper, name: String, address: String, address2: String, city: String, state: String, zipCode: String, mainContact: String, webAddress: String, companyType: Int) {
         company.managedObject.setValue(name, forKey: "name")
         company.managedObject.setValue(address, forKey: "address")
         company.managedObject.setValue(address2, forKey: "address2")
@@ -52,6 +54,8 @@ class CompanyViewModel: ObservableObject {
         company.managedObject.setValue(state, forKey: "state")
         company.managedObject.setValue(zipCode, forKey: "zipCode")
         company.managedObject.setValue(mainContact, forKey: "mainContact")
+        company.managedObject.setValue(webAddress, forKey: "webAddress")
+        company.managedObject.setValue(companyType, forKey: "companyType")
 
         saveData()
     }
@@ -125,6 +129,27 @@ struct CompanyWrapper: Identifiable, Hashable {
 
     var mainContact: String {
         managedObject.value(forKey: "mainContact") as? String ?? ""
+    }
+
+    var webAddress: String {
+        managedObject.value(forKey: "webAddress") as? String ?? ""
+    }
+
+    var companyType: Int {
+        managedObject.value(forKey: "companyType") as? Int ?? 0
+    }
+
+    var companyTypeDescription: String {
+        switch companyType {
+        case 1:
+            return "Customer"
+        case 2:
+            return "Lead"
+        case 3:
+            return "Prospect"
+        default:
+            return "Unknown"
+        }
     }
 
     // ✅ Conform to Hashable

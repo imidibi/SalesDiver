@@ -86,6 +86,10 @@ struct CompanyDataView: View {
                                         .font(.subheadline)
                                         .foregroundColor(.blue)
                                 }
+                                
+                                Text("Type: \(company.companyTypeDescription)")
+                                    .font(.subheadline)
+                                    .foregroundColor(colorForCompanyType(company.companyType))
                             }
                             .padding()
 
@@ -99,6 +103,16 @@ struct CompanyDataView: View {
                                     .foregroundColor(.blue)
                             }
                             .buttonStyle(PlainButtonStyle())
+                            
+                            if !company.webAddress.isEmpty, let url = URL(string: (company.webAddress.starts(with: "http") ? company.webAddress : "https://\(company.webAddress)")) {
+                                Button(action: {
+                                    UIApplication.shared.open(url)
+                                }) {
+                                    Image(systemName: "globe")
+                                        .foregroundColor(.green)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
                         }
                         .contextMenu {
                             Button(role: .destructive) {
@@ -150,6 +164,19 @@ struct CompanyDataView: View {
             if viewModel.deletionErrorMessage == nil {
                 viewModel.companies.remove(atOffsets: offsets)
             }
+        }
+    }
+
+    private func colorForCompanyType(_ type: Int) -> Color {
+        switch type {
+        case 1:
+            return .green // Customer
+        case 2:
+            return .yellow // Lead
+        case 3:
+            return .blue // Prospect
+        default:
+            return .gray
         }
     }
 
