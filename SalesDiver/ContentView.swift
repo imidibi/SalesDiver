@@ -69,8 +69,8 @@ struct WaveShape: Shape {
 // MARK: - Grid Menu View
 struct GridView: View {
     let menuItems: [(name: String, icon: String, destination: AnyView)] = [
-        ("Company Data", "building.2.fill", AnyView(CompanyDataView())),
-        ("Product Data", "cart.fill", AnyView(ProductDataView())),
+        ("Companies", "building.2.fill", AnyView(CompanyDataView())),
+        ("Products", "cart.fill", AnyView(ProductDataView())),
         ("Opportunities", "chart.bar.fill", AnyView(OpportunityDataView())),
         ("Contacts", "person.2.fill", AnyView(ContactsView())),
         ("Meetings", "calendar.badge.clock", AnyView(MeetingsView())),

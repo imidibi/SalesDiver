@@ -125,7 +125,7 @@ struct CompanyDataView: View {
                     .onDelete(perform: deleteCompany)
                 }
             }
-            .navigationTitle("Company Data")
+            .navigationTitle("Companies")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(action: { isShowingAddSheet = true }) {

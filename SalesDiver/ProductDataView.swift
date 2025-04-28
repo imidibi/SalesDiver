@@ -82,7 +82,7 @@ struct ProductDataView: View {
                 }
                 .listStyle(.plain)
             }
-            .navigationTitle("Product Data")
+            .navigationTitle("Products")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(action: { isShowingAddSheet = true }) {
