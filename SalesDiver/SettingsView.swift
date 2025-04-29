@@ -132,7 +132,7 @@ struct SettingsView: View {
                             }
                         }
                         .padding()
-                        .background(Color.white)
+                        .background(Color(UIColor.systemBackground))
                         .onTapGesture {
                             if let index = selectedOpportunities.firstIndex(where: { $0.name == opportunityName }) {
                                 selectedOpportunities.remove(at: index)
@@ -155,7 +155,7 @@ struct SettingsView: View {
             }
             .padding()
         }
-        .background(Color.white)
+        .background(Color(UIColor.systemBackground))
         .cornerRadius(12)
         .frame(width: 600, height: 500)
         .shadow(radius: 20)
@@ -744,7 +744,7 @@ private func importSelectedContacts() {
                             }
                         }
                         .padding()
-                        .background(Color.white)
+                        .background(Color(UIColor.systemBackground))
                         .onTapGesture {
                             if let index = selectedContacts.firstIndex(where: { $0.firstName == contact.firstName && $0.lastName == contact.lastName }) {
                                 selectedContacts.remove(at: index)
@@ -761,7 +761,7 @@ private func importSelectedContacts() {
             }
             .padding()
         }
-        .background(Color.white)
+        .background(Color(UIColor.systemBackground))
         .cornerRadius(12)
         .frame(width: 600, height: 500)  // Adjusted size for smaller overlay
         .shadow(radius: 20)
