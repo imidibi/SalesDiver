@@ -1,6 +1,7 @@
 import Foundation
 
 class AutotaskAPIManager {
+    private let apiSemaphore = DispatchSemaphore(value: 3)
     static let shared = AutotaskAPIManager()
     
     private init() {}
@@ -69,9 +70,11 @@ class AutotaskAPIManager {
             return
         }
         
+        apiSemaphore.wait()
         session.dataTask(with: request) { data, response, error in
             if let error = error {
                 print("🔴 API Request Error: \(error.localizedDescription)")
+                self.apiSemaphore.signal()
                 completion([])
                 return
             }
@@ -82,6 +85,7 @@ class AutotaskAPIManager {
             
             guard let data = data else {
                 print("🔴 No data received from API")
+                self.apiSemaphore.signal()
                 completion([])
                 return
             }
@@ -99,13 +103,16 @@ class AutotaskAPIManager {
                         return nil
                     }
                     print("✅ Parsed Companies: \(companyData)")
+                    self.apiSemaphore.signal()
                     completion(companyData)
                 } else {
                     print("⚠️ No companies found in response")
+                    self.apiSemaphore.signal()
                     completion([])
                 }
             } catch {
                 print("🔴 JSON Parsing Error: \(error.localizedDescription)")
+                self.apiSemaphore.signal()
                 completion([])
             }
         }.resume()
@@ -144,15 +151,18 @@ class AutotaskAPIManager {
             return
         }
         
+        apiSemaphore.wait()
         session.dataTask(with: request) { data, response, error in
             if let error = error {
                 print("API error: \(error.localizedDescription)")
+                self.apiSemaphore.signal()
                 completion([])
                 return
             }
             
             guard let data = data else {
                 print("No data received from API")
+                self.apiSemaphore.signal()
                 completion([])
                 return
             }
@@ -161,6 +171,7 @@ class AutotaskAPIManager {
                 let jsonResponse = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any]
                 guard let contactsArray = jsonResponse?["items"] as? [[String: Any]] else {
                     print("No 'items' in response")
+                    self.apiSemaphore.signal()
                     completion([])
                     return
                 }
@@ -174,9 +185,11 @@ class AutotaskAPIManager {
                     return (id, firstName, lastName)
                 }
                 
+                self.apiSemaphore.signal()
                 completion(contacts)
             } catch {
                 print("JSON parsing error: \(error.localizedDescription)")
+                self.apiSemaphore.signal()
                 completion([])
             }
         }.resume()
@@ -228,9 +241,11 @@ class AutotaskAPIManager {
         
         print("Performing GET request: \(urlString)")
         
+        apiSemaphore.wait()
         session.dataTask(with: request) { data, response, error in
             if let error = error {
                 print("API Request Error: \(error.localizedDescription)")
+                self.apiSemaphore.signal()
                 completion([])
                 return
             }
@@ -241,6 +256,7 @@ class AutotaskAPIManager {
             
             guard let data = data else {
                 print("No data received from API")
+                self.apiSemaphore.signal()
                 completion([])
                 return
             }
@@ -264,13 +280,16 @@ class AutotaskAPIManager {
                         return (id, "\(firstName) \(lastName)")
                     }
                     print("Filtered Contacts: \(contactData)")
+                    self.apiSemaphore.signal()
                     completion(contactData)
                 } else {
                     print("No contacts found in response")
+                    self.apiSemaphore.signal()
                     completion([])
                 }
             } catch {
                 print("JSON Parsing Error: \(error.localizedDescription)")
+                self.apiSemaphore.signal()
                 completion([])
             }
         }.resume()
@@ -302,15 +321,18 @@ class AutotaskAPIManager {
         request.setValue(apiSecret, forHTTPHeaderField: "Secret")
         request.setValue(apiTrackingID, forHTTPHeaderField: "ApiIntegrationCode")
         
+        apiSemaphore.wait()
         session.dataTask(with: request) { data, response, error in
             if let error = error {
                 print("API Request Error: \(error.localizedDescription)")
+                self.apiSemaphore.signal()
                 completion([])
                 return
             }
             
             guard let data = data else {
                 print("No data received from API")
+                self.apiSemaphore.signal()
                 completion([])
                 return
             }
@@ -325,12 +347,15 @@ class AutotaskAPIManager {
                         }
                         return nil
                     }
+                    self.apiSemaphore.signal()
                     completion(companies)
                 } else {
+                    self.apiSemaphore.signal()
                     completion([])
                 }
             } catch {
                 print("JSON Parsing Error: \(error.localizedDescription)")
+                self.apiSemaphore.signal()
                 completion([])
             }
         }.resume()
@@ -365,9 +390,11 @@ class AutotaskAPIManager {
             return
         }
         
+        apiSemaphore.wait()
         session.dataTask(with: request) { data, response, error in
             if let error = error {
                 print("❌ Network error: \(error)")
+                self.apiSemaphore.signal()
                 completion([])
                 return
             }
@@ -376,6 +403,7 @@ class AutotaskAPIManager {
                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                   let items = json["items"] as? [[String: Any]] else {
                 print("❌ Failed to parse contact response")
+                self.apiSemaphore.signal()
                 completion([])
                 return
             }
@@ -387,6 +415,7 @@ class AutotaskAPIManager {
                 return (id, firstName, lastName)
             }
             
+            self.apiSemaphore.signal()
             completion(contacts)
         }.resume()
     }
@@ -414,11 +443,13 @@ class AutotaskAPIManager {
             return
         }
 
+        apiSemaphore.wait()
         session.dataTask(with: request) { data, response, error in
             guard let data = data,
                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                   let items = json["items"] as? [[String: Any]] else {
                 print("❌ Failed to fetch or decode contact details")
+                self.apiSemaphore.signal()
                 completion([])
                 return
             }
@@ -434,6 +465,7 @@ class AutotaskAPIManager {
                 return (firstName, lastName, email, phone, title)
             }
 
+            self.apiSemaphore.signal()
             completion(contacts)
         }.resume()
     }
@@ -472,15 +504,18 @@ class AutotaskAPIManager {
             return
         }
         
+        apiSemaphore.wait()
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
                 print("❌ Request failed: \(error.localizedDescription)")
+                self.apiSemaphore.signal()
                 completion([])
                 return
             }
             
             guard let data = data else {
                 print("❌ No data returned")
+                self.apiSemaphore.signal()
                 completion([])
                 return
             }
@@ -498,13 +533,16 @@ class AutotaskAPIManager {
                         return nil
                     }
                     print("✅ Parsed Opportunities: \(opportunities)")
+                    self.apiSemaphore.signal()
                     completion(opportunities)
                 } else {
                     print("❌ Invalid JSON structure.")
+                    self.apiSemaphore.signal()
                     completion([])
                 }
             } catch {
                 print("❌ Failed to parse JSON: \(error.localizedDescription)")
+                self.apiSemaphore.signal()
                 completion([])
             }
         }.resume()

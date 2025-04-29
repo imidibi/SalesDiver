@@ -585,12 +585,15 @@ private func importSelectedContacts() {
         print("❌ Missing selected company ID.")
         return
     }
+    
+    let semaphore = DispatchSemaphore(value: 3)
 
     let group = DispatchGroup()
     var fetchedContacts: [(firstName: String, lastName: String, email: String?, phone: String?, title: String?)] = []
 
     for contact in selectedContacts {
         group.enter()
+        semaphore.wait()
         
         let requestBody: [String: Any] = [
             "MaxRecords": 1,
@@ -614,6 +617,7 @@ private func importSelectedContacts() {
                 } else {
                     print("❌ No contact details found for \(contact.firstName) \(contact.lastName).")
                 }
+                semaphore.signal()  // <-- ADD THIS
                 group.leave()
             }
         }
