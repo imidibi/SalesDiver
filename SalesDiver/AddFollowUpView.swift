@@ -18,6 +18,8 @@ struct AddFollowUpView: View {
     @State private var isShowingContactPicker: Bool = false
     @State private var isShowingCompanyPicker: Bool = false
     @State private var isShowingOpportunityPicker: Bool = false
+    @State private var isShowingEmailDraft: Bool = false
+    @State private var emailBodyText: String = ""
 
     @FetchRequest(entity: CompanyEntity.entity(), sortDescriptors: []) var companies: FetchedResults<CompanyEntity>
     @FetchRequest(entity: ContactsEntity.entity(), sortDescriptors: [NSSortDescriptor(keyPath: \ContactsEntity.lastName, ascending: true)]) var contacts: FetchedResults<ContactsEntity>
@@ -83,6 +85,14 @@ struct AddFollowUpView: View {
                 }
             }
         }
+        .sheet(isPresented: $isShowingEmailDraft) {
+            EmailDraftView(
+                to: assignedEmail,
+                subject: "Follow Up: \(name)",
+                emailText: $emailBodyText,
+                isPresented: $isShowingEmailDraft
+            )
+        }
     }
 
     private var companySection: some View {
@@ -129,11 +139,6 @@ struct AddFollowUpView: View {
             Section(header: Text("Follow Up Details")) {
                 TextField("Name", text: $name)
             }
-            Section {
-                Button("TEST Picker Button") {
-                    isShowingContactPicker = true
-                }
-            }
             // Explicitly use a Button row for "Assigned To" and force SwiftUI to treat as button, not TextField
             Section {
                 Button(action: {
@@ -166,12 +171,8 @@ struct AddFollowUpView: View {
             Button("Save and Email") {
                 // Only trigger if email exists (button will be disabled otherwise)
                 saveFollowUp(dismissAfterSave: false)
-                // After save, open email if assignedEmail is available
-                if !assignedEmail.isEmpty {
-                    if let emailUrl = createEmailUrl(to: assignedEmail, subject: "Follow Up: \(name)", body: "") {
-                        UIApplication.shared.open(emailUrl)
-                    }
-                }
+                emailBodyText = createEmailBody()
+                isShowingEmailDraft = true
             }
             .disabled(assignedEmail.isEmpty)
         }
@@ -205,10 +206,17 @@ struct AddFollowUpView: View {
     }
 
     private func createEmailUrl(to: String, subject: String, body: String) -> URL? {
+        let subjectEncoded = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        let bodyEncoded = body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        let urlString = "mailto:\(to)?subject=\(subjectEncoded)&body=\(bodyEncoded)"
+        return URL(string: urlString)
+    }
+
+    private func createEmailBody() -> String {
         let companyName = selectedCompany?.name ?? "your company"
         let opportunityName = selectedOpportunity?.name ?? "the opportunity"
 
-        let fullBody = """
+        return """
         Dear \(assignedTo),
 
         This is a follow-up regarding "\(name)" for \(companyName), specifically related to \(opportunityName).
@@ -218,11 +226,6 @@ struct AddFollowUpView: View {
 
         Best regards,
         """
-
-        let subjectEncoded = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
-        let bodyEncoded = fullBody.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
-        let urlString = "mailto:\(to)?subject=\(subjectEncoded)&body=\(bodyEncoded)"
-        return URL(string: urlString)
     }
 }
 
