@@ -51,13 +51,13 @@ struct AddFollowUpView: View {
                     }
                 }
                 .navigationTitle("Select Company")
-                .toolbar {
+                .toolbar(content: {
                     ToolbarItem(placement: .cancellationAction) {
                         Button("Cancel") {
                             isShowingCompanyPicker = false
                         }
                     }
-                }
+                })
             }
         }
         .sheet(isPresented: $isShowingOpportunityPicker) {
@@ -75,13 +75,13 @@ struct AddFollowUpView: View {
                         }
                     }
                     .navigationTitle("Select Opportunity")
-                    .toolbar {
+                    .toolbar(content: {
                         ToolbarItem(placement: .cancellationAction) {
                             Button("Cancel") {
                                 isShowingOpportunityPicker = false
                             }
                         }
-                    }
+                    })
                 }
             }
         }
@@ -89,6 +89,9 @@ struct AddFollowUpView: View {
             EmailDraftView(
                 to: assignedEmail,
                 subject: "Follow Up: \(name)",
+                companyName: selectedCompany?.name ?? "Unknown",
+                opportunityName: selectedOpportunity?.name ?? "Unknown",
+                followUpName: name,
                 emailText: $emailBodyText,
                 isPresented: $isShowingEmailDraft
             )
@@ -169,10 +172,31 @@ struct AddFollowUpView: View {
                 saveFollowUp(dismissAfterSave: true)
             }
             Button("Save and Email") {
-                // Only trigger if email exists (button will be disabled otherwise)
-                saveFollowUp(dismissAfterSave: false)
-                emailBodyText = createEmailBody()
+                print("DEBUG — Save and Email:")
+                print("Assigned To: \(assignedTo)")
+                print("Email: \(assignedEmail)")
+                print("Company: \(selectedCompany?.name ?? "nil")")
+                print("Opportunity: \(selectedOpportunity?.name ?? "nil")")
+                print("Follow-Up Name: \(name)")
+                let company = selectedOpportunity?.company?.name ?? "Unknown"
+                let opportunity = selectedOpportunity?.name ?? "Unknown"
+                let followUp = name
+                let recipient = assignedTo
+                let formattedDate = dueDate.formatted(date: .long, time: .omitted)
+
+                emailBodyText = """
+                Dear \(recipient),
+
+                This is a follow-up regarding "\(followUp)" for \(company), specifically related to \(opportunity).
+                The due date for this follow-up is \(formattedDate).
+
+                Please take the necessary actions and update the status accordingly.
+
+                Best regards,
+                """
+                
                 isShowingEmailDraft = true
+                saveFollowUp(dismissAfterSave: false)
             }
             .disabled(assignedEmail.isEmpty)
         }
@@ -180,6 +204,7 @@ struct AddFollowUpView: View {
 
     private func saveFollowUp(dismissAfterSave: Bool = true) {
         let newFollowUp = FollowUpsEntity(context: viewContext)
+        newFollowUp.opportunity = selectedOpportunity
         newFollowUp.name = name
         newFollowUp.assignedTo = assignedTo
         newFollowUp.dueDate = dueDate
@@ -263,13 +288,13 @@ private struct ContactPickerView: View {
             }
             .searchable(text: $searchText)
             .navigationTitle("Select Contact")
-            .toolbar {
+            .toolbar(content: {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
                         isPresented = false
                     }
                 }
-            }
+            })
         }
     }
 

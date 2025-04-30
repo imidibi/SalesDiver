@@ -10,6 +10,9 @@ import SwiftUI
 struct EmailDraftView: View {
     let to: String
     let subject: String
+    let companyName: String
+    let opportunityName: String
+    let followUpName: String
     @Binding var emailText: String
     @Binding var isPresented: Bool
 
@@ -19,12 +22,14 @@ struct EmailDraftView: View {
                 Group {
                     Text("To:")
                         .font(.headline)
-                    Text(to)
+                    TextField("To", text: .constant(to))
+                        .disabled(true)
                         .padding(.bottom, 5)
 
                     Text("Subject:")
                         .font(.headline)
-                    Text(subject)
+                    TextField("Subject", text: .constant(subject))
+                        .disabled(true)
                         .padding(.bottom, 5)
 
                     Text("Body:")
@@ -46,6 +51,9 @@ struct EmailDraftView: View {
                     Spacer()
 
                     Button("Send Email") {
+                        print("Composing email to: \(to)")
+                        print("Subject: \(subject)")
+                        print("Body: \(emailText)")
                         if let emailUrl = createEmailUrl(to: to, subject: subject, body: emailText) {
                             UIApplication.shared.open(emailUrl)
                         }
@@ -61,6 +69,20 @@ struct EmailDraftView: View {
                     Button("Cancel") {
                         isPresented = false
                     }
+                }
+            }
+            .onAppear {
+                if emailText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    emailText = """
+Dear \(to),
+
+This is a follow-up regarding "\(followUpName)" for \(companyName), specifically related to \(opportunityName).
+The due date for this follow-up is TBD.
+
+Please take the necessary actions and update the status accordingly.
+
+Best regards,
+"""
                 }
             }
         }
