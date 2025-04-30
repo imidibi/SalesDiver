@@ -180,7 +180,7 @@ struct FollowUpsView: View {
         }
         .sheet(isPresented: $showingNewFollowUp) {
             NavigationView {
-                NewFollowUpView()
+                AddFollowUpView()
             }
         }
         .sheet(item: $selectedFollowUp) { followUp in
