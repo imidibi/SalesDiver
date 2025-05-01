@@ -8,13 +8,18 @@
 import SwiftUI
 
 struct EmailDraftView: View {
-    let to: String
+    let contactEmail: String
+    let ccEmail: String? = nil
+    let bccEmail: String? = nil
+    let contactFirstName: String
     let subject: String
     let companyName: String
     let opportunityName: String
     let followUpName: String
+    let dueDate: Date
     @Binding var emailText: String
     @Binding var isPresented: Bool
+    var onDismiss: (() -> Void)? = nil
 
     var body: some View {
         NavigationView {
@@ -22,9 +27,21 @@ struct EmailDraftView: View {
                 Group {
                     Text("To:")
                         .font(.headline)
-                    TextField("To", text: .constant(to))
-                        .disabled(true)
+                    Text(contactEmail)
                         .padding(.bottom, 5)
+
+                    if let cc = ccEmail, !cc.isEmpty {
+                        Text("CC:")
+                            .font(.headline)
+                        Text(cc)
+                            .padding(.bottom, 5)
+                    }
+                    if let bcc = bccEmail, !bcc.isEmpty {
+                        Text("BCC:")
+                            .font(.headline)
+                        Text(bcc)
+                            .padding(.bottom, 5)
+                    }
 
                     Text("Subject:")
                         .font(.headline)
@@ -45,21 +62,24 @@ struct EmailDraftView: View {
                 HStack {
                     Button("Cancel") {
                         isPresented = false
+                        onDismiss?()
                     }
                     .foregroundColor(.red)
 
                     Spacer()
 
                     Button("Send Email") {
-                        print("Composing email to: \(to)")
+                        print("Composing email to: \(contactEmail)")
                         print("Subject: \(subject)")
                         print("Body: \(emailText)")
-                        if let emailUrl = createEmailUrl(to: to, subject: subject, body: emailText) {
-                            UIApplication.shared.open(emailUrl)
+                        if let emailUrl = createEmailUrl(to: contactEmail, subject: subject, body: emailText) {
+                            if UIApplication.shared.canOpenURL(emailUrl) {
+                                UIApplication.shared.open(emailUrl)
+                            }
                         }
                         isPresented = false
                     }
-                    .disabled(to.isEmpty)
+                    .disabled(contactEmail.isEmpty)
                 }
             }
             .padding()
@@ -68,30 +88,47 @@ struct EmailDraftView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
                         isPresented = false
+                        onDismiss?()
                     }
                 }
             }
             .onAppear {
                 if emailText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    let fallback = "Not Provided"
+                    let name = contactFirstName.isEmpty ? fallback : contactFirstName
+                    let followup = followUpName.isEmpty ? fallback : followUpName
+                    let company = companyName.isEmpty ? fallback : companyName
+                    let opportunity = opportunityName.isEmpty ? fallback : opportunityName
+                    let formattedDate = dueDate.formatted(date: .long, time: .omitted)
+
                     emailText = """
-Dear \(to),
+                    Dear \(name),
 
-This is a follow-up regarding "\(followUpName)" for \(companyName), specifically related to \(opportunityName).
-The due date for this follow-up is TBD.
+                    This is a follow-up regarding "\(followup)" for \(company), specifically related to \(opportunity).
+                    The due date for this follow-up is \(formattedDate).
 
-Please take the necessary actions and update the status accordingly.
+                    Please take the necessary actions and update the status accordingly.
 
-Best regards,
-"""
+                    Best regards,
+                    """
                 }
             }
         }
     }
 
     private func createEmailUrl(to: String, subject: String, body: String) -> URL? {
-        let subjectEncoded = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
-        let bodyEncoded = body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
-        let urlString = "mailto:\(to)?subject=\(subjectEncoded)&body=\(bodyEncoded)"
-        return URL(string: urlString)
+        var components = URLComponents()
+        components.scheme = "mailto"
+        components.path = to
+        var queryItems = [URLQueryItem(name: "subject", value: subject),
+                          URLQueryItem(name: "body", value: body)]
+        if let cc = ccEmail, !cc.isEmpty {
+            queryItems.append(URLQueryItem(name: "cc", value: cc))
+        }
+        if let bcc = bccEmail, !bcc.isEmpty {
+            queryItems.append(URLQueryItem(name: "bcc", value: bcc))
+        }
+        components.queryItems = queryItems
+        return components.url
     }
 }

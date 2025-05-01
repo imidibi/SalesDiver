@@ -35,30 +35,20 @@ struct AddFollowUpView: View {
             .navigationTitle("New Follow Up")
         }
         .sheet(isPresented: $isShowingContactPicker) {
-            ContactPickerView(assignedTo: $assignedTo, assignedEmail: $assignedEmail, isPresented: $isShowingContactPicker, contacts: contacts)
+            ContactPickerSheetView(
+                assignedTo: $assignedTo,
+                assignedEmail: $assignedEmail,
+                isPresented: $isShowingContactPicker,
+                contacts: contacts
+            )
         }
         .sheet(isPresented: $isShowingCompanyPicker) {
-            NavigationView {
-                List {
-                    ForEach(companies, id: \.self) { company in
-                        Button(action: {
-                            selectedCompany = company
-                            selectedOpportunity = nil
-                            isShowingCompanyPicker = false
-                        }) {
-                            Text(company.name ?? "Unknown")
-                        }
-                    }
-                }
-                .navigationTitle("Select Company")
-                .toolbar(content: {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Cancel") {
-                            isShowingCompanyPicker = false
-                        }
-                    }
-                })
-            }
+            CompanyPickerSheetView(
+                companies: companies,
+                selectedCompany: $selectedCompany,
+                selectedOpportunity: $selectedOpportunity,
+                isPresented: $isShowingCompanyPicker
+            )
         }
         .sheet(isPresented: $isShowingOpportunityPicker) {
             if let company = selectedCompany {
@@ -75,23 +65,27 @@ struct AddFollowUpView: View {
                         }
                     }
                     .navigationTitle("Select Opportunity")
-                    .toolbar(content: {
+                    .toolbar {
                         ToolbarItem(placement: .cancellationAction) {
                             Button("Cancel") {
                                 isShowingOpportunityPicker = false
                             }
                         }
-                    })
+                    }
                 }
             }
         }
-        .sheet(isPresented: $isShowingEmailDraft) {
+        .sheet(isPresented: $isShowingEmailDraft, onDismiss: {
+            resetForm()
+        }) {
             EmailDraftView(
-                to: assignedEmail,
+                contactEmail: assignedEmail,
+                contactFirstName: assignedTo.components(separatedBy: " ").first ?? "there",
                 subject: "Follow Up: \(name)",
-                companyName: selectedCompany?.name ?? "Unknown",
-                opportunityName: selectedOpportunity?.name ?? "Unknown",
+                companyName: selectedCompany?.name ?? "",
+                opportunityName: selectedOpportunity?.name ?? "",
                 followUpName: name,
+                dueDate: dueDate,
                 emailText: $emailBodyText,
                 isPresented: $isShowingEmailDraft
             )
@@ -178,56 +172,44 @@ struct AddFollowUpView: View {
                 print("Company: \(selectedCompany?.name ?? "nil")")
                 print("Opportunity: \(selectedOpportunity?.name ?? "nil")")
                 print("Follow-Up Name: \(name)")
-                let company = selectedOpportunity?.company?.name ?? "Unknown"
-                let opportunity = selectedOpportunity?.name ?? "Unknown"
-                let followUp = name
-                let recipient = assignedTo
-                let formattedDate = dueDate.formatted(date: .long, time: .omitted)
-
-                emailBodyText = """
-                Dear \(recipient),
-
-                This is a follow-up regarding "\(followUp)" for \(company), specifically related to \(opportunity).
-                The due date for this follow-up is \(formattedDate).
-
-                Please take the necessary actions and update the status accordingly.
-
-                Best regards,
-                """
                 
-                isShowingEmailDraft = true
                 saveFollowUp(dismissAfterSave: false)
+                emailBodyText = "" // Clear email body before presenting draft
+                isShowingEmailDraft = true
             }
             .disabled(assignedEmail.isEmpty)
         }
     }
-
+    
     private func saveFollowUp(dismissAfterSave: Bool = true) {
         let newFollowUp = FollowUpsEntity(context: viewContext)
+        // newFollowUp.company = selectedCompany // Removed as relationship is established via selectedOpportunity
         newFollowUp.opportunity = selectedOpportunity
         newFollowUp.name = name
         newFollowUp.assignedTo = assignedTo
         newFollowUp.dueDate = dueDate
         newFollowUp.completed = completed
         newFollowUp.id = UUID()
-        newFollowUp.opportunity = selectedOpportunity
 
         do {
             try viewContext.save()
-            // Reset form fields after saving
-            name = ""
-            assignedTo = ""
-            assignedEmail = ""
-            dueDate = Date()
-            completed = false
-            selectedCompany = nil
-            selectedOpportunity = nil
             if dismissAfterSave {
+                resetForm()
                 dismiss()
             }
         } catch {
             print("Save failed: \(error.localizedDescription)")
         }
+    }
+
+    private func resetForm() {
+        name = ""
+        assignedTo = ""
+        assignedEmail = ""
+        dueDate = Date()
+        completed = false
+        selectedCompany = nil
+        selectedOpportunity = nil
     }
 
     private func createEmailUrl(to: String, subject: String, body: String) -> URL? {
@@ -236,25 +218,53 @@ struct AddFollowUpView: View {
         let urlString = "mailto:\(to)?subject=\(subjectEncoded)&body=\(bodyEncoded)"
         return URL(string: urlString)
     }
-
-    private func createEmailBody() -> String {
-        let companyName = selectedCompany?.name ?? "your company"
-        let opportunityName = selectedOpportunity?.name ?? "the opportunity"
-
-        return """
-        Dear \(assignedTo),
-
-        This is a follow-up regarding "\(name)" for \(companyName), specifically related to \(opportunityName).
-        The due date for this follow-up is \(dueDate.formatted(date: .long, time: .omitted)).
-
-        Please take the necessary actions and update the status accordingly.
-
-        Best regards,
-        """
-    }
 }
 
 private struct ContactPickerView: View {
+    @Binding var assignedTo: String
+    @Binding var assignedEmail: String
+    @Binding var isPresented: Bool
+    let contacts: FetchedResults<ContactsEntity>
+
+    @State private var searchText: String = ""
+
+    private var filteredContacts: [ContactsEntity] {
+        if searchText.isEmpty {
+            return Array(contacts)
+        } else {
+            return contacts.filter {
+                ($0.firstName?.localizedCaseInsensitiveContains(searchText) ?? false) ||
+                ($0.lastName?.localizedCaseInsensitiveContains(searchText) ?? false)
+            }
+        }
+    }
+
+    var body: some View {
+        List {
+            ForEach(filteredContacts, id: \.objectID) { contact in
+                Button(action: {
+                    assignedTo = "\(contact.firstName ?? "") \(contact.lastName ?? "")"
+                    assignedEmail = contact.emailAddress ?? ""
+                    isPresented = false
+                }) {
+                    contactRow(for: contact)
+                }
+            }
+        }
+        .searchable(text: $searchText)
+    }
+
+    private func contactRow(for contact: ContactsEntity) -> some View {
+        VStack(alignment: .leading) {
+            Text("\(contact.firstName ?? "") \(contact.lastName ?? "")")
+            Text(contact.emailAddress ?? "")
+                .font(.subheadline)
+                .foregroundColor(.gray)
+        }
+    }
+}
+
+private struct ContactPickerSheetView: View {
     @Binding var assignedTo: String
     @Binding var assignedEmail: String
     @Binding var isPresented: Bool
@@ -282,28 +292,55 @@ private struct ContactPickerView: View {
                         assignedEmail = contact.emailAddress ?? ""
                         isPresented = false
                     }) {
-                        contactRow(for: contact)
+                        VStack(alignment: .leading) {
+                            Text("\(contact.firstName ?? "") \(contact.lastName ?? "")")
+                            Text(contact.emailAddress ?? "")
+                                .font(.subheadline)
+                                .foregroundColor(.gray)
+                        }
                     }
                 }
             }
             .searchable(text: $searchText)
             .navigationTitle("Select Contact")
-            .toolbar(content: {
+            .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
                         isPresented = false
                     }
                 }
-            })
+            }
         }
     }
+}
 
-    private func contactRow(for contact: ContactsEntity) -> some View {
-        VStack(alignment: .leading) {
-            Text("\(contact.firstName ?? "") \(contact.lastName ?? "")")
-            Text(contact.emailAddress ?? "")
-                .font(.subheadline)
-                .foregroundColor(.gray)
+private struct CompanyPickerSheetView: View {
+    let companies: FetchedResults<CompanyEntity>
+    @Binding var selectedCompany: CompanyEntity?
+    @Binding var selectedOpportunity: OpportunityEntity?
+    @Binding var isPresented: Bool
+
+    var body: some View {
+        NavigationView {
+            List {
+                ForEach(companies, id: \.self) { company in
+                    Button(action: {
+                        selectedCompany = company
+                        selectedOpportunity = nil
+                        isPresented = false
+                    }) {
+                        Text(company.name ?? "Unknown")
+                    }
+                }
+            }
+            .navigationTitle("Select Company")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        isPresented = false
+                    }
+                }
+            }
         }
     }
 }
