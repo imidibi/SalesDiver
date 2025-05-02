@@ -24,6 +24,7 @@ struct EditOpportunityView: View {
     @State private var monthlyRevenue: String = ""
     @State private var onetimeRevenue: String = ""
     @State private var estimatedValue: String = ""
+    @State private var isEstimatedOverridden = false
 
     var body: some View {
         NavigationStack {
@@ -55,19 +56,75 @@ struct EditOpportunityView: View {
 
                 // 🎯 Section: Financial Details
                 Section(header: Text("Financial Details")) {
-                    Stepper("Probability: \(probability)%", value: $probability, in: 0...100)
+                    HStack {
+                        Text("Probability:")
+                            .foregroundColor(.primary)
+                        Spacer()
+                        TextField("0–100", value: $probability, formatter: NumberFormatter())
+                            .keyboardType(.numberPad)
+                            .multilineTextAlignment(.trailing)
+                            .frame(width: 60)
+                            .padding(8)
+                            .background(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 1))
+                            .foregroundColor(.primary)
+                        Text("%")
+                            .foregroundColor(.primary)
+                    }
+                    .onChange(of: probability) {
+                        if probability < 0 { probability = 0 }
+                        else if probability > 100 { probability = 100 }
+                    }
 
-                    TextField("Monthly Revenue", text: $monthlyRevenue)
-                        .keyboardType(.decimalPad)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                    HStack {
+                        Text("Monthly Revenue:")
+                            .foregroundColor(.primary)
+                        Spacer()
+                        HStack {
+                            Text("$")
+                            TextField("e.g. 1000", text: $monthlyRevenue)
+                                .keyboardType(.decimalPad)
+                                .multilineTextAlignment(.trailing)
+                                .foregroundColor(.primary)
+                        }
+                        .frame(width: 120)
+                        .padding(8)
+                        .background(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 1))
+                        .onChange(of: monthlyRevenue) { updateEstimatedValue() }
+                    }
 
-                    TextField("One-Time Revenue", text: $onetimeRevenue)
-                        .keyboardType(.decimalPad)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                    HStack {
+                        Text("One-Time Revenue:")
+                            .foregroundColor(.primary)
+                        Spacer()
+                        HStack {
+                            Text("$")
+                            TextField("e.g. 5000", text: $onetimeRevenue)
+                                .keyboardType(.decimalPad)
+                                .multilineTextAlignment(.trailing)
+                                .foregroundColor(.primary)
+                        }
+                        .frame(width: 120)
+                        .padding(8)
+                        .background(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 1))
+                        .onChange(of: onetimeRevenue) { updateEstimatedValue() }
+                    }
 
-                    TextField("Estimated Value", text: $estimatedValue)
-                        .keyboardType(.decimalPad)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                    HStack {
+                        Text("Estimated Value:")
+                            .foregroundColor(.primary)
+                        Spacer()
+                        HStack {
+                            Text("$")
+                            TextField("e.g. 17000", text: $estimatedValue)
+                                .keyboardType(.decimalPad)
+                                .multilineTextAlignment(.trailing)
+                                .foregroundColor(.primary)
+                                .onChange(of: estimatedValue) { isEstimatedOverridden = true }
+                        }
+                        .frame(width: 120)
+                        .padding(8)
+                        .background(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 1))
+                    }
                 }
 
                 // 🎯 Delete Button
@@ -156,5 +213,19 @@ struct EditOpportunityView: View {
     private func deleteOpportunity() {
         viewModel.deleteOpportunity(opportunity: opportunity)  // ✅ Correct function call
         dismiss()
+    }
+    private func updateEstimatedValue() {
+        if isEstimatedOverridden {
+            isEstimatedOverridden = false
+        }
+
+        let monthlyRaw = monthlyRevenue.replacingOccurrences(of: "[^0-9.]", with: "", options: .regularExpression)
+        let oneTimeRaw = onetimeRevenue.replacingOccurrences(of: "[^0-9.]", with: "", options: .regularExpression)
+
+        let monthly = Double(monthlyRaw) ?? 0.0
+        let oneTime = Double(oneTimeRaw) ?? 0.0
+
+        let calculated = (monthly * 12.0) + oneTime
+        estimatedValue = String(format: "%.2f", calculated)
     }
 }

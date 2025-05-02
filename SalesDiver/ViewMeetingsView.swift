@@ -38,7 +38,6 @@ struct ViewMeetingsView: View {
             VStack {
                 List {
                     ForEach(meetings, id: \.objectID) { meeting in
-                        let wrapper = meeting.opportunity.flatMap { OpportunityWrapper(managedObject: $0) }
                         ZStack {
                             HStack {
                                 MeetingRowView(meeting: meeting)

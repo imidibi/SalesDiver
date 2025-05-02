@@ -14,6 +14,7 @@ struct AddOpportunityView: View {
     @State private var monthlyRevenue: String = ""
     @State private var onetimeRevenue: String = ""
     @State private var estimatedValue: String = ""
+    @State private var isEstimatedOverridden = false
     @State private var isDatePickerVisible: Bool = false  // ✅ Toggle for DatePicker visibility
 
     @State private var companies: [CompanyWrapper] = []
@@ -30,12 +31,14 @@ struct AddOpportunityView: View {
                             .padding()
                             .background(RoundedRectangle(cornerRadius: 10).stroke(Color.gray, lineWidth: 1))
                             .padding(.horizontal)
+                            .foregroundColor(.primary)
 
                         // 🎨 Close Date Picker
                         VStack {
                             Button(action: { isDatePickerVisible.toggle() }) {
                                 HStack {
                                     Text("Close Date: \(closeDate.formatted(date: .abbreviated, time: .omitted))")
+                                        .foregroundColor(.primary)
                                     Spacer()
                                     Image(systemName: "calendar")
                                 }
@@ -65,50 +68,90 @@ struct AddOpportunityView: View {
                         }
 
                         // 🎨 Searchable Company Selector
-                        SelectionCard(title: "Select Company", subtitle: selectedCompany?.name ?? "Tap to select") {
+                        SelectionCard(title: "Company", subtitle: selectedCompany?.name ?? "") {
                             sheetManager.showCompanySearch()
                         }
 
                         // 🎨 Searchable Product Selector
-                        SelectionCard(title: "Select Product", subtitle: selectedProduct?.name ?? "Tap to select") {
+                        SelectionCard(title: "Product", subtitle: selectedProduct?.name ?? "") {
                             sheetManager.showProductSearch()
                         }
 
                         // 🎨 Financials
                         VStack(spacing: 10) {
-                            Stepper("Probability: \(probability)%", value: $probability, in: 0...100)
+                            HStack {
+                                Text("Probability:")
+                                    .foregroundColor(.primary)
+                                Spacer()
+                                TextField("0–100", value: $probability, formatter: NumberFormatter())
+                                    .keyboardType(.numberPad)
+                                    .multilineTextAlignment(.trailing)
+                                    .frame(width: 60)
+                                    .padding(8)
+                                    .background(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 1))
+                                    .foregroundColor(.primary)
+                                Text("%")
+                                    .foregroundColor(.primary)
+                            }
+                            .onChange(of: probability) {
+                                if probability < 0 {
+                                    probability = 0
+                                } else if probability > 100 {
+                                    probability = 100
+                                }
+                            }
                             
                             HStack {
                                 Text("Monthly Revenue:")
+                                    .foregroundColor(.primary)
                                 Spacer()
-                                TextField("e.g. 1000", text: $monthlyRevenue)
-                                    .keyboardType(.decimalPad)
-                                    .multilineTextAlignment(.trailing)
-                                    .frame(width: 120)
-                                    .padding(8)
-                                    .background(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 1))
+                                HStack {
+                                    Text("$")
+                                    TextField("e.g. 1000", text: $monthlyRevenue)
+                                        .keyboardType(.decimalPad)
+                                        .multilineTextAlignment(.trailing)
+                                        .foregroundColor(.primary)
+                                }
+                                .frame(width: 120)
+                                .padding(8)
+                                .background(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 1))
+                                .onChange(of: monthlyRevenue) { updateEstimatedValue() }
                             }
 
                             HStack {
                                 Text("One-Time Revenue:")
+                                    .foregroundColor(.primary)
                                 Spacer()
-                                TextField("e.g. 5000", text: $onetimeRevenue)
-                                    .keyboardType(.decimalPad)
-                                    .multilineTextAlignment(.trailing)
-                                    .frame(width: 120)
-                                    .padding(8)
-                                    .background(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 1))
+                                HStack {
+                                    Text("$")
+                                    TextField("e.g. 5000", text: $onetimeRevenue)
+                                        .keyboardType(.decimalPad)
+                                        .multilineTextAlignment(.trailing)
+                                        .foregroundColor(.primary)
+                                }
+                                .frame(width: 120)
+                                .padding(8)
+                                .background(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 1))
+                                .onChange(of: onetimeRevenue) { updateEstimatedValue() }
                             }
 
                             HStack {
                                 Text("Estimated Value:")
+                                    .foregroundColor(.primary)
                                 Spacer()
-                                TextField("e.g. 17000", text: $estimatedValue)
-                                    .keyboardType(.decimalPad)
-                                    .multilineTextAlignment(.trailing)
-                                    .frame(width: 120)
-                                    .padding(8)
-                                    .background(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 1))
+                                HStack {
+                                    Text("$")
+                                    TextField("e.g. 17000", text: $estimatedValue)
+                                        .keyboardType(.decimalPad)
+                                        .multilineTextAlignment(.trailing)
+                                        .foregroundColor(.primary)
+                                        .onChange(of: estimatedValue) {
+                                            isEstimatedOverridden = true
+                                        }
+                                }
+                                .frame(width: 120)
+                                .padding(8)
+                                .background(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 1))
                             }
                         }
                         .padding(.horizontal)
@@ -120,6 +163,7 @@ struct AddOpportunityView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") { dismiss() }
+                        .foregroundColor(.primary)
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Save") {
@@ -127,6 +171,7 @@ struct AddOpportunityView: View {
                         dismiss()
                     }
                     .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty || selectedCompany == nil || selectedProduct == nil || monthlyRevenue.isEmpty || onetimeRevenue.isEmpty || estimatedValue.isEmpty)
+                    .foregroundColor(.primary)
                 }
             }
             .onAppear(perform: loadCompaniesAndProducts)
@@ -150,17 +195,22 @@ struct AddOpportunityView: View {
     // 🎨 Custom Card for Selectable Fields
     private func SelectionCard(title: String, subtitle: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            VStack(alignment: .leading) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(.headline)
                     .foregroundColor(.primary)
-                Text(subtitle)
-                    .foregroundColor(subtitle == "Tap to select" ? .gray : .black)
-                    .padding(.top, 2)
+                if !subtitle.isEmpty && subtitle != title {
+                    Text(subtitle)
+                        .foregroundColor(.primary)
+                }
             }
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(RoundedRectangle(cornerRadius: 12).fill(Color.white).shadow(radius: 1))
+            .background(Color(UIColor.systemBackground))
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(Color.gray, lineWidth: 1)
+            )
             .padding(.horizontal)
         }
     }
@@ -171,6 +221,21 @@ struct AddOpportunityView: View {
         let productViewModel = ProductViewModel()
         companies = companyViewModel.companies
         products = productViewModel.products
+    }
+
+    private func updateEstimatedValue() {
+        if isEstimatedOverridden {
+            isEstimatedOverridden = false
+        }
+
+        let monthlyRaw = monthlyRevenue.replacingOccurrences(of: "[^0-9.]", with: "", options: .regularExpression)
+        let oneTimeRaw = onetimeRevenue.replacingOccurrences(of: "[^0-9.]", with: "", options: .regularExpression)
+
+        let monthly = Double(monthlyRaw) ?? 0.0
+        let oneTime = Double(oneTimeRaw) ?? 0.0
+
+        let calculated = (monthly * 12.0) + oneTime
+        estimatedValue = String(format: "%.2f", calculated)
     }
 
     // ✅ Save Opportunity
