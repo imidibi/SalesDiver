@@ -147,10 +147,12 @@ struct FollowUpsView: View {
                     VStack(alignment: .leading) {
                         Text(followUp.name ?? "Untitled")
                             .font(.headline)
+                            .foregroundColor(followUp.completed ? .green : .blue)
                         Text("Assigned to: \(followUp.assignedTo ?? "N/A")")
                             .font(.subheadline)
                         Text("Due: \(followUp.dueDate ?? Date(), formatter: dateFormatter)")
                             .font(.caption)
+                            .foregroundColor((followUp.dueDate ?? Date()) < Date() ? .red : .primary)
                     }
                     Spacer()
                     VStack(alignment: .trailing) {

@@ -105,9 +105,10 @@ struct EmailDraftView: View {
                     Dear \(name),
 
                     This is a follow-up regarding "\(followup)" for \(company), specifically related to \(opportunity).
+                    
                     The due date for this follow-up is \(formattedDate).
 
-                    Please take the necessary actions and update the status accordingly.
+                    Please take the necessary actions and update me with the status accordingly.
 
                     Best regards,
                     """
