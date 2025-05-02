@@ -15,12 +15,15 @@ struct EditOpportunityView: View {
 
     @State private var name: String = ""
     @State private var closeDate: Date = Date()
-    @State private var quantity: String = ""
-    @State private var customPrice: String = ""
 
     @State private var selectedProduct: ProductWrapper?
     @State private var isSelectingProduct: Bool = false
     @StateObject private var productViewModel = ProductViewModel()
+
+    @State private var probability: Int = 0
+    @State private var monthlyRevenue: String = ""
+    @State private var onetimeRevenue: String = ""
+    @State private var estimatedValue: String = ""
 
     var body: some View {
         NavigationStack {
@@ -50,19 +53,21 @@ struct EditOpportunityView: View {
                     }
                 }
 
-                // 🎯 Section: Pricing & Quantity
-                Section(header: Text("Pricing & Quantity")) {
-                    TextField("Quantity", text: $quantity)
-                        .keyboardType(.numberPad)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .onChange(of: quantity) { _, _ in updatePrice() }
+                // 🎯 Section: Financial Details
+                Section(header: Text("Financial Details")) {
+                    Stepper("Probability: \(probability)%", value: $probability, in: 0...100)
 
-                    HStack {
-                        Text("Total Price")
-                        Spacer()
-                        Text("$\(customPrice)")
-                            .foregroundColor(.blue)
-                    }
+                    TextField("Monthly Revenue", text: $monthlyRevenue)
+                        .keyboardType(.decimalPad)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+
+                    TextField("One-Time Revenue", text: $onetimeRevenue)
+                        .keyboardType(.decimalPad)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+
+                    TextField("Estimated Value", text: $estimatedValue)
+                        .keyboardType(.decimalPad)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
                 }
 
                 // 🎯 Delete Button
@@ -91,7 +96,6 @@ struct EditOpportunityView: View {
             .sheet(isPresented: $isSelectingProduct) {
                 ProductSelectionModalView(products: productViewModel.products) { product in  // ✅ Uses correct view
                     selectedProduct = product
-                    updatePrice()
                 }
             }
         }
@@ -100,8 +104,11 @@ struct EditOpportunityView: View {
     private func loadExistingData() {
         name = opportunity.name
         closeDate = opportunity.closeDate
-        quantity = "\(opportunity.quantity)"
-        customPrice = String(format: "%.2f", opportunity.customPrice)
+
+        probability = opportunity.probability
+        monthlyRevenue = String(format: "%.2f", opportunity.monthlyRevenue)
+        onetimeRevenue = String(format: "%.2f", opportunity.onetimeRevenue)
+        estimatedValue = String(format: "%.2f", opportunity.estimatedValue)
 
         // ✅ Set initial selected product
         if let product = productViewModel.products.first(where: { $0.name == opportunity.productName }) {
@@ -109,14 +116,10 @@ struct EditOpportunityView: View {
         }
     }
 
-    private func updatePrice() {
-        guard let product = selectedProduct, let qty = Int(quantity) else { return }
-        let calculatedPrice = product.salePrice * Double(qty)
-        customPrice = String(format: "%.2f", calculatedPrice)
-    }
-
     private func saveOpportunity() {
-        guard let quantityInt = Int(quantity), let priceDouble = Double(customPrice) else { return }
+        guard let monthly = Double(monthlyRevenue),
+              let onetime = Double(onetimeRevenue),
+              let estimated = Double(estimatedValue) else { return }
 
         // ✅ Fetch the correct ProductEntity from Core Data
         var updatedProduct: NSManagedObject? = opportunity.managedObject.value(forKey: "product") as? NSManagedObject
@@ -133,13 +136,14 @@ struct EditOpportunityView: View {
             }
         }
 
-        // ✅ Update Opportunity in Core Data (Fixed function signature)
         viewModel.updateOpportunity(
             opportunity: opportunity,
             name: name,
             closeDate: closeDate,
-            quantity: quantityInt,
-            customPrice: priceDouble
+            probability: Int16(probability),
+            monthlyRevenue: monthly,
+            onetimeRevenue: onetime,
+            estimatedValue: estimated
         )
 
         // ✅ Ensure product is updated separately if needed

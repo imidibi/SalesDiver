@@ -99,11 +99,13 @@
         <attribute name="budgetCommentary" optional="YES" attributeType="String"/>
         <attribute name="budgetStatus" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="closeDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
-        <attribute name="customPrice" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="estimatedValue" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="monthlyRevenue" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="name" optional="YES" attributeType="String"/>
         <attribute name="needCommentary" optional="YES" attributeType="String"/>
         <attribute name="needStatus" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
-        <attribute name="quantity" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="onetimeRevenue" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="probability" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="timingCommentary" optional="YES" attributeType="String"/>
         <attribute name="timingStatus" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="totalPrice" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
@@ -120,7 +122,7 @@
         <attribute name="salePrice" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="type" optional="YES" attributeType="String"/>
         <attribute name="units" optional="YES" attributeType="String"/>
-        <relationship name="opportunities" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="OpportunityEntity" inverseName="product" inverseEntity="OpportunityEntity"/>
+        <relationship name="opportunities" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="OpportunityEntity" inverseName="product" inverseEntity="OpportunityEntity"/>
     </entity>
     <entity name="SecAssessEntity" representedClassName="SecAssessEntity" syncable="YES" codeGenerationType="class">
         <attribute name="advancedEDR" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>

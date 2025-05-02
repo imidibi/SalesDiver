@@ -101,8 +101,10 @@ struct OpportunityDataView: View {
                             Text("Product: \(opportunity.productName)")
                                 .foregroundColor(.gray)
 
-                            Text("Quantity: \(opportunity.quantity)")
-                            Text("Price: $\(opportunity.customPrice, specifier: "%.2f")")
+                            Text("Probability: \(opportunity.probability)%")
+                            Text("Monthly Revenue: $\(opportunity.monthlyRevenue, specifier: "%.2f")")
+                            Text("One-Time Revenue: $\(opportunity.onetimeRevenue, specifier: "%.2f")")
+                            Text("Estimated Value: $\(opportunity.estimatedValue, specifier: "%.2f")")
                         }
 
                         Spacer()

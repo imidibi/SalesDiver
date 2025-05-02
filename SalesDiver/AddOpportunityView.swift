@@ -10,9 +10,10 @@ struct AddOpportunityView: View {
     @State private var selectedCompany: CompanyWrapper?
     @State private var selectedProduct: ProductWrapper?
 
-    @State private var quantity: String = "1"
-    @FocusState private var isQuantityFocused: Bool
-    @State private var customPrice: String = ""
+    @State private var probability: Int = 0
+    @State private var monthlyRevenue: String = ""
+    @State private var onetimeRevenue: String = ""
+    @State private var estimatedValue: String = ""
     @State private var isDatePickerVisible: Bool = false  // ✅ Toggle for DatePicker visibility
 
     @State private var companies: [CompanyWrapper] = []
@@ -73,30 +74,40 @@ struct AddOpportunityView: View {
                             sheetManager.showProductSearch()
                         }
 
-                        // 🎨 Pricing & Quantity
+                        // 🎨 Financials
                         VStack(spacing: 10) {
+                            Stepper("Probability: \(probability)%", value: $probability, in: 0...100)
+                            
                             HStack {
-                                Text("Quantity:")
+                                Text("Monthly Revenue:")
                                 Spacer()
-                                TextField("Enter quantity", text: $quantity)
-                                    .keyboardType(.numberPad)
+                                TextField("e.g. 1000", text: $monthlyRevenue)
+                                    .keyboardType(.decimalPad)
                                     .multilineTextAlignment(.trailing)
-                                    .onChange(of: quantity) { oldValue, newValue in
-                                        updatePrice()
-                                    }
+                                    .frame(width: 120)
                                     .padding(8)
-                                    .frame(width: 80)
                                     .background(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 1))
                             }
 
                             HStack {
-                                Text("Custom Price:")
+                                Text("One-Time Revenue:")
                                 Spacer()
-                                TextField("Enter price", text: $customPrice)
+                                TextField("e.g. 5000", text: $onetimeRevenue)
                                     .keyboardType(.decimalPad)
                                     .multilineTextAlignment(.trailing)
-                                    .padding(8)
                                     .frame(width: 120)
+                                    .padding(8)
+                                    .background(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 1))
+                            }
+
+                            HStack {
+                                Text("Estimated Value:")
+                                Spacer()
+                                TextField("e.g. 17000", text: $estimatedValue)
+                                    .keyboardType(.decimalPad)
+                                    .multilineTextAlignment(.trailing)
+                                    .frame(width: 120)
+                                    .padding(8)
                                     .background(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 1))
                             }
                         }
@@ -115,7 +126,7 @@ struct AddOpportunityView: View {
                         saveOpportunity()
                         dismiss()
                     }
-                    .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty || selectedCompany == nil || selectedProduct == nil || Double(customPrice) == nil)
+                    .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty || selectedCompany == nil || selectedProduct == nil || monthlyRevenue.isEmpty || onetimeRevenue.isEmpty || estimatedValue.isEmpty)
                 }
             }
             .onAppear(perform: loadCompaniesAndProducts)
@@ -129,7 +140,6 @@ struct AddOpportunityView: View {
                 case .productSearch:
                     SearchProductView(products: products) { product in
                         selectedProduct = product
-                        updatePrice()
                         sheetManager.dismiss()
                     }
                 }
@@ -163,18 +173,15 @@ struct AddOpportunityView: View {
         products = productViewModel.products
     }
 
-    // ✅ Auto-Calculate Price
-    private func updatePrice() {
-        guard let product = selectedProduct, let qty = Int(quantity) else { return }
-        let calculatedPrice = product.salePrice * Double(qty)
-        customPrice = String(format: "%.2f", calculatedPrice)
-    }
-
     // ✅ Save Opportunity
     private func saveOpportunity() {
-        guard let company = selectedCompany, let product = selectedProduct,
-              let quantityInt = Int(quantity), let priceDouble = Double(customPrice) else { return }
+        guard let company = selectedCompany,
+              let product = selectedProduct,
+              let monthly = Double(monthlyRevenue),
+              let onetime = Double(onetimeRevenue),
+              let estimated = Double(estimatedValue) else { return }
+        let probabilityVal = Int16(probability)
 
-        viewModel.addOpportunity(name: name, closeDate: closeDate, company: company, product: product, quantity: quantityInt, customPrice: priceDouble)
+        viewModel.addOpportunity(name: name, closeDate: closeDate, company: company, product: product, probability: probabilityVal, monthlyRevenue: monthly, onetimeRevenue: onetime, estimatedValue: estimated)
     }
 }

@@ -43,7 +43,7 @@ class OpportunityViewModel: ObservableObject {
         }
     }
     
-    func addOpportunity(name: String, closeDate: Date, company: CompanyWrapper, product: ProductWrapper, quantity: Int, customPrice: Double) {
+    func addOpportunity(name: String, closeDate: Date, company: CompanyWrapper, product: ProductWrapper, probability: Int16, monthlyRevenue: Double, onetimeRevenue: Double, estimatedValue: Double) {
         let entity = NSEntityDescription.entity(forEntityName: "OpportunityEntity", in: context)!
         let newOpportunity = NSManagedObject(entity: entity, insertInto: context)
 
@@ -51,8 +51,10 @@ class OpportunityViewModel: ObservableObject {
         newOpportunity.setValue(closeDate, forKey: "closeDate")
         newOpportunity.setValue(company.managedObject, forKey: "company")
         newOpportunity.setValue(product.managedObject, forKey: "product")
-        newOpportunity.setValue(quantity, forKey: "quantity")
-        newOpportunity.setValue(customPrice, forKey: "customPrice")
+        newOpportunity.setValue(probability, forKey: "probability")
+        newOpportunity.setValue(monthlyRevenue, forKey: "monthlyRevenue")
+        newOpportunity.setValue(onetimeRevenue, forKey: "onetimeRevenue")
+        newOpportunity.setValue(estimatedValue, forKey: "estimatedValue")
 
         newOpportunity.setValue(0, forKey: "budgetStatus")
         newOpportunity.setValue(0, forKey: "authorityStatus")
@@ -67,11 +69,13 @@ class OpportunityViewModel: ObservableObject {
         saveData()
     }
     
-    func updateOpportunity(opportunity: OpportunityWrapper, name: String, closeDate: Date, quantity: Int, customPrice: Double) {
+    func updateOpportunity(opportunity: OpportunityWrapper, name: String, closeDate: Date, probability: Int16, monthlyRevenue: Double, onetimeRevenue: Double, estimatedValue: Double) {
         opportunity.managedObject.setValue(name, forKey: "name")
         opportunity.managedObject.setValue(closeDate, forKey: "closeDate")
-        opportunity.managedObject.setValue(quantity, forKey: "quantity")
-        opportunity.managedObject.setValue(customPrice, forKey: "customPrice")
+        opportunity.managedObject.setValue(probability, forKey: "probability")
+        opportunity.managedObject.setValue(monthlyRevenue, forKey: "monthlyRevenue")
+        opportunity.managedObject.setValue(onetimeRevenue, forKey: "onetimeRevenue")
+        opportunity.managedObject.setValue(estimatedValue, forKey: "estimatedValue")
 
         saveData()
     }

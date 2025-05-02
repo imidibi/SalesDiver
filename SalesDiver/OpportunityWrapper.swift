@@ -31,13 +31,20 @@ class OpportunityWrapper: ObservableObject, Identifiable {
             .value(forKey: "name") as? String ?? "Unknown Product"
     }
 
-    // ✅ Quantity & Price
-    var quantity: Int {
-        managedObject.value(forKey: "quantity") as? Int ?? 0
+    var probability: Int {
+        managedObject.value(forKey: "probability") as? Int ?? 0
     }
 
-    var customPrice: Double {
-        managedObject.value(forKey: "customPrice") as? Double ?? 0.0
+    var monthlyRevenue: Double {
+        managedObject.value(forKey: "monthlyRevenue") as? Double ?? 0.0
+    }
+
+    var onetimeRevenue: Double {
+        managedObject.value(forKey: "onetimeRevenue") as? Double ?? 0.0
+    }
+
+    var estimatedValue: Double {
+        managedObject.value(forKey: "estimatedValue") as? Double ?? 0.0
     }
 
     // ✅ BANT Qualification Status

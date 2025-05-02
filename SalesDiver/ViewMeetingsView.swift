@@ -33,38 +33,20 @@ struct ViewMeetingsView: View {
         }
     }
 
-    var body: some View {
+    var body:  some View {
         NavigationView {
             VStack {
                 List {
                     ForEach(meetings, id: \.objectID) { meeting in
+                        let wrapper = meeting.opportunity.flatMap { OpportunityWrapper(managedObject: $0) }
                         ZStack {
                             HStack {
                                 MeetingRowView(meeting: meeting)
 
                                 Spacer()
 
-                                VStack(alignment: .trailing, spacing: 4) {
-                                    if let opportunity = meeting.opportunity {
-                                        Text("Opportunity: \(opportunity.name ?? "Unknown")")
-                                            .font(.subheadline)
-                                            .foregroundColor(.blue)
-
-                                        Text("Expected Value: $\(opportunity.customPrice, specifier: "%.2f")")
-                                            .font(.subheadline)
-                                            .foregroundColor(.gray)
-
-                                        if let closeDate = opportunity.closeDate {
-                                            Text("Expected Close: \(closeDate, formatter: shortDateFormatter)")
-                                                .font(.subheadline)
-                                                .foregroundColor(.gray)
-                                        }
-
-                                        let wrapper = OpportunityWrapper(managedObject: opportunity)
-                                        BANTIndicatorView(opportunity: wrapper, onBANTSelected: { _ in })
-                                            .scaleEffect(0.7)
-                                            .padding(.top, 4)
-                                    }
+                                if let opportunity = meeting.opportunity {
+                                    OpportunityDetailsView(opportunity: opportunity)
                                 }
                             }
                             .padding()
@@ -175,5 +157,32 @@ struct MeetingRowView: View {
 
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+struct OpportunityDetailsView: View {
+    let opportunity: OpportunityEntity
+
+    var body: some View {
+        VStack(alignment: .trailing, spacing: 4) {
+            Text("Opportunity: \(opportunity.name ?? "Unknown")")
+                .font(.subheadline)
+                .foregroundColor(.blue)
+
+            Text("Estimated Value: $\(opportunity.estimatedValue, specifier: "%.2f")")
+                .font(.subheadline)
+                .foregroundColor(.gray)
+
+            if let closeDate = opportunity.closeDate {
+                Text("Expected Close: \(closeDate, formatter: shortDateFormatter)")
+                    .font(.subheadline)
+                    .foregroundColor(.gray)
+            }
+
+            let wrapper = OpportunityWrapper(managedObject: opportunity)
+            BANTIndicatorView(opportunity: wrapper, onBANTSelected: { _ in })
+                .scaleEffect(0.7)
+                .padding(.top, 4)
+        }
     }
 }
