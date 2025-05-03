@@ -57,12 +57,7 @@ struct AddOpportunityView: View {
                                     Button("Done") {
                                         isDatePickerVisible = false
                                     }
-                                    .padding()
-                                    .frame(maxWidth: .infinity)
-                                    .background(Color.blue)
-                                    .foregroundColor(.white)
-                                    .cornerRadius(10)
-                                    .padding(.horizontal)
+                                    .frame(maxWidth: .infinity, alignment: .trailing)
                                 }
                             }
                         }

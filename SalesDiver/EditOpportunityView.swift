@@ -15,6 +15,7 @@ struct EditOpportunityView: View {
 
     @State private var name: String = ""
     @State private var closeDate: Date = Date()
+    @State private var showingDatePicker = false
 
     @State private var selectedProduct: ProductWrapper?
     @State private var isSelectingProduct: Bool = false
@@ -41,7 +42,25 @@ struct EditOpportunityView: View {
                     TextField("Opportunity Name", text: $name)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
 
-                    DatePicker("Close Date", selection: $closeDate, displayedComponents: .date)
+                    Button(action: { showingDatePicker = true }) {
+                        HStack {
+                            Text("Close Date")
+                            Spacer()
+                            Text(closeDate, style: .date)
+                                .foregroundColor(.gray)
+                        }
+                    }
+
+                    if showingDatePicker {
+                        VStack {
+                            DatePicker("Close Date", selection: $closeDate, displayedComponents: .date)
+                                .datePickerStyle(GraphicalDatePickerStyle())
+                            Button("Done") {
+                                showingDatePicker = false
+                            }
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                        }
+                    }
 
                     // 🎯 Selectable Product Field
                     Button(action: { isSelectingProduct = true }) {
