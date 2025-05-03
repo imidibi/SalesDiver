@@ -26,6 +26,7 @@ struct SettingsView: View {
     @State private var selectedOpportunities: [OpportunityEntity] = []
     @State private var showOpportunitySearch = false
     @State private var showSyncButton = false
+    @State private var opportunityImportCache: [(Int, String, Int?, Double?, Double?)] = []
     
     private var searchHeaderText: String {
         switch selectedCategory {
@@ -50,7 +51,7 @@ struct SettingsView: View {
 
         let requestBody: [String: Any] = [
             "MaxRecords": 100,
-            "IncludeFields": ["id", "title", "amount"],
+            "IncludeFields": ["id", "title", "amount", "probability", "monthlyRevenue", "onetimeRevenue"],
             "Filter": [
                 [
                     "op": "and",
@@ -64,6 +65,7 @@ struct SettingsView: View {
         AutotaskAPIManager.shared.searchOpportunitiesFromBody(requestBody) { results in
             DispatchQueue.main.async {
                 searchResults = results.map { ($0.0, $0.1, "") }
+                opportunityImportCache = results
                 print("✅ Opportunities Fetched: \(searchResults.count)")
             }
         }
@@ -103,13 +105,25 @@ struct SettingsView: View {
         // Fetch or create the company entity
         CoreDataManager.shared.fetchOrCreateCompany(companyID: selectedCompanyID, companyName: companyName) { companyEntity in
             for opportunity in selectedOpportunities {
-                opportunity.company = companyEntity  // Ensure the company relationship is set
+                if let cached = opportunityImportCache.first(where: { $0.1 == opportunity.name }) {
+                    opportunity.autotaskID = Int64(cached.0)
+                    opportunity.probability = Int16(cached.2 ?? 0)
+                    opportunity.monthlyRevenue = cached.3 ?? 0
+                    opportunity.onetimeRevenue = cached.4 ?? 0
+                    opportunity.estimatedValue = (cached.3 ?? 0) * 12 + (cached.4 ?? 0)
+                }
+                opportunity.company = companyEntity
                 context.insert(opportunity)
             }
 
             CoreDataManager.shared.saveContext()
             print("✅ Imported \(selectedOpportunities.count) opportunities successfully and linked to company \(companyName).")
             selectedOpportunities.removeAll()
+            // Clear state and show confirmation
+            searchResults.removeAll()
+            opportunityImportCache.removeAll()
+            showSyncButton = false
+            testResult = "Imported opportunities successfully for company \(companyName)."
         }
     }
 
@@ -266,7 +280,12 @@ struct SettingsView: View {
             if !testResult.isEmpty {
                 Section(header: Text("Autotask Sync Status")) {
                     Text(testResult)
-                        .foregroundColor(testResult.contains("Failed") || testResult.contains("Error") || testResult.contains("No companies found") ? .red : .primary)
+                        .foregroundColor(
+                            testResult.contains("Failed") ||
+                            testResult.contains("Error") ||
+                            testResult.contains("No companies found")
+                            ? .red : .primary
+                        )
                 }
             }
 

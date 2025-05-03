@@ -96,6 +96,7 @@
     <entity name="OpportunityEntity" representedClassName="OpportunityEntity" syncable="YES" codeGenerationType="class">
         <attribute name="authorityCommentary" optional="YES" attributeType="String"/>
         <attribute name="authorityStatus" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="autotaskID" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="budgetCommentary" optional="YES" attributeType="String"/>
         <attribute name="budgetStatus" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="closeDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
