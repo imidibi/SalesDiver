@@ -98,8 +98,11 @@ struct OpportunityDataView: View {
 
                             Text("Close Date: \(opportunity.closeDate, style: .date)")
 
-                            Text("Product: \(opportunity.productName)")
-                                .foregroundColor(.gray)
+                            let trimmedProduct = opportunity.productName.trimmingCharacters(in: .whitespacesAndNewlines)
+                            if !trimmedProduct.isEmpty && trimmedProduct.lowercased() != "unknown product" {
+                                Text("Product: \(trimmedProduct)")
+                                    .foregroundColor(.gray)
+                            }
 
                             Text("Probability: \(opportunity.probability)%")
                             Text("Monthly Revenue: $\(opportunity.monthlyRevenue, specifier: "%.2f")")
