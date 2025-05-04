@@ -80,4 +80,9 @@ class OpportunityWrapper: ObservableObject, Identifiable {
     var timingCommentary: String {
         managedObject.value(forKey: "timingCommentary") as? String ?? ""
     }
+
+    // Expose status value from OpportunityEntity
+    var status: Int16 {
+        managedObject.value(forKey: "status") as? Int16 ?? 0
+    }
 }

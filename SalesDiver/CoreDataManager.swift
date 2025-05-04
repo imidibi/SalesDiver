@@ -213,15 +213,15 @@ func fetchOrCreateCompany(companyID: Int, companyName: String? = nil, completion
     do {
         if let existingCompany = try context.fetch(fetchRequest).first {
             // ✅ Update the Autotask CompanyID if it's missing or different
-            if existingCompany.id == 0 {
-                existingCompany.id = Int64(companyID)
+            if existingCompany.autotaskID == 0 {
+                existingCompany.autotaskID = Int64(companyID)
                 try context.save()
             }
             completion(existingCompany)
         } else {
             // No existing company found, create a new one
             let newCompany = CompanyEntity(context: context)
-            newCompany.id = Int64(companyID)  // Store the Autotask CompanyID
+            newCompany.autotaskID = Int64(companyID)  // Store the Autotask CompanyID
             newCompany.name = companyName
             try context.save()
             completion(newCompany)

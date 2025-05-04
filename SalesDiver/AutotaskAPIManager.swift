@@ -469,7 +469,7 @@ class AutotaskAPIManager {
             completion(contacts)
         }.resume()
     }
-    func searchOpportunitiesFromBody(_ requestBody: [String: Any], completion: @escaping ([(Int, String, Int?, Double?, Double?)]) -> Void) {
+    func searchOpportunitiesFromBody(_ requestBody: [String: Any], completion: @escaping ([(Int, String, Int?, Double?, Double?, Int?)]) -> Void) {
         guard let url = URL(string: "https://webservices24.autotask.net/ATServicesRest/V1.0/Opportunities/query") else {
             print("❌ Invalid URL for Opportunities API")
             return
@@ -479,7 +479,7 @@ class AutotaskAPIManager {
         print("📄 Request Body: \(requestBody)")
         
         var modifiedRequestBody = requestBody
-        modifiedRequestBody["IncludeFields"] = ["id", "title", "amount", "probability", "monthlyRevenue", "onetimeRevenue"]
+        modifiedRequestBody["IncludeFields"] = ["id", "title", "amount", "probability", "monthlyRevenue", "onetimeRevenue", "status"]
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -526,12 +526,13 @@ class AutotaskAPIManager {
                 if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
                    let items = json["items"] as? [[String: Any]] {
                     
-                    let opportunities = items.compactMap { item -> (Int, String, Int?, Double?, Double?)? in
+                    let opportunities = items.compactMap { item -> (Int, String, Int?, Double?, Double?, Int?)? in
                         if let id = item["id"] as? Int, let title = item["title"] as? String {
                             let probability = item["probability"] as? Int
                             let monthlyRevenue = item["monthlyRevenue"] as? Double
                             let onetimeRevenue = item["onetimeRevenue"] as? Double
-                            return (id, title, probability, monthlyRevenue, onetimeRevenue)
+                            let status = item["status"] as? Int
+                            return (id, title, probability, monthlyRevenue, onetimeRevenue, status)
                         }
                         return nil
                     }

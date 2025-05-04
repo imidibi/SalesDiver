@@ -16,6 +16,7 @@ struct AddOpportunityView: View {
     @State private var estimatedValue: String = ""
     @State private var isEstimatedOverridden = false
     @State private var isDatePickerVisible: Bool = false  // ✅ Toggle for DatePicker visibility
+    @State private var status: Int = 1
 
     @State private var companies: [CompanyWrapper] = []
     @State private var products: [ProductWrapper] = []
@@ -150,6 +151,21 @@ struct AddOpportunityView: View {
                             }
                         }
                         .padding(.horizontal)
+
+                        // 🎨 Status Picker
+                        VStack(alignment: .leading) {
+                            Text("Status:")
+                                .foregroundColor(.primary)
+                            Picker("Status", selection: $status) {
+                                Text("Active").tag(1)
+                                Text("Not Ready to Buy").tag(2)
+                                Text("Lost").tag(3)
+                                Text("Closed").tag(4)
+                                Text("Implemented").tag(5)
+                            }
+                            .pickerStyle(SegmentedPickerStyle())
+                        }
+                        .padding(.horizontal)
                     }
                     .padding(.top)
                 }
@@ -242,6 +258,16 @@ struct AddOpportunityView: View {
               let estimated = Double(estimatedValue) else { return }
         let probabilityVal = Int16(probability)
 
-        viewModel.addOpportunity(name: name, closeDate: closeDate, company: company, product: product, probability: probabilityVal, monthlyRevenue: monthly, onetimeRevenue: onetime, estimatedValue: estimated)
+        viewModel.addOpportunity(
+            name: name,
+            closeDate: closeDate,
+            company: company,
+            product: product,
+            probability: probabilityVal,
+            monthlyRevenue: monthly,
+            onetimeRevenue: onetime,
+            estimatedValue: estimated,
+            status: Int16(status)
+        )
     }
 }

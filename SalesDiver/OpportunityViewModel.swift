@@ -12,6 +12,24 @@ class OpportunityViewModel: ObservableObject {
         case companyName, opportunityName, closeDate
     }
     
+    enum OpportunityStatus: Int16 {
+        case active = 1, notReady = 2, lost = 3, closed = 4, implemented = 5
+        
+        var description: String {
+            switch self {
+            case .active: return "Active"
+            case .notReady: return "Not Ready to Buy"
+            case .lost: return "Lost"
+            case .closed: return "Closed"
+            case .implemented: return "Implemented"
+            }
+        }
+    }
+    
+    func statusDescription(for statusCode: Int16) -> String {
+        return OpportunityStatus(rawValue: statusCode)?.description ?? "Unknown"
+    }
+    
     private let context = CoreDataManager.shared.context
 
     init() {
@@ -43,7 +61,7 @@ class OpportunityViewModel: ObservableObject {
         }
     }
     
-    func addOpportunity(name: String, closeDate: Date, company: CompanyWrapper, product: ProductWrapper, probability: Int16, monthlyRevenue: Double, onetimeRevenue: Double, estimatedValue: Double) {
+    func addOpportunity(name: String, closeDate: Date, company: CompanyWrapper, product: ProductWrapper, probability: Int16, monthlyRevenue: Double, onetimeRevenue: Double, estimatedValue: Double, status: Int16) {
         let entity = NSEntityDescription.entity(forEntityName: "OpportunityEntity", in: context)!
         let newOpportunity = NSManagedObject(entity: entity, insertInto: context)
 
@@ -55,6 +73,7 @@ class OpportunityViewModel: ObservableObject {
         newOpportunity.setValue(monthlyRevenue, forKey: "monthlyRevenue")
         newOpportunity.setValue(onetimeRevenue, forKey: "onetimeRevenue")
         newOpportunity.setValue(estimatedValue, forKey: "estimatedValue")
+        newOpportunity.setValue(status, forKey: "status")
 
         newOpportunity.setValue(0, forKey: "budgetStatus")
         newOpportunity.setValue(0, forKey: "authorityStatus")
@@ -69,13 +88,14 @@ class OpportunityViewModel: ObservableObject {
         saveData()
     }
     
-    func updateOpportunity(opportunity: OpportunityWrapper, name: String, closeDate: Date, probability: Int16, monthlyRevenue: Double, onetimeRevenue: Double, estimatedValue: Double) {
+    func updateOpportunity(opportunity: OpportunityWrapper, name: String, closeDate: Date, probability: Int16, monthlyRevenue: Double, onetimeRevenue: Double, estimatedValue: Double, status: Int16) {
         opportunity.managedObject.setValue(name, forKey: "name")
         opportunity.managedObject.setValue(closeDate, forKey: "closeDate")
         opportunity.managedObject.setValue(probability, forKey: "probability")
         opportunity.managedObject.setValue(monthlyRevenue, forKey: "monthlyRevenue")
         opportunity.managedObject.setValue(onetimeRevenue, forKey: "onetimeRevenue")
         opportunity.managedObject.setValue(estimatedValue, forKey: "estimatedValue")
+        opportunity.managedObject.setValue(status, forKey: "status")
 
         saveData()
     }

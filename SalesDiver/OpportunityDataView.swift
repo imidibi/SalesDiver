@@ -53,95 +53,105 @@ struct OpportunityDataView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            VStack {
-                // 🔍 Search Bar
+        let mainContent = VStack {
+            // 🔍 Search Bar
+            HStack {
+                TextField("Search Opportunities", text: $searchText)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .padding(.horizontal)
+
+                Button(action: { searchText = "" }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundColor(.gray)
+                }
+                .padding(.trailing)
+                .opacity(searchText.isEmpty ? 0 : 1)
+            }
+            .padding(.top)
+
+            // 🔄 Sorting Picker
+            Picker("Sort by", selection: $sortOption) {
+                ForEach(OpportunitySortOption.allCases, id: \.self) { option in
+                    Text(option.rawValue).tag(option)
+                }
+            }
+            .pickerStyle(SegmentedPickerStyle())
+            .padding(.horizontal)
+
+            // 📋 List of Opportunities
+            List(filteredOpportunities, id: \.id) { opportunity in
                 HStack {
-                    TextField("Search Opportunities", text: $searchText)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .padding(.horizontal)
+                    VStack(alignment: .leading) {
+                        Button(action: {
+                            editingOpportunity = opportunity
+                            isPresentingEditOpportunity = true
+                        }) {
+                            Text("Opportunity: \(opportunity.name)")
+                                .font(.headline)
+                                .foregroundColor(.blue)
+                        }
 
-                    Button(action: { searchText = "" }) {
-                        Image(systemName: "xmark.circle.fill")
+                        Text("Company: \(opportunity.companyName)")
                             .foregroundColor(.gray)
-                    }
-                    .padding(.trailing)
-                    .opacity(searchText.isEmpty ? 0 : 1)  // Hide if no search text
-                }
-                .padding(.top)
 
-                // 🔄 Sorting Picker
-                Picker("Sort by", selection: $sortOption) {
-                    ForEach(OpportunitySortOption.allCases, id: \.self) { option in
-                        Text(option.rawValue).tag(option)
-                    }
-                }
-                .pickerStyle(SegmentedPickerStyle())
-                .padding(.horizontal)
+                        Text("Close Date: \(opportunity.closeDate, style: .date)")
 
-                // 📋 List of Opportunities
-                List(filteredOpportunities, id: \.id) { opportunity in
-                    HStack {
-                        VStack(alignment: .leading) {
-                            // ✅ Tap on Name to Open EditOpportunityView
-                            Button(action: {
-                                editingOpportunity = opportunity
-                                isPresentingEditOpportunity = true
-                            }) {
-                                Text("Opportunity: \(opportunity.name)")
-                                    .font(.headline)
-                                    .foregroundColor(.blue)
-                            }
-
-                            Text("Company: \(opportunity.companyName)")
+                        let trimmedProduct = opportunity.productName.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if !trimmedProduct.isEmpty && trimmedProduct.lowercased() != "unknown product" {
+                            Text("Product: \(trimmedProduct)")
                                 .foregroundColor(.gray)
+                        }
 
-                            Text("Close Date: \(opportunity.closeDate, style: .date)")
+                        Text("Probability: \(opportunity.probability)%")
+                        Text("Monthly Revenue: $\(opportunity.monthlyRevenue, specifier: "%.2f")")
+                        Text("One-Time Revenue: $\(opportunity.onetimeRevenue, specifier: "%.2f")")
+                        Text("Estimated Value: $\(opportunity.estimatedValue, specifier: "%.2f")")
 
-                            let trimmedProduct = opportunity.productName.trimmingCharacters(in: .whitespacesAndNewlines)
-                            if !trimmedProduct.isEmpty && trimmedProduct.lowercased() != "unknown product" {
-                                Text("Product: \(trimmedProduct)")
-                                    .foregroundColor(.gray)
+                        let (statusText, statusColor): (String, Color) = {
+                            switch opportunity.status {
+                            case 1: return ("Active", .blue)
+                            case 2: return ("Not Ready to Buy", .orange)
+                            case 3: return ("Lost", .red)
+                            case 4: return ("Closed", .green)
+                            case 5: return ("Implemented", .green)
+                            default: return ("Unknown", .gray)
                             }
+                        }()
 
-                            Text("Probability: \(opportunity.probability)%")
-                            Text("Monthly Revenue: $\(opportunity.monthlyRevenue, specifier: "%.2f")")
-                            Text("One-Time Revenue: $\(opportunity.onetimeRevenue, specifier: "%.2f")")
-                            Text("Estimated Value: $\(opportunity.estimatedValue, specifier: "%.2f")")
-                        }
+                        Text("Status: \(statusText)")
+                            .foregroundColor(statusColor)
+                    }
 
-                        Spacer()
+                    Spacer()
 
-                        // ✅ BANT Indicator remains intact
-                        BANTIndicatorView(opportunity: opportunity) { bantType in
-                            print("BANT icon pressed: \(bantType)")
-                            selectedBANTItem = SelectedBANTItem(opportunity: opportunity, bantType: bantType)
-                        }
+                    BANTIndicatorView(opportunity: opportunity) { bantType in
+                        print("BANT icon pressed: \(bantType)")
+                        selectedBANTItem = SelectedBANTItem(opportunity: opportunity, bantType: bantType)
                     }
                 }
             }
-            .navigationTitle("Opportunities")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: { isPresentingAddOpportunity = true }) {
-                        Image(systemName: "plus")
+        }
+
+        return NavigationStack {
+            mainContent
+                .navigationTitle("Opportunities")
+                .onAppear { viewModel.fetchOpportunities() }
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button(action: { isPresentingAddOpportunity = true }) {
+                            Image(systemName: "plus")
+                        }
                     }
                 }
-            }
-            .onAppear {
-                viewModel.fetchOpportunities()
-            }
-        
-            .sheet(item: $selectedBANTItem) { item in
-                BANTEditorView(viewModel: viewModel, opportunity: item.opportunity, bantType: item.bantType)
-            }
-            
-            .sheet(isPresented: $isPresentingAddOpportunity) {
-                AddOpportunityView(viewModel: viewModel)  // ✅ Opens Add Opportunity View
-            }
-            .sheet(item: $editingOpportunity) { opportunity in
-                EditOpportunityView(viewModel: viewModel, opportunity: opportunity) // ✅ Opens Opportunity Edit View
-            }
+        }
+        .sheet(item: $selectedBANTItem) { item in
+            BANTEditorView(viewModel: viewModel, opportunity: item.opportunity, bantType: item.bantType)
+        }
+        .sheet(isPresented: $isPresentingAddOpportunity) {
+            AddOpportunityView(viewModel: viewModel)
+        }
+        .sheet(item: $editingOpportunity) { opportunity in
+            EditOpportunityView(viewModel: viewModel, opportunity: opportunity)
         }
     }
 }

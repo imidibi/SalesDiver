@@ -27,6 +27,8 @@ struct EditOpportunityView: View {
     @State private var estimatedValue: String = ""
     @State private var isEstimatedOverridden = false
 
+    @State private var status: Int = 1
+
     var body: some View {
         NavigationStack {
             Form {
@@ -144,6 +146,20 @@ struct EditOpportunityView: View {
                         .padding(8)
                         .background(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 1))
                     }
+                    
+                    VStack(alignment: .leading) {
+                        Text("Status:")
+                            .foregroundColor(.primary)
+                        Picker("Status", selection: $status) {
+                            Text("Active").tag(1)
+                            Text("Not Ready to Buy").tag(2)
+                            Text("Lost").tag(3)
+                            Text("Closed").tag(4)
+                            Text("Implemented").tag(5)
+                        }
+                        .pickerStyle(SegmentedPickerStyle())
+                    }
+                    .padding(.horizontal)
                 }
 
                 // 🎯 Delete Button
@@ -190,6 +206,8 @@ struct EditOpportunityView: View {
         if let product = productViewModel.products.first(where: { $0.name == opportunity.productName }) {
             selectedProduct = product
         }
+        
+        status = Int(opportunity.status)
     }
 
     private func saveOpportunity() {
@@ -219,7 +237,8 @@ struct EditOpportunityView: View {
             probability: Int16(probability),
             monthlyRevenue: monthly,
             onetimeRevenue: onetime,
-            estimatedValue: estimated
+            estimatedValue: estimated,
+            status: Int16(status)
         )
 
         // ✅ Ensure product is updated separately if needed

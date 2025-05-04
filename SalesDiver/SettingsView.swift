@@ -26,7 +26,7 @@ struct SettingsView: View {
     @State private var selectedOpportunities: [OpportunityEntity] = []
     @State private var showOpportunitySearch = false
     @State private var showSyncButton = false
-    @State private var opportunityImportCache: [(Int, String, Int?, Double?, Double?)] = []
+    @State private var opportunityImportCache: [(Int, String, Int?, Double?, Double?, Int?)] = []
     
     private var searchHeaderText: String {
         switch selectedCategory {
@@ -51,7 +51,7 @@ struct SettingsView: View {
 
         let requestBody: [String: Any] = [
             "MaxRecords": 100,
-            "IncludeFields": ["id", "title", "amount", "probability", "monthlyRevenue", "onetimeRevenue"],
+            "IncludeFields": ["id", "title", "amount", "probability", "monthlyRevenue", "onetimeRevenue", "status"],
             "Filter": [
                 [
                     "op": "and",
@@ -111,6 +111,7 @@ struct SettingsView: View {
                     opportunity.monthlyRevenue = cached.3 ?? 0
                     opportunity.onetimeRevenue = cached.4 ?? 0
                     opportunity.estimatedValue = (cached.3 ?? 0) * 12 + (cached.4 ?? 0)
+                    opportunity.status = Int16(cached.5 ?? 0)
                 }
                 opportunity.company = companyEntity
                 context.insert(opportunity)
