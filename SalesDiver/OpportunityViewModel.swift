@@ -13,15 +13,13 @@ class OpportunityViewModel: ObservableObject {
     }
     
     enum OpportunityStatus: Int16 {
-        case active = 1, notReady = 2, lost = 3, closed = 4, implemented = 5
+        case active = 1, lost = 2, closed = 3
         
         var description: String {
             switch self {
             case .active: return "Active"
-            case .notReady: return "Not Ready to Buy"
             case .lost: return "Lost"
             case .closed: return "Closed"
-            case .implemented: return "Implemented"
             }
         }
     }

@@ -81,8 +81,15 @@ class OpportunityWrapper: ObservableObject, Identifiable {
         managedObject.value(forKey: "timingCommentary") as? String ?? ""
     }
 
-    // Expose status value from OpportunityEntity
+    // Expose status value from OpportunityEntity (1: Active, 2: Lost, 3: Closed)
     var status: Int16 {
-        managedObject.value(forKey: "status") as? Int16 ?? 0
+        let value = managedObject.value(forKey: "status") as? Int16 ?? 0
+        // Only allow 1 (Active), 2 (Lost), or 3 (Closed)
+        switch value {
+        case 1, 2, 3:
+            return value
+        default:
+            return 1 // Default to Active if out of range
+        }
     }
 }

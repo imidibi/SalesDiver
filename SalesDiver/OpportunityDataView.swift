@@ -110,10 +110,8 @@ struct OpportunityDataView: View {
                         let (statusText, statusColor): (String, Color) = {
                             switch opportunity.status {
                             case 1: return ("Active", .blue)
-                            case 2: return ("Not Ready to Buy", .orange)
-                            case 3: return ("Lost", .red)
-                            case 4: return ("Closed", .green)
-                            case 5: return ("Implemented", .green)
+                            case 2: return ("Lost", .red)
+                            case 3: return ("Closed", .green)
                             default: return ("Unknown", .gray)
                             }
                         }()

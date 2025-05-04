@@ -527,11 +527,13 @@ class AutotaskAPIManager {
                    let items = json["items"] as? [[String: Any]] {
                     
                     let opportunities = items.compactMap { item -> (Int, String, Int?, Double?, Double?, Int?)? in
-                        if let id = item["id"] as? Int, let title = item["title"] as? String {
+                        if let id = item["id"] as? Int,
+                           let title = item["title"] as? String,
+                           let status = item["status"] as? Int,
+                           (1...3).contains(status) {
                             let probability = item["probability"] as? Int
                             let monthlyRevenue = item["monthlyRevenue"] as? Double
                             let onetimeRevenue = item["onetimeRevenue"] as? Double
-                            let status = item["status"] as? Int
                             return (id, title, probability, monthlyRevenue, onetimeRevenue, status)
                         }
                         return nil

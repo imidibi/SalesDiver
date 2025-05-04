@@ -111,7 +111,13 @@ struct SettingsView: View {
                     opportunity.monthlyRevenue = cached.3 ?? 0
                     opportunity.onetimeRevenue = cached.4 ?? 0
                     opportunity.estimatedValue = (cached.3 ?? 0) * 12 + (cached.4 ?? 0)
-                    opportunity.status = Int16(cached.5 ?? 0)
+                    // Accept only status values 1, 2, or 3. Default to 1 (Active) otherwise.
+                    let rawStatus = cached.5 ?? 0
+                    if (1...3).contains(rawStatus) {
+                        opportunity.status = Int16(rawStatus)
+                    } else {
+                        opportunity.status = 1 // default to Active
+                    }
                 }
                 opportunity.company = companyEntity
                 context.insert(opportunity)

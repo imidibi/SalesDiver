@@ -152,10 +152,8 @@ struct EditOpportunityView: View {
                             .foregroundColor(.primary)
                         Picker("Status", selection: $status) {
                             Text("Active").tag(1)
-                            Text("Not Ready to Buy").tag(2)
-                            Text("Lost").tag(3)
-                            Text("Closed").tag(4)
-                            Text("Implemented").tag(5)
+                            Text("Lost").tag(2)
+                            Text("Closed").tag(3)
                         }
                         .pickerStyle(SegmentedPickerStyle())
                     }
