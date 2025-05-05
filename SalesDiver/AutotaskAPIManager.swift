@@ -553,4 +553,66 @@ class AutotaskAPIManager {
             }
         }.resume()
     }
+    func searchProductsFromBody(_ requestBody: [String: Any], completion: @escaping ([(Int, String, String, String, String, Double, Double, String, Date?, Date?)]) -> Void) {
+        guard let url = URL(string: "https://webservices24.autotask.net/ATServicesRest/V1.0/Products/query") else {
+            print("❌ Invalid Autotask URL for products.")
+            completion([])
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "accept")
+        request.setValue(UserDefaults.standard.string(forKey: "autotaskAPIUsername") ?? "", forHTTPHeaderField: "UserName")
+        request.setValue(UserDefaults.standard.string(forKey: "autotaskAPISecret") ?? "", forHTTPHeaderField: "Secret")
+        request.setValue(UserDefaults.standard.string(forKey: "autotaskAPITrackingID") ?? "", forHTTPHeaderField: "ApiIntegrationCode")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: requestBody, options: [])
+        } catch {
+            print("❌ Failed to serialize request body.")
+            completion([])
+            return
+        }
+
+        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+            guard error == nil else {
+                print("❌ Error in product query: \(error!.localizedDescription)")
+                completion([])
+                return
+            }
+
+            guard let data = data,
+                  let responseObject = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
+                  let items = responseObject["items"] as? [[String: Any]] else {
+                print("❌ Invalid or empty response from product query.")
+                completion([])
+                return
+            }
+
+            let formatter = ISO8601DateFormatter()
+            let products: [(Int, String, String, String, String, Double, Double, String, Date?, Date?)] = items.compactMap { item in
+                guard let id = item["id"] as? Int,
+                      let name = item["name"] as? String else { return nil }
+
+                let type = item["type"] as? String ?? ""
+                let description = item["description"] as? String ?? ""
+                let units = item["unitName"] as? String ?? ""
+                let unitPrice = item["unitPrice"] as? Double ?? 0.0
+                let unitCost = item["unitCost"] as? Double ?? 0.0
+                let benefits = item["benefits"] as? String ?? ""
+                let lastModified = (item["lastModified"] as? String).flatMap { formatter.date(from: $0) }
+                let lastActive = (item["autotaskLastActivityDate"] as? String).flatMap { formatter.date(from: $0) }
+
+                return (id, name, type, description, units, unitPrice, unitCost, benefits, lastModified, lastActive)
+            }
+
+            DispatchQueue.main.async {
+                completion(products)
+            }
+        }
+
+        task.resume()
+    }
 }

@@ -75,7 +75,7 @@ struct GridView: View {
         ("Contacts", "person.2.fill", AnyView(ContactsView())),
         ("Meetings", "calendar.badge.clock", AnyView(MeetingsView())),
         ("Follow Ups", "checkmark.circle.fill", AnyView(FollowUpsView())),
-        ("Security Assessment", "shield.fill", AnyView(SecurityAssessmentView())),
+        ("Security Review", "shield.fill", AnyView(SecurityAssessmentView())),
         ("Questions", "questionmark.circle.fill", AnyView(QuestionsView())),
         ("Assessments", "doc.text.magnifyingglass", AnyView(AssessmentView().environmentObject(CoreDataManager.shared))) // Injected CoreDataManager
     ]

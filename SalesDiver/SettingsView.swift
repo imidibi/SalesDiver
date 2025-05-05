@@ -16,6 +16,7 @@ struct SettingsView: View {
     @State private var isTesting = false
     @State private var companyName: String = ""
     @State private var searchResults: [(Int, String, String)] = []
+    @State private var productSearchResults: [(Int, String, String)] = []
     @State private var selectedCompanies: Set<String> = []
     @State private var selectedContacts: [Contact] = []
     @State private var showAutotaskSettings = false
@@ -27,6 +28,10 @@ struct SettingsView: View {
     @State private var showOpportunitySearch = false
     @State private var showSyncButton = false
     @State private var opportunityImportCache: [(Int, String, Int?, Double?, Double?, Int?)] = []
+    // Product selection state
+    @State private var selectedProducts: [ProductEntity] = []
+    @State private var showProductSearch = false
+    @State private var productImportCache: [(Int, String, String, String, String, Double, Double, String, Date?, Date?)] = []
     
     private var searchHeaderText: String {
         switch selectedCategory {
@@ -235,6 +240,9 @@ struct SettingsView: View {
             .overlay(
                 showOpportunitySearch ? opportunitySelectionOverlay : nil
             )
+            .overlay(
+                showProductSearch ? productSelectionOverlay : nil
+            )
         }
     }
 
@@ -307,24 +315,28 @@ struct SettingsView: View {
         Section(header: Text(searchHeaderText)) {
             TextField("Enter company name", text: $companyName, onCommit: handleSearchCommit)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
- 
+
             if selectedCategory == "Contact" || selectedCategory == "Opportunity" {
                 if selectedCompanyID == nil {
                     resultsScrollView  // Display company list for selection
                 } else if selectedCategory == "Contact" {
                     contactSearchField  // Display contact search field after company is selected
-            } else if selectedCategory == "Opportunity" {
+                } else if selectedCategory == "Opportunity" {
                     opportunitySearchField
                         .onAppear {
                             fetchAllOpportunitiesForSelectedCompany()  // Trigger the API call when the view appears
                         }
+                }
             }
+
+            if selectedCategory == "Product" {
+                productSearchField
             }
- 
+
             if selectedCategory == "Company" {
                 resultsScrollView  // Display resultsScrollView for Company search
             }
- 
+
             syncOrImportButton
         }
     }
@@ -384,6 +396,14 @@ struct SettingsView: View {
         } else if selectedCategory == "Opportunity", !selectedOpportunities.isEmpty && showSyncButton {
             Button("Sync Opportunities now") {
                 importSelectedOpportunities()
+            }
+            .padding()
+            .background(Color.blue)
+            .foregroundColor(.white)
+            .cornerRadius(8)
+        } else if selectedCategory == "Product", !selectedProducts.isEmpty && showSyncButton {
+            Button("Sync Products/Services now") {
+                importSelectedProducts()
             }
             .padding()
             .background(Color.blue)
@@ -851,6 +871,140 @@ private func importSelectedContacts() {
                     print("✅ Fetched \(results.count) contacts for companyID: \(companyID)")
                 }
                 searchResults = results.map { ($0.0, $0.1, $0.2) }
+            }
+        }
+    }
+    // MARK: - Product Search Field
+    private var productSearchField: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Products / Services")
+                .font(.headline)
+
+            Button(action: {
+                showProductSearch = true
+                fetchAllProductsFromAutotask()
+            }) {
+                HStack {
+                    Text(selectedProducts.isEmpty ? "Select Products/Services" :
+                        selectedProducts.map { $0.name ?? "Unnamed" }.joined(separator: ", "))
+                        .foregroundColor(selectedProducts.isEmpty ? .gray : .primary)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .foregroundColor(.gray)
+                }
+            }
+            .padding()
+            .background(Color(UIColor.systemGray6))
+            .cornerRadius(8)
+        }
+    }
+
+    // MARK: - Product Selection Overlay
+    private var productSelectionOverlay: some View {
+        VStack {
+            Text("Select Products / Services")
+                .font(.headline)
+                .padding()
+
+            ScrollView {
+                LazyVStack {
+                    ForEach(productSearchResults, id: \.0) { result in
+                        let productName = result.1
+                        HStack {
+                            Text(productName)
+                            Spacer()
+                            if selectedProducts.contains(where: { $0.name == productName }) {
+                                Image(systemName: "checkmark")
+                                    .foregroundColor(.blue)
+                            }
+                        }
+                        .padding()
+                        .background(Color(UIColor.systemBackground))
+                        .onTapGesture {
+                            if let index = selectedProducts.firstIndex(where: { $0.name == productName }) {
+                                selectedProducts.remove(at: index)
+                            } else {
+                                let newProduct = ProductEntity(context: CoreDataManager.shared.persistentContainer.viewContext)
+                                newProduct.name = productName
+                                selectedProducts.append(newProduct)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Button("Done") {
+                showProductSearch = false
+                if !selectedProducts.isEmpty {
+                    showSyncButton = true
+                }
+            }
+            .padding()
+        }
+        .background(Color(UIColor.systemBackground))
+        .cornerRadius(12)
+        .frame(width: 600, height: 500)
+        .shadow(radius: 20)
+        .padding()
+        .onAppear {
+            fetchAllProductsFromAutotask()
+        }
+    }
+
+    // MARK: - Import Selected Products
+    private func importSelectedProducts() {
+        let context = CoreDataManager.shared.persistentContainer.viewContext
+        let semaphore = DispatchSemaphore(value: 3)
+        let group = DispatchGroup()
+
+        for product in selectedProducts {
+            group.enter()
+            semaphore.wait()
+
+            DispatchQueue.global().async {
+                if let cached = productImportCache.first(where: { $0.1 == product.name }) {
+                    product.autotaskID = Int64(cached.0)
+                    product.name = cached.1
+                    product.type = cached.2
+                    product.prodDescription = cached.3
+                    product.units = cached.4
+                    product.unitPrice = cached.5
+                    product.unitCost = cached.6
+                    product.benefits = cached.7
+                    product.lastModified = cached.8
+                    product.autotaskLastActive = cached.9
+                }
+
+                DispatchQueue.main.async {
+                    semaphore.signal()
+                    group.leave()
+                }
+            }
+        }
+
+        group.notify(queue: .main) {
+            CoreDataManager.shared.saveContext()
+            testResult = "✅ Imported \(selectedProducts.count) products/services successfully."
+            selectedProducts.removeAll()
+            showSyncButton = false
+        }
+    }
+
+    private func fetchAllProductsFromAutotask() {
+        let requestBody: [String: Any] = [
+            "MaxRecords": 100,
+            "IncludeFields": ["id", "name", "type", "description", "unitName", "unitPrice", "unitCost", "benefits", "lastModified", "autotaskLastActivityDate"]
+        ]
+
+        AutotaskAPIManager.shared.searchProductsFromBody(requestBody) { results in
+            DispatchQueue.main.async {
+                if results.isEmpty {
+                    print("⚠️ No products/services found.")
+                } else {
+                    print("✅ Retrieved \(results.count) products/services.")
+                }
+                productSearchResults = results.map { ($0.0, $0.1, $0.2) }
+                productImportCache = results
             }
         }
     }

@@ -58,7 +58,7 @@ struct SecurityAssessmentView: View {
                     if selectedCustomer == nil {
                         searchField
                     } else {
-                    Text("\(selectedCustomer ?? "Unknown") - Security Assessment \(assessmentDate != nil ? assessmentDate!.formatted(date: .numeric, time: .omitted) : "")")
+                    Text("\(selectedCustomer ?? "Unknown") - Security Review \(assessmentDate != nil ? assessmentDate!.formatted(date: .numeric, time: .omitted) : "")")
                             .font(.title)
                             .bold()
                             .padding(.bottom, 10)
@@ -120,7 +120,7 @@ struct SecurityAssessmentView: View {
                     }
                 }
             }
-            .navigationTitle("Security Assessment")
+            .navigationTitle("Security Review")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Save") {

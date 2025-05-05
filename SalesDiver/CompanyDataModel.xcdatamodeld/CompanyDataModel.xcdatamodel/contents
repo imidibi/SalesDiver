@@ -125,7 +125,7 @@
     </entity>
     <entity name="ProductEntity" representedClassName="ProductEntity" syncable="YES" codeGenerationType="class">
         <attribute name="autotaskID" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
-        <attribute name="autotaskLastActivity" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="autotaskLastActive" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="benefits" optional="YES" attributeType="String"/>
         <attribute name="lastModified" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="name" optional="YES" attributeType="String"/>
