@@ -29,7 +29,7 @@ struct SearchProductView: View {
                     HStack {
                         Text(product.name)
                         Spacer()
-                        Text("$\(product.salePrice, specifier: "%.2f")")
+                        Text("$\(product.unitPrice, specifier: "%.2f")")
                             .foregroundColor(.gray)
                     }
                 }

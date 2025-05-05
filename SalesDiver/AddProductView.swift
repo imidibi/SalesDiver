@@ -12,8 +12,8 @@ struct AddProductView: View {
     @ObservedObject var viewModel: ProductViewModel
 
     @State private var name = ""
-    @State private var costPrice = ""
-    @State private var salePrice = ""
+    @State private var unitCost = ""
+    @State private var unitPrice = ""
     @State private var type = "Hardware"
     @State private var benefits = ""
     @State private var prodDescription = ""
@@ -43,14 +43,14 @@ struct AddProductView: View {
 
                 Section(header: Text("Pricing")) {
                     HStack {
-                        Text("Cost Price: $")
-                        TextField("0.00", text: $costPrice)
+                        Text("Unit Cost: $")
+                        TextField("0.00", text: $unitCost)
                             .keyboardType(.decimalPad)
                     }
                     
                     HStack {
-                        Text("Sale Price: $")
-                        TextField("0.00", text: $salePrice)
+                        Text("Unit Price: $")
+                        TextField("0.00", text: $unitPrice)
                             .keyboardType(.decimalPad)
                     }
                 }
@@ -69,11 +69,11 @@ struct AddProductView: View {
             .navigationBarItems(
                 leading: Button("Cancel") { dismiss() },
                 trailing: Button("Save") {
-                    if let cost = Double(costPrice), let sale = Double(salePrice) {
+                    if let cost = Double(unitCost), let sale = Double(unitPrice) {
                         viewModel.addProduct(
                             name: name,
-                            costPrice: cost,
-                            salePrice: sale,
+                            unitCost: cost,
+                            unitPrice: sale,
                             type: type,
                             benefits: benefits,
                             prodDescription: prodDescription,
@@ -82,7 +82,7 @@ struct AddProductView: View {
                         dismiss()
                     }
                 }
-                .disabled(name.isEmpty || costPrice.isEmpty || salePrice.isEmpty)
+                .disabled(name.isEmpty || unitCost.isEmpty || unitPrice.isEmpty)
             )
         }
     }

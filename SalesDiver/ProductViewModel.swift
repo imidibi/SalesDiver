@@ -9,8 +9,8 @@ import CoreData
 
 enum ProductSortOption: String, CaseIterable {
     case name = "Name"
-    case costPrice = "Cost Price"
-    case salePrice = "Sale Price"
+    case unitCost = "Unit Cost"
+    case unitPrice = "Unit Price"
 }
 
 class ProductViewModel: ObservableObject {
@@ -35,10 +35,10 @@ class ProductViewModel: ObservableObject {
         switch sortOption {
         case .name:
             request.sortDescriptors = [NSSortDescriptor(key: "name", ascending: true)]
-        case .costPrice:
-            request.sortDescriptors = [NSSortDescriptor(key: "costPrice", ascending: true)]
-        case .salePrice:
-            request.sortDescriptors = [NSSortDescriptor(key: "salePrice", ascending: true)]
+        case .unitCost:
+            request.sortDescriptors = [NSSortDescriptor(key: "unitCost", ascending: true)]
+        case .unitPrice:
+            request.sortDescriptors = [NSSortDescriptor(key: "unitPrice", ascending: true)]
         }
 
         do {
@@ -54,10 +54,10 @@ class ProductViewModel: ObservableObject {
             switch sortOption {
             case .name:
                 wrappedProducts.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-            case .costPrice:
-                wrappedProducts.sort { $0.costPrice < $1.costPrice }
-            case .salePrice:
-                wrappedProducts.sort { $0.salePrice < $1.salePrice }
+            case .unitCost:
+                wrappedProducts.sort { $0.unitCost < $1.unitCost }
+            case .unitPrice:
+                wrappedProducts.sort { $0.unitPrice < $1.unitPrice }
             }
 
             self.products = wrappedProducts
@@ -66,7 +66,7 @@ class ProductViewModel: ObservableObject {
         }
     }
 
-    func addProduct(name: String, costPrice: Double, salePrice: Double, type: String, benefits: String, prodDescription: String, units: String) {
+    func addProduct(name: String, unitCost: Double, unitPrice: Double, type: String, benefits: String, prodDescription: String, units: String) {
         let entity = NSEntityDescription.entity(forEntityName: "ProductEntity", in: context)!
         let newProduct = NSManagedObject(entity: entity, insertInto: context)
 
@@ -75,20 +75,20 @@ class ProductViewModel: ObservableObject {
         newProduct.setValue(units, forKey: "units")
         newProduct.setValue(benefits, forKey: "benefits")
         newProduct.setValue(prodDescription, forKey: "prodDescription")
-        newProduct.setValue(costPrice, forKey: "costPrice")
-        newProduct.setValue(salePrice, forKey: "salePrice")
+        newProduct.setValue(unitCost, forKey: "unitCost")
+        newProduct.setValue(unitPrice, forKey: "unitPrice")
 
         saveData()
     }
 
-    func updateProduct(product: ProductWrapper, name: String, costPrice: Double, salePrice: Double, type: String, benefits: String, prodDescription: String, units: String) {
+    func updateProduct(product: ProductWrapper, name: String, unitCost: Double, unitPrice: Double, type: String, benefits: String, prodDescription: String, units: String) {
         product.managedObject.setValue(name, forKey: "name")
         product.managedObject.setValue(type, forKey: "type")
         product.managedObject.setValue(units, forKey: "units")
         product.managedObject.setValue(benefits, forKey: "benefits")
         product.managedObject.setValue(prodDescription, forKey: "prodDescription")
-        product.managedObject.setValue(costPrice, forKey: "costPrice")
-        product.managedObject.setValue(salePrice, forKey: "salePrice")
+        product.managedObject.setValue(unitCost, forKey: "unitCost")
+        product.managedObject.setValue(unitPrice, forKey: "unitPrice")
 
         saveData()
     }
@@ -133,12 +133,12 @@ struct ProductWrapper: Identifiable, Hashable {
         managedObject.value(forKey: "prodDescription") as? String ?? ""
     }
 
-    var costPrice: Double {
-        managedObject.value(forKey: "costPrice") as? Double ?? 0.0
+    var unitCost: Double {
+        managedObject.value(forKey: "unitCost") as? Double ?? 0.0
     }
 
-    var salePrice: Double {
-        managedObject.value(forKey: "salePrice") as? Double ?? 0.0
+    var unitPrice: Double {
+        managedObject.value(forKey: "unitPrice") as? Double ?? 0.0
     }
 
     // ✅ Conform to Hashable

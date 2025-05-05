@@ -127,12 +127,12 @@
         <attribute name="autotaskID" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="autotaskLastActivity" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="benefits" optional="YES" attributeType="String"/>
-        <attribute name="costPrice" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="lastModified" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="name" optional="YES" attributeType="String"/>
         <attribute name="prodDescription" optional="YES" attributeType="String"/>
-        <attribute name="salePrice" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="type" optional="YES" attributeType="String"/>
+        <attribute name="unitCost" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="unitPrice" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="units" optional="YES" attributeType="String"/>
         <relationship name="opportunities" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="OpportunityEntity" inverseName="product" inverseEntity="OpportunityEntity"/>
     </entity>

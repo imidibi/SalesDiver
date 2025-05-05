@@ -61,7 +61,7 @@ struct ProductDataView: View {
                                 .font(.subheadline)
                                 .foregroundColor(.gray)
 
-                            Text("Cost: $\(product.costPrice, specifier: "%.2f") | Sale: $\(product.salePrice, specifier: "%.2f")")
+                            Text("Cost: $\(product.unitCost, specifier: "%.2f") | Sale: $\(product.unitPrice, specifier: "%.2f")")
                                 .font(.subheadline)
                                 .foregroundColor(.gray)
 

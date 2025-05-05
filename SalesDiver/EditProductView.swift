@@ -13,8 +13,8 @@ struct EditProductView: View {
     var product: ProductWrapper  // ✅ Now using ProductWrapper instead of ProductEntity
 
     @State private var name: String
-    @State private var costPrice: String
-    @State private var salePrice: String
+    @State private var unitCost: String
+    @State private var unitPrice: String
     @State private var type: String
     @State private var benefits: String
     @State private var prodDescription: String
@@ -24,8 +24,8 @@ struct EditProductView: View {
         self.viewModel = viewModel
         self.product = product
         _name = State(initialValue: product.name)
-        _costPrice = State(initialValue: "\(product.costPrice)")
-        _salePrice = State(initialValue: "\(product.salePrice)")
+        _unitCost = State(initialValue: "\(product.unitCost)")
+        _unitPrice = State(initialValue: "\(product.unitPrice)")
         _type = State(initialValue: product.type)
         _benefits = State(initialValue: product.benefits)
         _prodDescription = State(initialValue: product.prodDescription)
@@ -47,14 +47,14 @@ struct EditProductView: View {
 
                 Section(header: Text("Pricing")) {
                     HStack {
-                        Text("Cost Price: $")
-                        TextField("0.00", text: $costPrice)
+                        Text("Unit Cost: $")
+                        TextField("0.00", text: $unitCost)
                             .keyboardType(.decimalPad)
                     }
                     
                     HStack {
-                        Text("Sale Price: $")
-                        TextField("0.00", text: $salePrice)
+                        Text("Unit Price: $")
+                        TextField("0.00", text: $unitPrice)
                             .keyboardType(.decimalPad)
                     }
                 }
@@ -77,14 +77,14 @@ struct EditProductView: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Save") {
-                        let convertedCostPrice = Double(costPrice) ?? 0.0
-                        let convertedSalePrice = Double(salePrice) ?? 0.0
+                        let convertedunitCost = Double(unitCost) ?? 0.0
+                        let convertedunitPrice = Double(unitPrice) ?? 0.0
 
                         viewModel.updateProduct(
                             product: product,
                             name: name,
-                            costPrice: convertedCostPrice,
-                            salePrice: convertedSalePrice,
+                            unitCost: convertedunitCost,
+                            unitPrice: convertedunitPrice,
                             type: type,
                             benefits: benefits,
                             prodDescription: prodDescription,
