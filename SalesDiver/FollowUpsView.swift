@@ -151,7 +151,7 @@ struct FollowUpsView: View {
                         Text("Assigned to: \(followUp.assignedTo ?? "N/A")")
                             .font(.subheadline)
                         Text("Due: \(followUp.dueDate ?? Date(), formatter: dateFormatter)")
-                            .font(.caption)
+                            .font(.subheadline)
                             .foregroundColor((followUp.dueDate ?? Date()) < Date() ? .red : .primary)
                     }
                     Spacer()
