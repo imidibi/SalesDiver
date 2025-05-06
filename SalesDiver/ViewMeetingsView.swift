@@ -7,6 +7,7 @@ struct ViewMeetingsView: View {
     @State private var selectedMeeting: MeetingsEntity? = nil  // New state to track selected meeting
     @State private var isEditSheetPresented = false
     @State private var refreshID = UUID()  // New state for refresh ID
+    @State private var isAddMeetingPresented = false
 
     private func fetchMeetings() {
         let request: NSFetchRequest<MeetingsEntity> = MeetingsEntity.fetchRequest()
@@ -82,6 +83,14 @@ struct ViewMeetingsView: View {
                         }
                     }
 
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button(action: {
+                            isAddMeetingPresented = true
+                        }) {
+                            Image(systemName: "plus")
+                        }
+                    }
+
                     ToolbarItem(placement: .navigationBarLeading) {
                         EditButton()
                     }
@@ -105,6 +114,13 @@ struct ViewMeetingsView: View {
                 }
                 refreshID = UUID()  // Update refresh ID
             }
+        }
+        .sheet(isPresented: $isAddMeetingPresented, onDismiss: {
+            fetchMeetings()
+            refreshID = UUID()
+        }) {
+            PlanMeetingView()
+                .environment(\.managedObjectContext, viewContext)
         }
     }
 }

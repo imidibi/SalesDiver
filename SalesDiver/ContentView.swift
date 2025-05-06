@@ -73,7 +73,7 @@ struct GridView: View {
         ("Products", "cart.fill", AnyView(ProductDataView())),
         ("Opportunities", "chart.bar.fill", AnyView(OpportunityDataView())),
         ("Contacts", "person.2.fill", AnyView(ContactsView())),
-        ("Meetings", "calendar.badge.clock", AnyView(MeetingsView())),
+        ("Meetings", "calendar.badge.clock", AnyView(ViewMeetingsView())),
         ("Follow Ups", "checkmark.circle.fill", AnyView(FollowUpsView())),
         ("Security Review", "shield.fill", AnyView(SecurityAssessmentView())),
         ("Questions", "questionmark.circle.fill", AnyView(QuestionsView())),

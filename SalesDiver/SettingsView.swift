@@ -953,7 +953,7 @@ private func importSelectedContacts() {
 
     // MARK: - Import Selected Products
     private func importSelectedProducts() {
-        let context = CoreDataManager.shared.persistentContainer.viewContext
+        _ = CoreDataManager.shared.persistentContainer.viewContext
         let semaphore = DispatchSemaphore(value: 3)
         let group = DispatchGroup()
 
