@@ -31,7 +31,7 @@ struct SettingsView: View {
     // Product selection state
     @State private var selectedProducts: [ProductEntity] = []
     @State private var showProductSearch = false
-    @State private var productImportCache: [(Int, String, String, String, String, Double, Double, String, Date?, Date?)] = []
+    @State private var productImportCache: [(Int, String, String, Double, Double, String, String, Date?)] = []
     
     private var searchHeaderText: String {
         switch selectedCategory {
@@ -40,7 +40,7 @@ struct SettingsView: View {
         case "Opportunity":
             return "Search Opportunities in Autotask"
         case "Product":
-            return "Search Products in Autotask"
+            return "Search Products or Services in Autotask"
         default:
             return "Search Companies in Autotask"
         }
@@ -311,10 +311,23 @@ struct SettingsView: View {
     }
 
     // Extracted search and results section
-   private var searchAndResultsSection: some View {
+    private var searchAndResultsSection: some View {
         Section(header: Text(searchHeaderText)) {
-            TextField("Enter company name", text: $companyName, onCommit: handleSearchCommit)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
+            Group {
+                if selectedCategory == "Product" {
+                    TextField("Enter product or service name", text: $companyName, onCommit: {
+                        if selectedCategory == "Product" {
+                            searchProductsByName()
+                        } else {
+                            handleSearchCommit()
+                        }
+                    })
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                } else {
+                    TextField("Enter company name", text: $companyName, onCommit: handleSearchCommit)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                }
+            }
 
             if selectedCategory == "Contact" || selectedCategory == "Opportunity" {
                 if selectedCompanyID == nil {
@@ -899,6 +912,58 @@ private func importSelectedContacts() {
         }
     }
 
+    // MARK: - Product Name Search (for Product category)
+    private func searchProductsByName() {
+        let trimmedQuery = companyName.trimmingCharacters(in: .whitespaces)
+
+        let filterGroup: [String: Any]
+        if trimmedQuery.isEmpty {
+            filterGroup = [
+                "op": "exist",
+                "field": "id"
+            ]
+        } else {
+            filterGroup = [
+                "op": "and",
+                "items": [
+                    ["op": "contains", "field": "name", "value": trimmedQuery]
+                ]
+            ]
+        }
+
+        print("🔍 Product search filter: \(filterGroup)")
+
+        let requestBody: [String: Any] = [
+            "MaxRecords": 100,
+            "IncludeFields": [
+                "id", "description", "invoiceDescription", "unitCost",
+                "unitPrice", "sku", "catalogNumberPartNumber", "lastModifiedDate"
+            ],
+            "Filter": [filterGroup]
+        ]
+
+        AutotaskAPIManager.shared.searchServicesFromBody(requestBody) { results in
+            DispatchQueue.main.async {
+                // For productSearchResults, consistently use $0.1 as the product name/description, and blank $0.2 for display.
+                productSearchResults = results.map { ($0.0, $0.1, "") }
+                // For import cache, keep all fields as before.
+                productImportCache = results.map {
+                    (
+                        $0.0,  // id
+                        $0.1,  // description (used as name)
+                        $0.2,  // invoiceDescription
+                        $0.3,  // unitCost
+                        $0.4,  // unitPrice
+                        $0.5,  // sku
+                        $0.6,  // catalogNumberPartNumber
+                        $0.7   // lastModifiedDate
+                    )
+                }
+                showProductSearch = true
+            }
+        }
+    }
+
     // MARK: - Product Selection Overlay
     private var productSelectionOverlay: some View {
         VStack {
@@ -946,9 +1011,7 @@ private func importSelectedContacts() {
         .frame(width: 600, height: 500)
         .shadow(radius: 20)
         .padding()
-        .onAppear {
-            fetchAllProductsFromAutotask()
-        }
+        // Removed .onAppear { fetchAllProductsFromAutotask() }
     }
 
     // MARK: - Import Selected Products
@@ -965,14 +1028,17 @@ private func importSelectedContacts() {
                 if let cached = productImportCache.first(where: { $0.1 == product.name }) {
                     product.autotaskID = Int64(cached.0)
                     product.name = cached.1
-                    product.type = cached.2
-                    product.prodDescription = cached.3
-                    product.units = cached.4
-                    product.unitPrice = cached.5
-                    product.unitCost = cached.6
-                    product.benefits = cached.7
-                    product.lastModified = cached.8
-                    product.autotaskLastActive = cached.9
+                    product.type = "\(cached.2)"
+                    product.prodDescription = "\(cached.3)"
+                    product.units = "\(cached.4)"
+                    product.unitPrice = Double("\(cached.5)") ?? 0.0
+                    product.unitCost = Double("\(cached.6)") ?? 0.0
+                    if let date = cached.7 {
+                        product.benefits = ISO8601DateFormatter().string(from: date)
+                    } else {
+                        product.benefits = ""
+                    }
+                    // Remove or fix: product.lastModified = cached.8 if out of bounds
                 }
 
                 DispatchQueue.main.async {
@@ -993,10 +1059,16 @@ private func importSelectedContacts() {
     private func fetchAllProductsFromAutotask() {
         let requestBody: [String: Any] = [
             "MaxRecords": 100,
-            "IncludeFields": ["id", "name", "type", "description", "unitName", "unitPrice", "unitCost", "benefits", "lastModified", "autotaskLastActivityDate"]
+            "IncludeFields": ["id", "name", "type", "unitCost", "unitPrice", "sku", "catalogNumberPartNumber", "lastModifiedDate"],
+            "Filter": [
+                [
+                    "op": "exist",
+                    "field": "id"
+                ]
+            ]
         ]
 
-        AutotaskAPIManager.shared.searchProductsFromBody(requestBody) { results in
+        AutotaskAPIManager.shared.searchServicesFromBody(requestBody) { results in
             DispatchQueue.main.async {
                 if results.isEmpty {
                     print("⚠️ No products/services found.")
@@ -1004,7 +1076,18 @@ private func importSelectedContacts() {
                     print("✅ Retrieved \(results.count) products/services.")
                 }
                 productSearchResults = results.map { ($0.0, $0.1, $0.2) }
-                productImportCache = results
+                productImportCache = results.map {
+                    (
+                        $0.0,  // id
+                        $0.1,  // name
+                        $0.2,  // type
+                        $0.3,  // unitCost
+                        $0.4,  // unitPrice
+                        $0.5,  // sku
+                        $0.6,  // catalogNumberPartNumber
+                        $0.7   // lastModifiedDate
+                    )
+                }
             }
         }
     }

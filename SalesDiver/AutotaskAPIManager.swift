@@ -615,4 +615,71 @@ class AutotaskAPIManager {
 
         task.resume()
     }
+    func searchServicesFromBody(_ requestBody: [String: Any], completion: @escaping ([(Int, String, String, Double, Double, String, String, Date?)]) -> Void) {
+        let url = URL(string: "https://webservices24.autotask.net/ATServicesRest/V1.0/Services/query")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("application/json", forHTTPHeaderField: "accept")
+        request.setValue(UserDefaults.standard.string(forKey: "autotaskAPIUsername") ?? "", forHTTPHeaderField: "UserName")
+        request.setValue(UserDefaults.standard.string(forKey: "autotaskAPISecret") ?? "", forHTTPHeaderField: "Secret")
+        request.setValue(UserDefaults.standard.string(forKey: "autotaskAPITrackingID") ?? "", forHTTPHeaderField: "ApiIntegrationCode")
+
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: requestBody, options: [])
+            // Print API URL and request body
+            print("📡 Sending Service API Request to URL: \(url)")
+            if let bodyData = try? JSONSerialization.data(withJSONObject: requestBody, options: .prettyPrinted),
+               let bodyString = String(data: bodyData, encoding: .utf8) {
+                print("📤 Request Body:\n\(bodyString)")
+            }
+        } catch {
+            print("❌ Failed to encode request body: \(error.localizedDescription)")
+            completion([])
+            return
+        }
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("❌ Error fetching services: \(error.localizedDescription)")
+                completion([])
+                return
+            }
+
+            guard let data = data else {
+                print("❌ Invalid or empty response from service query.")
+                completion([])
+                return
+            }
+
+            // Print raw response string before parsing
+            if let responseString = String(data: data, encoding: .utf8) {
+                print("📥 Raw Response:\n\(responseString)")
+            }
+
+            guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let items = json["items"] as? [[String: Any]] else {
+                print("❌ Invalid or empty response from service query.")
+                completion([])
+                return
+            }
+
+            let services: [(Int, String, String, Double, Double, String, String, Date?)] = items.compactMap { item in
+                guard let id = item["id"] as? Int,
+                      let description = item["description"] as? String,
+                      let invoiceDescription = item["invoiceDescription"] as? String,
+                      let unitCost = item["unitCost"] as? Double,
+                      let unitPrice = item["unitPrice"] as? Double,
+                      let sku = item["sku"] as? String,
+                      let catalogNumber = item["catalogNumberPartNumber"] as? String else {
+                    return nil
+                }
+
+                let lastModified = (item["lastModifiedDate"] as? String).flatMap { ISO8601DateFormatter().date(from: $0) }
+                return (id, description, invoiceDescription, unitCost, unitPrice, sku, catalogNumber, lastModified)
+            }
+
+            completion(services)
+        }.resume()
+    }
 }
