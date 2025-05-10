@@ -3,6 +3,7 @@ import CoreData
 import SwiftUI
 
 class OpportunityViewModel: ObservableObject {
+    @AppStorage("selectedMethodology") var currentMethodology: String = "BANT"
     @Published var opportunities: [OpportunityWrapper] = []
     
     @Published var searchText: String = ""
@@ -123,6 +124,84 @@ class OpportunityViewModel: ObservableObject {
         
         print("Debug (updateBANT): Update complete. Saving data.")
         saveData()
+    }
+
+    func updateMEDDICStatus(for opportunity: OpportunityWrapper, metricType: String, status: Int, commentary: String) {
+        switch metricType {
+        case "Metrics":
+            opportunity.managedObject.setValue(status, forKey: "metricsStatus")
+            opportunity.managedObject.setValue(commentary, forKey: "metricsCommentary")
+        case "Decision Criteria":
+            opportunity.managedObject.setValue(status, forKey: "decisionCriteriaStatus")
+            opportunity.managedObject.setValue(commentary, forKey: "decisionCriteriaCommentary")
+        case "Champion":
+            opportunity.managedObject.setValue(status, forKey: "championStatus")
+            opportunity.managedObject.setValue(commentary, forKey: "championCommentary")
+        default:
+            break
+        }
+        saveData()
+    }
+
+    func getMEDDICStatus(for opportunity: OpportunityWrapper, metricType: String) -> (status: Int, commentary: String) {
+        switch metricType {
+        case "Metrics":
+            return (opportunity.managedObject.value(forKey: "metricsStatus") as? Int ?? 0,
+                    opportunity.managedObject.value(forKey: "metricsCommentary") as? String ?? "")
+        case "Decision Criteria":
+            return (opportunity.managedObject.value(forKey: "decisionCriteriaStatus") as? Int ?? 0,
+                    opportunity.managedObject.value(forKey: "decisionCriteriaCommentary") as? String ?? "")
+        case "Champion":
+            return (opportunity.managedObject.value(forKey: "championStatus") as? Int ?? 0,
+                    opportunity.managedObject.value(forKey: "championCommentary") as? String ?? "")
+        default:
+            return (0, "")
+        }
+    }
+
+    func updateSCUBATANKStatus(for opportunity: OpportunityWrapper, elementType: String, status: Int, commentary: String) {
+        switch elementType {
+        case "Solution":
+            opportunity.managedObject.setValue(status, forKey: "solutionStatus")
+            opportunity.managedObject.setValue(commentary, forKey: "solutionCommentary")
+        case "Competition":
+            opportunity.managedObject.setValue(status, forKey: "competitionStatus")
+            opportunity.managedObject.setValue(commentary, forKey: "competitionCommentary")
+        case "Uniques":
+            opportunity.managedObject.setValue(status, forKey: "uniquesStatus")
+            opportunity.managedObject.setValue(commentary, forKey: "uniquesCommentary")
+        case "Benefits":
+            opportunity.managedObject.setValue(status, forKey: "benefitsStatus")
+            opportunity.managedObject.setValue(commentary, forKey: "benefitsCommentary")
+        case "Action Plan":
+            opportunity.managedObject.setValue(status, forKey: "actionPlanStatus")
+            opportunity.managedObject.setValue(commentary, forKey: "actionPlanCommentary")
+        default:
+            break
+        }
+        saveData()
+    }
+
+    func getSCUBATANKStatus(for opportunity: OpportunityWrapper, elementType: String) -> (status: Int, commentary: String) {
+        switch elementType {
+        case "Solution":
+            return (opportunity.managedObject.value(forKey: "solutionStatus") as? Int ?? 0,
+                    opportunity.managedObject.value(forKey: "solutionCommentary") as? String ?? "")
+        case "Competition":
+            return (opportunity.managedObject.value(forKey: "competitionStatus") as? Int ?? 0,
+                    opportunity.managedObject.value(forKey: "competitionCommentary") as? String ?? "")
+        case "Uniques":
+            return (opportunity.managedObject.value(forKey: "uniquesStatus") as? Int ?? 0,
+                    opportunity.managedObject.value(forKey: "uniquesCommentary") as? String ?? "")
+        case "Benefits":
+            return (opportunity.managedObject.value(forKey: "benefitsStatus") as? Int ?? 0,
+                    opportunity.managedObject.value(forKey: "benefitsCommentary") as? String ?? "")
+        case "Action Plan":
+            return (opportunity.managedObject.value(forKey: "actionPlanStatus") as? Int ?? 0,
+                    opportunity.managedObject.value(forKey: "actionPlanCommentary") as? String ?? "")
+        default:
+            return (0, "")
+        }
     }
 
     func deleteOpportunity(opportunity: OpportunityWrapper) {

@@ -99,25 +99,41 @@
         <relationship name="questions" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="MeetingQuestionEntity" inverseName="meeting" inverseEntity="MeetingQuestionEntity"/>
     </entity>
     <entity name="OpportunityEntity" representedClassName="OpportunityEntity" syncable="YES" codeGenerationType="class">
+        <attribute name="actionPlanCommentary" optional="YES" attributeType="String"/>
+        <attribute name="actionPlanStatus" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="authorityCommentary" optional="YES" attributeType="String"/>
         <attribute name="authorityStatus" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="autotaskID" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="autotaskLastActivity" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="benefitsCommentary" optional="YES" attributeType="String"/>
+        <attribute name="benefitsStatus" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="budgetCommentary" optional="YES" attributeType="String"/>
         <attribute name="budgetStatus" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="championCommentary" optional="YES" attributeType="String"/>
+        <attribute name="championStatus" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="closeDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="competitionCommentary" optional="YES" attributeType="String"/>
+        <attribute name="competitionStatus" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="decisionCriteriaCommentary" optional="YES" attributeType="String"/>
+        <attribute name="decisionCriteriaStatus" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="estimatedValue" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="lastModified" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="metricsCommentary" optional="YES" attributeType="String"/>
+        <attribute name="metricsStatus" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="monthlyRevenue" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="name" optional="YES" attributeType="String"/>
         <attribute name="needCommentary" optional="YES" attributeType="String"/>
         <attribute name="needStatus" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="onetimeRevenue" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="probability" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="solutionCommentary" optional="YES" attributeType="String"/>
+        <attribute name="solutionStatus" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="status" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="timingCommentary" optional="YES" attributeType="String"/>
         <attribute name="timingStatus" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="totalPrice" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="uniquesCommentary" optional="YES" attributeType="String"/>
+        <attribute name="uniquesStatus" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <relationship name="company" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CompanyEntity" inverseName="opportunities" inverseEntity="CompanyEntity"/>
         <relationship name="followups" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="FollowUpsEntity" inverseName="opportunity" inverseEntity="FollowUpsEntity"/>
         <relationship name="meetings" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="MeetingsEntity" inverseName="opportunity" inverseEntity="MeetingsEntity"/>

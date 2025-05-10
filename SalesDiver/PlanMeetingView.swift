@@ -594,12 +594,22 @@ struct PlanMeetingView: View {
     }
 
     
+    @AppStorage("selectedMethodology") private var currentMethodology: String = "BANT"
+
     private var bantIcons: some View {
         Group {
             if let opportunity = selectedOpportunity {
                 let wrapper = OpportunityWrapper(managedObject: opportunity)
-                BANTIndicatorView(opportunity: wrapper, onBANTSelected: { _ in })
-                    .frame(height: 14)
+                Group {
+                    if currentMethodology == "BANT" {
+                        BANTIndicatorView(opportunity: wrapper, onBANTSelected: { _ in })
+                    } else if currentMethodology == "MEDDIC" {
+                        MEDDICIndicatorView(opportunity: wrapper, onItemSelected: { _ in })
+                    } else if currentMethodology == "SCUBATANK" {
+                        SCUBATANKIndicatorView(opportunity: wrapper, onItemSelected: { _ in })
+                    }
+                }
+                .frame(height: 14)
             } else {
                 EmptyView()
             }

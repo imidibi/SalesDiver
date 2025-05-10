@@ -137,6 +137,8 @@ struct FollowUpsView: View {
         animation: .default)
     private var followUps: FetchedResults<FollowUpsEntity>
 
+    @AppStorage("selectedMethodology") private var currentMethodology: String = "BANT"
+
     @State private var showingNewFollowUp = false
     @State private var selectedFollowUp: FollowUpsEntity?
 
@@ -161,7 +163,15 @@ struct FollowUpsView: View {
                         Text(followUp.opportunity?.name ?? "No Opportunity")
                             .font(.subheadline)
                         if let opportunity = followUp.opportunity {
-                            BANTIndicatorView(opportunity: OpportunityWrapper(managedObject: opportunity), onBANTSelected: { _ in })
+                            Group {
+                                if currentMethodology == "BANT" {
+                                    BANTIndicatorView(opportunity: OpportunityWrapper(managedObject: opportunity), onBANTSelected: { _ in })
+                                } else if currentMethodology == "MEDDIC" {
+                                    MEDDICIndicatorView(opportunity: OpportunityWrapper(managedObject: opportunity), onItemSelected: { _ in })
+                                } else if currentMethodology == "SCUBATANK" {
+                                    SCUBATANKIndicatorView(opportunity: OpportunityWrapper(managedObject: opportunity), onItemSelected: { _ in })
+                                }
+                            }
                         }
                     }
                 }

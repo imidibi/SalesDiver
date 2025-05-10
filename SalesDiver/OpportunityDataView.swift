@@ -23,6 +23,8 @@ enum OpportunitySortOption: String, CaseIterable {
 struct OpportunityDataView: View {
     @ObservedObject var viewModel = OpportunityViewModel()
     
+    @AppStorage("selectedMethodology") private var currentMethodology: String = "BANT"
+    
     @State private var searchText: String = ""  // ✅ Search state
     @State private var sortOption: OpportunitySortOption = .companyName  // ✅ Default sorting
 
@@ -53,103 +55,121 @@ struct OpportunityDataView: View {
     }
 
     var body: some View {
-        let mainContent = VStack {
-            // 🔍 Search Bar
-            HStack {
-                TextField("Search Opportunities", text: $searchText)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .padding(.horizontal)
-
-                Button(action: { searchText = "" }) {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundColor(.gray)
-                }
-                .padding(.trailing)
-                .opacity(searchText.isEmpty ? 0 : 1)
-            }
-            .padding(.top)
-
-            // 🔄 Sorting Picker
-            Picker("Sort by", selection: $sortOption) {
-                ForEach(OpportunitySortOption.allCases, id: \.self) { option in
-                    Text(option.rawValue).tag(option)
-                }
-            }
-            .pickerStyle(SegmentedPickerStyle())
-            .padding(.horizontal)
-
-            // 📋 List of Opportunities
-            List(filteredOpportunities, id: \.id) { opportunity in
+        NavigationStack {
+            VStack {
+                // 🔍 Search Bar
                 HStack {
-                    VStack(alignment: .leading) {
-                        Button(action: {
-                            editingOpportunity = opportunity
-                            isPresentingEditOpportunity = true
-                        }) {
-                            Text("Opportunity: \(opportunity.name)")
-                                .font(.headline)
-                                .foregroundColor(.blue)
-                        }
+                    TextField("Search Opportunities", text: $searchText)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .padding(.horizontal)
 
-                        Text("Company: \(opportunity.companyName)")
+                    Button(action: { searchText = "" }) {
+                        Image(systemName: "xmark.circle.fill")
                             .foregroundColor(.gray)
+                    }
+                    .padding(.trailing)
+                    .opacity(searchText.isEmpty ? 0 : 1)
+                }
+                .padding(.top)
 
-                        Text("Close Date: \(opportunity.closeDate, style: .date)")
+                // 🔄 Sorting Picker
+                Picker("Sort by", selection: $sortOption) {
+                    ForEach(OpportunitySortOption.allCases, id: \.self) { option in
+                        Text(option.rawValue).tag(option)
+                    }
+                }
+                .pickerStyle(SegmentedPickerStyle())
+                .padding(.horizontal)
 
-                        let trimmedProduct = opportunity.productName.trimmingCharacters(in: .whitespacesAndNewlines)
-                        if !trimmedProduct.isEmpty && trimmedProduct.lowercased() != "unknown product" {
-                            Text("Product: \(trimmedProduct)")
+                // 📋 List of Opportunities
+                List(filteredOpportunities, id: \.id) { opportunity in
+                    HStack {
+                        VStack(alignment: .leading) {
+                            Button(action: {
+                                editingOpportunity = opportunity
+                                isPresentingEditOpportunity = true
+                            }) {
+                                Text("Opportunity: \(opportunity.name)")
+                                    .font(.headline)
+                                    .foregroundColor(.blue)
+                            }
+
+                            Text("Company: \(opportunity.companyName)")
                                 .foregroundColor(.gray)
+
+                            Text("Close Date: \(opportunity.closeDate, style: .date)")
+
+                            let trimmedProduct = opportunity.productName.trimmingCharacters(in: .whitespacesAndNewlines)
+                            if !trimmedProduct.isEmpty && trimmedProduct.lowercased() != "unknown product" {
+                                Text("Product: \(trimmedProduct)")
+                                    .foregroundColor(.gray)
+                            }
+
+                            Text("Probability: \(opportunity.probability)%")
+                            Text("Monthly Revenue: $\(opportunity.monthlyRevenue, specifier: "%.2f")")
+                            Text("One-Time Revenue: $\(opportunity.onetimeRevenue, specifier: "%.2f")")
+                            Text("Estimated Value: $\(opportunity.estimatedValue, specifier: "%.2f")")
+
+                            let (statusText, statusColor): (String, Color) = {
+                                switch opportunity.status {
+                                case 1: return ("Active", .blue)
+                                case 2: return ("Lost", .red)
+                                case 3: return ("Closed", .green)
+                                default: return ("Unknown", .gray)
+                                }
+                            }()
+
+                            Text("Status: \(statusText)")
+                                .foregroundColor(statusColor)
                         }
 
-                        Text("Probability: \(opportunity.probability)%")
-                        Text("Monthly Revenue: $\(opportunity.monthlyRevenue, specifier: "%.2f")")
-                        Text("One-Time Revenue: $\(opportunity.onetimeRevenue, specifier: "%.2f")")
-                        Text("Estimated Value: $\(opportunity.estimatedValue, specifier: "%.2f")")
+                        Spacer()
 
-                        let (statusText, statusColor): (String, Color) = {
-                            switch opportunity.status {
-                            case 1: return ("Active", .blue)
-                            case 2: return ("Lost", .red)
-                            case 3: return ("Closed", .green)
-                            default: return ("Unknown", .gray)
+                        Group {
+                            if currentMethodology == "BANT" {
+                                BANTIndicatorView(opportunity: opportunity) { bantType in
+                                    print("BANT icon pressed: \(bantType)")
+                                    selectedBANTItem = SelectedBANTItem(opportunity: opportunity, bantType: bantType)
+                                }
+                            } else if currentMethodology == "MEDDIC" {
+                                MEDDICIndicatorView(opportunity: opportunity) { metricType in
+                                    print("MEDDIC icon pressed: \(metricType)")
+                                    selectedBANTItem = SelectedBANTItem(opportunity: opportunity, bantType: .budget) // Placeholder BANTType for compatibility
+                                }
+                            } else if currentMethodology == "SCUBATANK" {
+                                SCUBATANKIndicatorView(opportunity: opportunity) { elementType in
+                                    print("SCUBATANK icon pressed: \(elementType)")
+                                    selectedBANTItem = SelectedBANTItem(opportunity: opportunity, bantType: .budget) // Placeholder BANTType for compatibility
+                                }
                             }
-                        }()
-
-                        Text("Status: \(statusText)")
-                            .foregroundColor(statusColor)
-                    }
-
-                    Spacer()
-
-                    BANTIndicatorView(opportunity: opportunity) { bantType in
-                        print("BANT icon pressed: \(bantType)")
-                        selectedBANTItem = SelectedBANTItem(opportunity: opportunity, bantType: bantType)
+                        }
                     }
                 }
             }
-        }
-
-        return NavigationStack {
-            mainContent
-                .navigationTitle("Opportunities")
-                .onAppear { viewModel.fetchOpportunities() }
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button(action: { isPresentingAddOpportunity = true }) {
-                            Image(systemName: "plus")
-                        }
+            .navigationTitle("Opportunities")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: { isPresentingAddOpportunity = true }) {
+                        Image(systemName: "plus")
                     }
                 }
-        }
-        .sheet(item: $selectedBANTItem) { item in
-            BANTEditorView(viewModel: viewModel, opportunity: item.opportunity, bantType: item.bantType)
-        }
-        .sheet(isPresented: $isPresentingAddOpportunity) {
-            AddOpportunityView(viewModel: viewModel)
-        }
-        .sheet(item: $editingOpportunity) { opportunity in
-            EditOpportunityView(viewModel: viewModel, opportunity: opportunity)
+            }
+            .onAppear { viewModel.fetchOpportunities() }
+            .sheet(item: $selectedBANTItem) { item in
+                if currentMethodology == "BANT" {
+                    BANTEditorView(viewModel: viewModel, opportunity: item.opportunity, bantType: item.bantType)
+                } else if currentMethodology == "MEDDIC" {
+                    MEDDICEditorView(viewModel: viewModel, opportunity: item.opportunity, metricType: "Metrics") // Adjust metricType as needed
+                } else if currentMethodology == "SCUBATANK" {
+                    SCUBATANKEditorView(viewModel: viewModel, opportunity: item.opportunity, elementType: "Solution") // Adjust elementType as needed
+                }
+            }
+            .sheet(isPresented: $isPresentingAddOpportunity) {
+                AddOpportunityView(viewModel: viewModel)
+            }
+            .sheet(item: $editingOpportunity) { opportunity in
+                EditOpportunityView(viewModel: viewModel, opportunity: opportunity)
+            }
         }
     }
 }

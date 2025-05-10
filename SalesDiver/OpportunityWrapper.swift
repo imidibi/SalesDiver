@@ -81,6 +81,74 @@ class OpportunityWrapper: ObservableObject, Identifiable {
         managedObject.value(forKey: "timingCommentary") as? String ?? ""
     }
 
+    // ✅ MEDDIC Qualification Status
+    var metricsStatus: Int {
+        managedObject.value(forKey: "metricsStatus") as? Int ?? 0
+    }
+
+    var decisionCriteriaStatus: Int {
+        managedObject.value(forKey: "decisionCriteriaStatus") as? Int ?? 0
+    }
+
+    var championStatus: Int {
+        managedObject.value(forKey: "championStatus") as? Int ?? 0
+    }
+
+    // ✅ MEDDIC Qualification Commentary
+    var metricsCommentary: String {
+        managedObject.value(forKey: "metricsCommentary") as? String ?? ""
+    }
+
+    var decisionCriteriaCommentary: String {
+        managedObject.value(forKey: "decisionCriteriaCommentary") as? String ?? ""
+    }
+
+    var championCommentary: String {
+        managedObject.value(forKey: "championCommentary") as? String ?? ""
+    }
+
+    // ✅ SCUBATANK Qualification Status
+    var solutionStatus: Int {
+        managedObject.value(forKey: "solutionStatus") as? Int ?? 0
+    }
+
+    var competitionStatus: Int {
+        managedObject.value(forKey: "competitionStatus") as? Int ?? 0
+    }
+
+    var uniquesStatus: Int {
+        managedObject.value(forKey: "uniquesStatus") as? Int ?? 0
+    }
+
+    var benefitsStatus: Int {
+        managedObject.value(forKey: "benefitsStatus") as? Int ?? 0
+    }
+
+    var actionPlanStatus: Int {
+        managedObject.value(forKey: "actionPlanStatus") as? Int ?? 0
+    }
+
+    // ✅ SCUBATANK Qualification Commentary
+    var solutionCommentary: String {
+        managedObject.value(forKey: "solutionCommentary") as? String ?? ""
+    }
+
+    var competitionCommentary: String {
+        managedObject.value(forKey: "competitionCommentary") as? String ?? ""
+    }
+
+    var uniquesCommentary: String {
+        managedObject.value(forKey: "uniquesCommentary") as? String ?? ""
+    }
+
+    var benefitsCommentary: String {
+        managedObject.value(forKey: "benefitsCommentary") as? String ?? ""
+    }
+
+    var actionPlanCommentary: String {
+        managedObject.value(forKey: "actionPlanCommentary") as? String ?? ""
+    }
+
     // Expose status value from OpportunityEntity (1: Active, 2: Lost, 3: Closed)
     var status: Int16 {
         let value = managedObject.value(forKey: "status") as? Int16 ?? 0

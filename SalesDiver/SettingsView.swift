@@ -213,15 +213,22 @@ struct SettingsView: View {
                 Toggle("Show Settings", isOn: $showAutotaskSettings)
 
                 if showAutotaskSettings {
-                    TextField("API Username", text: $apiUsername)
-                        .textContentType(.username)
-                        .autocapitalization(.none)
-                    
-                    SecureField("API Secret", text: $apiSecret)
-                        .textContentType(.password)
-                    
-                    TextField("Tracking Identifier", text: $apiTrackingID)
-                        .autocapitalization(.none)
+                    HStack {
+                        Text("API Username:")
+                        TextField("", text: $apiUsername)
+                            .textContentType(.username)
+                            .autocapitalization(.none)
+                    }
+                    HStack {
+                        Text("API Secret:")
+                        SecureField("", text: $apiSecret)
+                            .textContentType(.password)
+                    }
+                    HStack {
+                        Text("Tracking Identifier:")
+                        TextField("", text: $apiTrackingID)
+                            .autocapitalization(.none)
+                    }
                 }
             }
         }

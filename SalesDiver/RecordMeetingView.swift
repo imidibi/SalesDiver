@@ -8,6 +8,7 @@ struct RecordMeetingView: View {
     @State private var currentQuestionIndex = 0
     @StateObject private var speechManager = SpeechManager()
     @State private var currentAnswer = ""
+    @AppStorage("selectedMethodology") private var currentMethodology: String = "BANT"
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -42,8 +43,16 @@ struct RecordMeetingView: View {
 
                 if let opportunityEntity = meeting.opportunity {
                     let wrapper = OpportunityWrapper(managedObject: opportunityEntity)
-                    BANTIndicatorView(opportunity: wrapper, onBANTSelected: { _ in })
-                        .scaleEffect(0.8)
+                    Group {
+                        if currentMethodology == "BANT" {
+                            BANTIndicatorView(opportunity: wrapper, onBANTSelected: { _ in })
+                        } else if currentMethodology == "MEDDIC" {
+                            MEDDICIndicatorView(opportunity: wrapper, onItemSelected: { _ in })
+                        } else if currentMethodology == "SCUBATANK" {
+                            SCUBATANKIndicatorView(opportunity: wrapper, onItemSelected: { _ in })
+                        }
+                    }
+                    .scaleEffect(0.8)
                 }
             }
 

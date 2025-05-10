@@ -178,6 +178,8 @@ struct MeetingRowView: View {
 struct OpportunityDetailsView: View {
     let opportunity: OpportunityEntity
 
+    @AppStorage("selectedMethodology") private var currentMethodology: String = "BANT"
+
     var body: some View {
         VStack(alignment: .trailing, spacing: 4) {
             Text("Opportunity: \(opportunity.name ?? "Unknown")")
@@ -195,9 +197,17 @@ struct OpportunityDetailsView: View {
             }
 
             let wrapper = OpportunityWrapper(managedObject: opportunity)
-            BANTIndicatorView(opportunity: wrapper, onBANTSelected: { _ in })
-                .scaleEffect(0.7)
-                .padding(.top, 4)
+            Group {
+                if currentMethodology == "BANT" {
+                    BANTIndicatorView(opportunity: wrapper, onBANTSelected: { _ in })
+                } else if currentMethodology == "MEDDIC" {
+                    MEDDICIndicatorView(opportunity: wrapper, onItemSelected: { _ in })
+                } else if currentMethodology == "SCUBATANK" {
+                    SCUBATANKIndicatorView(opportunity: wrapper, onItemSelected: { _ in })
+                }
+            }
+            .scaleEffect(0.7)
+            .padding(.top, 4)
         }
     }
 }
