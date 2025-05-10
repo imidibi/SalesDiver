@@ -11,6 +11,11 @@ struct SettingsView: View {
     @AppStorage("autotaskAPIUsername") private var apiUsername = ""
     @AppStorage("autotaskAPISecret") private var apiSecret = ""
     @AppStorage("autotaskAPITrackingID") private var apiTrackingID = ""
+    @AppStorage("myName") private var myName = ""
+    @AppStorage("myEmail") private var myEmail = ""
+    @AppStorage("myCompanyName") private var myCompanyName = ""
+    @AppStorage("myCompanyURL") private var myCompanyURL = ""
+    @AppStorage("selectedMethodology") private var selectedMethodology = "BANT"
     
     @State private var testResult: String = ""
     @State private var isTesting = false
@@ -31,7 +36,7 @@ struct SettingsView: View {
     // Product selection state
     @State private var selectedProducts: [ProductEntity] = []
     @State private var showProductSearch = false
-    @State private var productImportCache: [(Int, String, String, Double, Double, String, String, Date?)] = []
+    @State private var productImportCache: [(Int, String, String, String, Double?, Double?, Date?)] = []
     
     private var searchHeaderText: String {
         switch selectedCategory {
@@ -225,6 +230,38 @@ struct SettingsView: View {
    var body: some View {
         NavigationStack {
             Form {
+                Section(header: Text("My Settings")) {
+                    HStack {
+                        Text("My Name:")
+                        TextField("", text: $myName)
+                            .textContentType(.name)
+                    }
+                    HStack {
+                        Text("My Email Address:")
+                        TextField("", text: $myEmail)
+                            .textContentType(.emailAddress)
+                            .keyboardType(.emailAddress)
+                    }
+                    HStack {
+                        Text("My Company Name:")
+                        TextField("", text: $myCompanyName)
+                    }
+                    HStack {
+                        Text("My Company URL:")
+                        TextField("", text: $myCompanyURL)
+                            .keyboardType(.URL)
+                    }
+                }
+
+                Section(header: Text("Qualification Methodology")) {
+                    Picker("Methodology", selection: $selectedMethodology) {
+                        Text("BANT").tag("BANT")
+                        Text("MEDDIC").tag("MEDDIC")
+                        Text("SCUBATANK").tag("SCUBATANK")
+                    }
+                    .pickerStyle(SegmentedPickerStyle())
+                }
+
                 autotaskIntegrationSection
 
                 if autotaskEnabled {
@@ -936,32 +973,32 @@ private func importSelectedContacts() {
         let requestBody: [String: Any] = [
             "MaxRecords": 100,
             "IncludeFields": [
-                "id", "description", "invoiceDescription", "unitCost",
+                "id", "name", "description", "invoiceDescription", "unitCost",
                 "unitPrice", "sku", "catalogNumberPartNumber", "lastModifiedDate"
             ],
             "Filter": [filterGroup]
         ]
 
-        AutotaskAPIManager.shared.searchServicesFromBody(requestBody) { results in
+        let completionBlock: ([(Int, String, String, Double, Double, String, String, Date?)]) -> Void = { results in
             DispatchQueue.main.async {
-                // For productSearchResults, consistently use $0.1 as the product name/description, and blank $0.2 for display.
+                // For productSearchResults, consistently use $0.1 as the product name, and blank $0.2 for display.
                 productSearchResults = results.map { ($0.0, $0.1, "") }
-                // For import cache, keep all fields as before.
-                productImportCache = results.map {
-                    (
-                        $0.0,  // id
-                        $0.1,  // description (used as name)
-                        $0.2,  // invoiceDescription
-                        $0.3,  // unitCost
-                        $0.4,  // unitPrice
-                        $0.5,  // sku
-                        $0.6,  // catalogNumberPartNumber
-                        $0.7   // lastModifiedDate
+                productImportCache = results.map { tuple in
+                    let (id, name, description, unitCost, unitPrice, invoiceDescription, _, lastModifiedDate) = tuple
+                    return (
+                        id,
+                        name,                   // name -> name
+                        description,            // description -> prodDescription
+                        invoiceDescription,     // invoiceDescription -> benefits
+                        unitCost,               // unitCost -> unitCost
+                        unitPrice,              // unitPrice -> unitPrice
+                        lastModifiedDate        // lastModifiedDate
                     )
                 }
                 showProductSearch = true
             }
         }
+        AutotaskAPIManager.shared.searchServicesFromBody(requestBody, completion: completionBlock)
     }
 
     // MARK: - Product Selection Overlay
@@ -1028,17 +1065,12 @@ private func importSelectedContacts() {
                 if let cached = productImportCache.first(where: { $0.1 == product.name }) {
                     product.autotaskID = Int64(cached.0)
                     product.name = cached.1
-                    product.type = "\(cached.2)"
-                    product.prodDescription = "\(cached.3)"
-                    product.units = "\(cached.4)"
-                    product.unitPrice = Double("\(cached.5)") ?? 0.0
-                    product.unitCost = Double("\(cached.6)") ?? 0.0
-                    if let date = cached.7 {
-                        product.benefits = ISO8601DateFormatter().string(from: date)
-                    } else {
-                        product.benefits = ""
-                    }
-                    // Remove or fix: product.lastModified = cached.8 if out of bounds
+                    product.type = "Service"
+                    product.prodDescription = cached.2
+                    product.benefits = cached.3
+                    product.unitCost = cached.4 ?? 0.0
+                    product.unitPrice = cached.5 ?? 0.0
+                    product.lastModified = cached.6
                 }
 
                 DispatchQueue.main.async {
@@ -1059,7 +1091,7 @@ private func importSelectedContacts() {
     private func fetchAllProductsFromAutotask() {
         let requestBody: [String: Any] = [
             "MaxRecords": 100,
-            "IncludeFields": ["id", "name", "type", "unitCost", "unitPrice", "sku", "catalogNumberPartNumber", "lastModifiedDate"],
+            "IncludeFields": ["id", "name", "description", "invoiceDescription", "unitCost", "unitPrice", "lastModifiedDate"],
             "Filter": [
                 [
                     "op": "exist",
@@ -1068,7 +1100,7 @@ private func importSelectedContacts() {
             ]
         ]
 
-        AutotaskAPIManager.shared.searchServicesFromBody(requestBody) { results in
+        let completionBlock: ([(Int, String, String, Double, Double, String, String, Date?)]) -> Void = { results in
             DispatchQueue.main.async {
                 if results.isEmpty {
                     print("⚠️ No products/services found.")
@@ -1076,20 +1108,21 @@ private func importSelectedContacts() {
                     print("✅ Retrieved \(results.count) products/services.")
                 }
                 productSearchResults = results.map { ($0.0, $0.1, $0.2) }
-                productImportCache = results.map {
-                    (
-                        $0.0,  // id
-                        $0.1,  // name
-                        $0.2,  // type
-                        $0.3,  // unitCost
-                        $0.4,  // unitPrice
-                        $0.5,  // sku
-                        $0.6,  // catalogNumberPartNumber
-                        $0.7   // lastModifiedDate
+                productImportCache = results.map { tuple in
+                    let (id, name, description, unitCost, unitPrice, invoiceDescription, _, lastModifiedDate) = tuple
+                    return (
+                        id,
+                        name,                   // name -> name
+                        description,            // description -> prodDescription
+                        invoiceDescription,     // invoiceDescription -> benefits
+                        unitCost,               // unitCost -> unitCost
+                        unitPrice,              // unitPrice -> unitPrice
+                        lastModifiedDate        // lastModifiedDate
                     )
                 }
             }
         }
+        AutotaskAPIManager.shared.searchServicesFromBody(requestBody, completion: completionBlock)
     }
 }
 
