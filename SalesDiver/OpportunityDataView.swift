@@ -145,9 +145,9 @@ struct OpportunityDataView: View {
                                     selectedBANTItem = SelectedBANTItem(opportunity: opportunity, bantType: bantType)
                                 }
                             } else if currentMethodology == "MEDDIC" {
-                                MEDDICIndicatorView(opportunity: opportunity) { metricType in
-                                    print("MEDDIC icon pressed: \(metricType)")
-                                    selectedQualificationItem = SelectedQualificationItem(opportunity: opportunity, qualificationType: metricType)
+                                MEDDICIndicatorView(opportunity: opportunity) { meddicType in
+                                    print("MEDDIC icon pressed: \(meddicType.rawValue)")
+                                    selectedQualificationItem = SelectedQualificationItem(opportunity: opportunity, qualificationType: meddicType.rawValue)
                                 }
                             } else if currentMethodology == "SCUBATANK" {
                                 SCUBATANKIndicatorView(opportunity: opportunity) { scubatankType in

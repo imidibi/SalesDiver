@@ -603,7 +603,7 @@ struct PlanMeetingView: View {
             if currentMethodology == "BANT" {
                 BANTIndicatorView(opportunity: wrapper, onBANTSelected: { _ in })
             } else if currentMethodology == "MEDDIC" {
-                MEDDICIndicatorView(opportunity: wrapper, onItemSelected: { _ in })
+                MEDDICIndicatorView(opportunity: wrapper, onMEDDICSelected: { _ in })
             } else if currentMethodology == "SCUBATANK" {
                 SCUBATANKIndicatorView(opportunity: wrapper, onSCUBATANKSelected: { _ in })
             } else {

@@ -107,6 +107,16 @@ class OpportunityWrapper: ObservableObject, Identifiable {
         managedObject.value(forKey: "championCommentary") as? String ?? ""
     }
 
+    // ✅ MEDDIC Qualification Status (mapped to BANT fields)
+    var economicBuyerStatus: Int { authorityStatus }
+    var identifyPainStatus: Int { needStatus }
+    var decisionProcessStatus: Int { timingStatus }
+
+    // ✅ MEDDIC Qualification Commentary (mapped to BANT fields)
+    var economicBuyerCommentary: String { authorityCommentary }
+    var identifyPainCommentary: String { needCommentary }
+    var decisionProcessCommentary: String { timingCommentary }
+
     // ✅ SCUBATANK Qualification Status
     var solutionStatus: Int {
         let value = managedObject.value(forKey: "solutionStatus") as? Int ?? 0

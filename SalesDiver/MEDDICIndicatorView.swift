@@ -7,27 +7,36 @@
 
 
 
+
 import SwiftUI
+
+enum MEDDICType: String, CaseIterable {
+    case metrics = "Metrics"
+    case economicBuyer = "Economic Buyer"
+    case identifyPain = "Identify Pain"
+    case decisionProcess = "Decision Process"
+    case decisionCriteria = "Decision Criteria"
+    case champion = "Champion"
+}
 
 struct MEDDICIndicatorView: View {
     var opportunity: OpportunityWrapper
-    var onItemSelected: (String) -> Void
+    var onMEDDICSelected: (MEDDICType) -> Void
 
     var body: some View {
         HStack(spacing: 15) {
-            QualificationIcon(iconName: "dollarsign.circle.fill", status: opportunity.budgetStatus)
-                .onTapGesture { onItemSelected("Metrics") }
+            QualificationIcon(iconName: "dollarsign.circle.fill", status: opportunity.metricsStatus)
+                .onTapGesture { onMEDDICSelected(.metrics) }
             QualificationIcon(iconName: "person.fill", status: opportunity.authorityStatus)
-                .onTapGesture { onItemSelected("Economic Buyer") }
+                .onTapGesture { onMEDDICSelected(.economicBuyer) }
             QualificationIcon(iconName: "exclamationmark.circle.fill", status: opportunity.needStatus)
-                .onTapGesture { onItemSelected("Identify Pain") }
+                .onTapGesture { onMEDDICSelected(.identifyPain) }
             QualificationIcon(iconName: "clock.fill", status: opportunity.timingStatus)
-                .onTapGesture { onItemSelected("Decision Process") }
-            // Placeholder for additional MEDDIC elements
-            QualificationIcon(iconName: "checkmark.circle.fill", status: 0)
-                .onTapGesture { onItemSelected("Decision Criteria") }
-            QualificationIcon(iconName: "star.circle.fill", status: 0)
-                .onTapGesture { onItemSelected("Champion") }
+                .onTapGesture { onMEDDICSelected(.decisionProcess) }
+            QualificationIcon(iconName: "checkmark.circle.fill", status: opportunity.decisionCriteriaStatus)
+                .onTapGesture { onMEDDICSelected(.decisionCriteria) }
+            QualificationIcon(iconName: "star.circle.fill", status: opportunity.championStatus)
+                .onTapGesture { onMEDDICSelected(.champion) }
         }
     }
 }

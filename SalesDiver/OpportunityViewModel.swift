@@ -131,6 +131,15 @@ class OpportunityViewModel: ObservableObject {
         case "Metrics":
             opportunity.managedObject.setValue(status, forKey: "metricsStatus")
             opportunity.managedObject.setValue(commentary, forKey: "metricsCommentary")
+        case "Economic Buyer":
+            opportunity.managedObject.setValue(status, forKey: "authorityStatus")
+            opportunity.managedObject.setValue(commentary, forKey: "authorityCommentary")
+        case "Identify Pain":
+            opportunity.managedObject.setValue(status, forKey: "needStatus")
+            opportunity.managedObject.setValue(commentary, forKey: "needCommentary")
+        case "Decision Process":
+            opportunity.managedObject.setValue(status, forKey: "timingStatus")
+            opportunity.managedObject.setValue(commentary, forKey: "timingCommentary")
         case "Decision Criteria":
             opportunity.managedObject.setValue(status, forKey: "decisionCriteriaStatus")
             opportunity.managedObject.setValue(commentary, forKey: "decisionCriteriaCommentary")
@@ -148,6 +157,15 @@ class OpportunityViewModel: ObservableObject {
         case "Metrics":
             return (opportunity.managedObject.value(forKey: "metricsStatus") as? Int ?? 0,
                     opportunity.managedObject.value(forKey: "metricsCommentary") as? String ?? "")
+        case "Economic Buyer":
+            return (opportunity.managedObject.value(forKey: "authorityStatus") as? Int ?? 0,
+                    opportunity.managedObject.value(forKey: "authorityCommentary") as? String ?? "")
+        case "Identify Pain":
+            return (opportunity.managedObject.value(forKey: "needStatus") as? Int ?? 0,
+                    opportunity.managedObject.value(forKey: "needCommentary") as? String ?? "")
+        case "Decision Process":
+            return (opportunity.managedObject.value(forKey: "timingStatus") as? Int ?? 0,
+                    opportunity.managedObject.value(forKey: "timingCommentary") as? String ?? "")
         case "Decision Criteria":
             return (opportunity.managedObject.value(forKey: "decisionCriteriaStatus") as? Int ?? 0,
                     opportunity.managedObject.value(forKey: "decisionCriteriaCommentary") as? String ?? "")

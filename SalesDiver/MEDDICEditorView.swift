@@ -13,8 +13,18 @@ struct MEDDICEditorView: View {
     var opportunity: OpportunityWrapper
     var metricType: String
 
-    @State private var selectedStatus: Int = 0
-    @State private var commentary: String = ""
+    @State private var selectedStatus: Int
+    @State private var commentary: String
+
+    init(viewModel: OpportunityViewModel, opportunity: OpportunityWrapper, metricType: String) {
+        self.viewModel = viewModel
+        self.opportunity = opportunity
+        self.metricType = metricType
+
+        let statusInfo = viewModel.getMEDDICStatus(for: opportunity, metricType: metricType)
+        _selectedStatus = State(initialValue: statusInfo.status)
+        _commentary = State(initialValue: statusInfo.commentary)
+    }
 
     var body: some View {
         NavigationStack {
@@ -45,11 +55,6 @@ struct MEDDICEditorView: View {
                         dismiss()
                     }
                 }
-            }
-            .onAppear {
-                let statusInfo = viewModel.getMEDDICStatus(for: opportunity, metricType: metricType)
-                selectedStatus = statusInfo.status
-                commentary = statusInfo.commentary
             }
         }
     }
