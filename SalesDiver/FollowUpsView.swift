@@ -163,15 +163,7 @@ struct FollowUpsView: View {
                         Text(followUp.opportunity?.name ?? "No Opportunity")
                             .font(.subheadline)
                         if let opportunity = followUp.opportunity {
-                            Group {
-                                if currentMethodology == "BANT" {
-                                    BANTIndicatorView(opportunity: OpportunityWrapper(managedObject: opportunity), onBANTSelected: { _ in })
-                                } else if currentMethodology == "MEDDIC" {
-                                    MEDDICIndicatorView(opportunity: OpportunityWrapper(managedObject: opportunity), onItemSelected: { _ in })
-                                } else if currentMethodology == "SCUBATANK" {
-                                    SCUBATANKIndicatorView(opportunity: OpportunityWrapper(managedObject: opportunity), onItemSelected: { _ in })
-                                }
-                            }
+                            indicatorView(for: opportunity)
                         }
                     }
                 }
@@ -199,6 +191,20 @@ struct FollowUpsView: View {
             NavigationView {
                 EditFollowUpView(followUp: followUp)
             }
+        }
+    }
+
+    @ViewBuilder
+    private func indicatorView(for opportunity: OpportunityEntity) -> some View {
+        let wrapper = OpportunityWrapper(managedObject: opportunity)
+        if currentMethodology == "BANT" {
+            BANTIndicatorView(opportunity: wrapper, onBANTSelected: { _ in })
+        } else if currentMethodology == "MEDDIC" {
+            MEDDICIndicatorView(opportunity: wrapper, onItemSelected: { _ in })
+        } else if currentMethodology == "SCUBATANK" {
+            SCUBATANKIndicatorView(opportunity: wrapper, onSCUBATANKSelected: { _ in })
+        } else {
+            EmptyView()
         }
     }
 

@@ -179,7 +179,7 @@ struct AddOpportunityView: View {
                         saveOpportunity()
                         dismiss()
                     }
-                    .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty || selectedCompany == nil || selectedProduct == nil || monthlyRevenue.isEmpty || onetimeRevenue.isEmpty || estimatedValue.isEmpty)
+                    .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
                     .foregroundColor(.primary)
                 }
             }
@@ -249,11 +249,10 @@ struct AddOpportunityView: View {
 
     // ✅ Save Opportunity
     private func saveOpportunity() {
-        guard let company = selectedCompany,
-              let product = selectedProduct,
-              let monthly = Double(monthlyRevenue),
-              let onetime = Double(onetimeRevenue),
-              let estimated = Double(estimatedValue) else { return }
+        guard let company = selectedCompany, let product = selectedProduct else { return }
+        let monthly = Double(monthlyRevenue) ?? 0.0
+        let onetime = Double(onetimeRevenue) ?? 0.0
+        let estimated = Double(estimatedValue) ?? 0.0
         let probabilityVal = Int16(probability)
 
         viewModel.addOpportunity(

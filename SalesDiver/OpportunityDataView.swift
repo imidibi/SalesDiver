@@ -14,6 +14,17 @@ struct SelectedBANTItem: Identifiable {
     var bantType: BANTIndicatorView.BANTType
 }
 
+// New struct for non-BANT qualification item selection
+struct SelectedQualificationItem: Identifiable, Equatable {
+    var id: NSManagedObjectID { opportunity.id }
+    var opportunity: OpportunityWrapper
+    var qualificationType: String
+
+    static func == (lhs: SelectedQualificationItem, rhs: SelectedQualificationItem) -> Bool {
+        lhs.opportunity.id == rhs.opportunity.id && lhs.qualificationType == rhs.qualificationType
+    }
+}
+
 enum OpportunitySortOption: String, CaseIterable {
     case companyName = "Company Name"
     case productName = "Product Name"
@@ -29,11 +40,13 @@ struct OpportunityDataView: View {
     @State private var sortOption: OpportunitySortOption = .companyName  // ✅ Default sorting
 
     @State private var selectedBANTItem: SelectedBANTItem? = nil  // Combined state for BANT Editing
+    @State private var selectedQualificationItem: SelectedQualificationItem? = nil // State for non-BANT items
     @State private var editingOpportunity: OpportunityWrapper?   // ✅ Used for Opportunity Editing
     @State private var isPresentingAddOpportunity = false  // ✅ Added state for modal
     @State private var isPresentingEditOpportunity = false // ✅ Added state for editing
 
     var filteredOpportunities: [OpportunityWrapper] {
+        print("Rebuilding filtered opportunities: \(viewModel.opportunities.map { $0.id })")
         var opportunities = viewModel.opportunities
 
         // 🔍 Filter by search text
@@ -134,12 +147,12 @@ struct OpportunityDataView: View {
                             } else if currentMethodology == "MEDDIC" {
                                 MEDDICIndicatorView(opportunity: opportunity) { metricType in
                                     print("MEDDIC icon pressed: \(metricType)")
-                                    selectedBANTItem = SelectedBANTItem(opportunity: opportunity, bantType: .budget) // Placeholder BANTType for compatibility
+                                    selectedQualificationItem = SelectedQualificationItem(opportunity: opportunity, qualificationType: metricType)
                                 }
                             } else if currentMethodology == "SCUBATANK" {
-                                SCUBATANKIndicatorView(opportunity: opportunity) { elementType in
-                                    print("SCUBATANK icon pressed: \(elementType)")
-                                    selectedBANTItem = SelectedBANTItem(opportunity: opportunity, bantType: .budget) // Placeholder BANTType for compatibility
+                                SCUBATANKIndicatorView(opportunity: opportunity) { scubatankType in
+                                    print("SCUBATANK icon pressed: \(scubatankType.rawValue)")
+                                    selectedQualificationItem = SelectedQualificationItem(opportunity: opportunity, qualificationType: scubatankType.rawValue)
                                 }
                             }
                         }
@@ -158,10 +171,18 @@ struct OpportunityDataView: View {
             .sheet(item: $selectedBANTItem) { item in
                 if currentMethodology == "BANT" {
                     BANTEditorView(viewModel: viewModel, opportunity: item.opportunity, bantType: item.bantType)
-                } else if currentMethodology == "MEDDIC" {
-                    MEDDICEditorView(viewModel: viewModel, opportunity: item.opportunity, metricType: "Metrics") // Adjust metricType as needed
+                }
+            }
+            .sheet(item: $selectedQualificationItem) { item in
+                if currentMethodology == "MEDDIC" {
+                    MEDDICEditorView(viewModel: viewModel, opportunity: item.opportunity, metricType: item.qualificationType)
                 } else if currentMethodology == "SCUBATANK" {
-                    SCUBATANKEditorView(viewModel: viewModel, opportunity: item.opportunity, elementType: "Solution") // Adjust elementType as needed
+                    SCUBATANKEditorView(viewModel: viewModel, opportunity: item.opportunity, elementType: item.qualificationType)
+                }
+            }
+            .onChange(of: selectedQualificationItem) {
+                if selectedQualificationItem == nil {
+                    viewModel.fetchOpportunities()
                 }
             }
             .sheet(isPresented: $isPresentingAddOpportunity) {

@@ -109,23 +109,33 @@ class OpportunityWrapper: ObservableObject, Identifiable {
 
     // ✅ SCUBATANK Qualification Status
     var solutionStatus: Int {
-        managedObject.value(forKey: "solutionStatus") as? Int ?? 0
+        let value = managedObject.value(forKey: "solutionStatus") as? Int ?? 0
+        print("Accessing solutionStatus: \(value)")
+        return value
     }
 
     var competitionStatus: Int {
-        managedObject.value(forKey: "competitionStatus") as? Int ?? 0
+        let value = managedObject.value(forKey: "competitionStatus") as? Int ?? 0
+        print("Accessing competitionStatus: \(value)")
+        return value
     }
 
     var uniquesStatus: Int {
-        managedObject.value(forKey: "uniquesStatus") as? Int ?? 0
+        let value = managedObject.value(forKey: "uniquesStatus") as? Int ?? 0
+        print("Accessing uniquesStatus: \(value)")
+        return value
     }
 
     var benefitsStatus: Int {
-        managedObject.value(forKey: "benefitsStatus") as? Int ?? 0
+        let value = managedObject.value(forKey: "benefitsStatus") as? Int ?? 0
+        print("Accessing benefitsStatus: \(value)")
+        return value
     }
 
     var actionPlanStatus: Int {
-        managedObject.value(forKey: "actionPlanStatus") as? Int ?? 0
+        let value = managedObject.value(forKey: "actionPlanStatus") as? Int ?? 0
+        print("Accessing actionPlanStatus: \(value)")
+        return value
     }
 
     // ✅ SCUBATANK Qualification Commentary

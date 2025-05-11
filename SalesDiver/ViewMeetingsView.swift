@@ -180,6 +180,23 @@ struct OpportunityDetailsView: View {
 
     @AppStorage("selectedMethodology") private var currentMethodology: String = "BANT"
 
+    private var wrapper: OpportunityWrapper {
+        OpportunityWrapper(managedObject: opportunity)
+    }
+
+    @ViewBuilder
+    private var indicatorView: some View {
+        if currentMethodology == "BANT" {
+            BANTIndicatorView(opportunity: wrapper, onBANTSelected: { _ in })
+        } else if currentMethodology == "MEDDIC" {
+            MEDDICIndicatorView(opportunity: wrapper, onItemSelected: { _ in })
+        } else if currentMethodology == "SCUBATANK" {
+            SCUBATANKIndicatorView(opportunity: wrapper, onSCUBATANKSelected: { _ in })
+        } else {
+            EmptyView()
+        }
+    }
+
     var body: some View {
         VStack(alignment: .trailing, spacing: 4) {
             Text("Opportunity: \(opportunity.name ?? "Unknown")")
@@ -196,18 +213,9 @@ struct OpportunityDetailsView: View {
                     .foregroundColor(.gray)
             }
 
-            let wrapper = OpportunityWrapper(managedObject: opportunity)
-            Group {
-                if currentMethodology == "BANT" {
-                    BANTIndicatorView(opportunity: wrapper, onBANTSelected: { _ in })
-                } else if currentMethodology == "MEDDIC" {
-                    MEDDICIndicatorView(opportunity: wrapper, onItemSelected: { _ in })
-                } else if currentMethodology == "SCUBATANK" {
-                    SCUBATANKIndicatorView(opportunity: wrapper, onItemSelected: { _ in })
-                }
-            }
-            .scaleEffect(0.7)
-            .padding(.top, 4)
+            indicatorView
+                .scaleEffect(0.7)
+                .padding(.top, 4)
         }
     }
 }

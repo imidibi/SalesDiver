@@ -160,25 +160,50 @@ class OpportunityViewModel: ObservableObject {
     }
 
     func updateSCUBATANKStatus(for opportunity: OpportunityWrapper, elementType: String, status: Int, commentary: String) {
+        print("Updating SCUBATANK for Opportunity ID: \(opportunity.managedObject.objectID)")
+        print("Element: \(elementType), Status: \(status), Commentary: \(commentary)")
+        
         switch elementType {
         case "Solution":
+            print("Updating solution qualification.")
             opportunity.managedObject.setValue(status, forKey: "solutionStatus")
             opportunity.managedObject.setValue(commentary, forKey: "solutionCommentary")
         case "Competition":
+            print("Updating competition qualification.")
             opportunity.managedObject.setValue(status, forKey: "competitionStatus")
             opportunity.managedObject.setValue(commentary, forKey: "competitionCommentary")
         case "Uniques":
+            print("Updating uniques qualification.")
             opportunity.managedObject.setValue(status, forKey: "uniquesStatus")
             opportunity.managedObject.setValue(commentary, forKey: "uniquesCommentary")
         case "Benefits":
+            print("Updating benefits qualification.")
             opportunity.managedObject.setValue(status, forKey: "benefitsStatus")
             opportunity.managedObject.setValue(commentary, forKey: "benefitsCommentary")
         case "Action Plan":
+            print("Updating action plan qualification.")
             opportunity.managedObject.setValue(status, forKey: "actionPlanStatus")
             opportunity.managedObject.setValue(commentary, forKey: "actionPlanCommentary")
+        case "Need":
+            print("Updating need qualification.")
+            opportunity.managedObject.setValue(status, forKey: "needStatus")
+            opportunity.managedObject.setValue(commentary, forKey: "needCommentary")
+        case "Authority":
+            print("Updating authority qualification.")
+            opportunity.managedObject.setValue(status, forKey: "authorityStatus")
+            opportunity.managedObject.setValue(commentary, forKey: "authorityCommentary")
+        case "Timescale":
+            print("Updating timescale qualification.")
+            opportunity.managedObject.setValue(status, forKey: "timingStatus")
+            opportunity.managedObject.setValue(commentary, forKey: "timingCommentary")
+        case "Kash":
+            print("Updating Kash qualification.")
+            opportunity.managedObject.setValue(status, forKey: "budgetStatus")
+            opportunity.managedObject.setValue(commentary, forKey: "budgetCommentary")
         default:
             break
         }
+        print("Update complete. Saving data.")
         saveData()
     }
 
@@ -199,6 +224,9 @@ class OpportunityViewModel: ObservableObject {
         case "Action Plan":
             return (opportunity.managedObject.value(forKey: "actionPlanStatus") as? Int ?? 0,
                     opportunity.managedObject.value(forKey: "actionPlanCommentary") as? String ?? "")
+        case "Kash":
+            return (opportunity.managedObject.value(forKey: "budgetStatus") as? Int ?? 0,
+                    opportunity.managedObject.value(forKey: "budgetCommentary") as? String ?? "")
         default:
             return (0, "")
         }
@@ -211,6 +239,7 @@ class OpportunityViewModel: ObservableObject {
 
     private func saveData() {
         do {
+            objectWillChange.send()  // Notify UI observers
             try context.save()
             fetchOpportunities()
         } catch {

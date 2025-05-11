@@ -596,23 +596,21 @@ struct PlanMeetingView: View {
     
     @AppStorage("selectedMethodology") private var currentMethodology: String = "BANT"
 
+    @ViewBuilder
     private var bantIcons: some View {
-        Group {
-            if let opportunity = selectedOpportunity {
-                let wrapper = OpportunityWrapper(managedObject: opportunity)
-                Group {
-                    if currentMethodology == "BANT" {
-                        BANTIndicatorView(opportunity: wrapper, onBANTSelected: { _ in })
-                    } else if currentMethodology == "MEDDIC" {
-                        MEDDICIndicatorView(opportunity: wrapper, onItemSelected: { _ in })
-                    } else if currentMethodology == "SCUBATANK" {
-                        SCUBATANKIndicatorView(opportunity: wrapper, onItemSelected: { _ in })
-                    }
-                }
-                .frame(height: 14)
+        if let opportunity = selectedOpportunity {
+            let wrapper = OpportunityWrapper(managedObject: opportunity)
+            if currentMethodology == "BANT" {
+                BANTIndicatorView(opportunity: wrapper, onBANTSelected: { _ in })
+            } else if currentMethodology == "MEDDIC" {
+                MEDDICIndicatorView(opportunity: wrapper, onItemSelected: { _ in })
+            } else if currentMethodology == "SCUBATANK" {
+                SCUBATANKIndicatorView(opportunity: wrapper, onSCUBATANKSelected: { _ in })
             } else {
                 EmptyView()
             }
+        } else {
+            EmptyView()
         }
     }
     

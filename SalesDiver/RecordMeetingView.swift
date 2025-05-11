@@ -10,6 +10,24 @@ struct RecordMeetingView: View {
     @State private var currentAnswer = ""
     @AppStorage("selectedMethodology") private var currentMethodology: String = "BANT"
 
+    @ViewBuilder
+    private var qualificationIndicatorView: some View {
+        if let opportunityEntity = meeting.opportunity {
+            let wrapper = OpportunityWrapper(managedObject: opportunityEntity)
+            if currentMethodology == "BANT" {
+                BANTIndicatorView(opportunity: wrapper, onBANTSelected: { _ in })
+            } else if currentMethodology == "MEDDIC" {
+                MEDDICIndicatorView(opportunity: wrapper, onItemSelected: { _ in })
+            } else if currentMethodology == "SCUBATANK" {
+                SCUBATANKIndicatorView(opportunity: wrapper, onSCUBATANKSelected: { _ in })
+            } else {
+                EmptyView()
+            }
+        } else {
+            EmptyView()
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             // Meeting Info Header
@@ -41,19 +59,8 @@ struct RecordMeetingView: View {
                         .italic()
                 }
 
-                if let opportunityEntity = meeting.opportunity {
-                    let wrapper = OpportunityWrapper(managedObject: opportunityEntity)
-                    Group {
-                        if currentMethodology == "BANT" {
-                            BANTIndicatorView(opportunity: wrapper, onBANTSelected: { _ in })
-                        } else if currentMethodology == "MEDDIC" {
-                            MEDDICIndicatorView(opportunity: wrapper, onItemSelected: { _ in })
-                        } else if currentMethodology == "SCUBATANK" {
-                            SCUBATANKIndicatorView(opportunity: wrapper, onItemSelected: { _ in })
-                        }
-                    }
+                qualificationIndicatorView
                     .scaleEffect(0.8)
-                }
             }
 
             Divider()
