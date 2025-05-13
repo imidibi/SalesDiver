@@ -107,6 +107,42 @@ struct AssessmentView: View {
 
 
     func exportAssessmentAsPDF() {
+        let questionTextMapping: [String: String] = [
+            "Windows PCs": "How many Windows PCs do you have?",
+            "Windows Managed": "Are these Windows PCs managed?",
+            "Macs": "How many Macs do you have?",
+            "Mac Managed": "Are these Macs managed?",
+            "iPhones": "How many iPhones do you have?",
+            "iPhone Managed": "Are these iPhones managed?",
+            "iPads": "How many iPads do you have?",
+            "iPad Managed": "Are these iPads managed?",
+            "Chromebooks": "How many Chromebooks do you have?",
+            "Chromebook Managed": "Are these Chromebooks managed?",
+            "Android": "How many Android devices do you have?",
+            "Android Managed": "Are these Android devices managed?",
+            "Runs Windows 11": "Do your PCs all run Windows 11?",
+            "Windows Version": "If not, which Windows version do they run?",
+            "Has MDM": "Are any of your devices managed by an MDM solution?",
+            "MDM Provider": "If so, which one?",
+            "Has AUP": "Does your company have an Acceptable Use Policy?",
+            "Allows BYOD": "Do you allow personal devices to access company data or email?",
+            "Are Encrypted": "Are your computers encrypted?",
+            // Added server-related mappings
+            "Physical Servers": "How many physical servers do you have?",
+            "Physical Managed": "Are these physical servers managed?",
+            "Virtual Servers": "How many virtual servers do you have?",
+            "Virtual Managed": "Are these virtual servers managed?",
+            "Hypervisors": "How many hypervisors do you have?",
+            "Hypervisor Managed": "Are these hypervisors managed?",
+            "Server OS": "What operating systems are on your servers?",
+            "Hypervisor OS": "What Hypervisor OS do you use?",
+            "Server Apps": "What are the main apps or services run on your servers?",
+            "Migrate to Cloud": "Do you plan to migrate your servers to the cloud?",
+            "Migration Timeframe": "What is your timeframe for migration?",
+            "Had Outage": "Have you experienced a major server outage?",
+            "Recovery Time": "How long did it take to recover from the server outage?"
+        ]
+
         let pdfMetaData = [
             kCGPDFContextCreator: "SalesDiver25",
             kCGPDFContextAuthor: "CMIT Solutions",
@@ -154,9 +190,34 @@ struct AssessmentView: View {
 
                 sectionTitle.draw(at: CGPoint(x: 50, y: 50), withAttributes: titleAttributes)
 
+                let preferredOrder = [
+                    "Windows PCs", "Windows Managed",
+                    "Macs", "Mac Managed",
+                    "iPhones", "iPhone Managed",
+                    "iPads", "iPad Managed",
+                    "Chromebooks", "Chromebook Managed",
+                    "Android", "Android Managed",
+                    "Runs Windows 11", "Windows Version",
+                    "Has MDM", "MDM Provider",
+                    "Has AUP", "Allows BYOD", "Are Encrypted",
+                    // Server section preferred order
+                    "Physical Servers", "Physical Managed",
+                    "Virtual Servers", "Virtual Managed",
+                    "Hypervisors", "Hypervisor Managed",
+                    "Server OS", "Hypervisor OS", "Server Apps",
+                    "Migrate to Cloud", "Migration Timeframe",
+                    "Had Outage", "Recovery Time"
+                ]
+
                 let fields = coreDataManager
                     .loadAllAssessmentFields(for: selectedCompany, category: categoryKey)
-                    .sorted { ($0.fieldName ?? "").localizedCaseInsensitiveCompare($1.fieldName ?? "") == .orderedAscending }
+                    .sorted {
+                        guard let firstIndex = preferredOrder.firstIndex(of: $0.fieldName ?? ""),
+                              let secondIndex = preferredOrder.firstIndex(of: $1.fieldName ?? "") else {
+                            return false
+                        }
+                        return firstIndex < secondIndex
+                    }
                 print("Loaded \(fields.count) fields for \(categoryKey)")
 
                 for (index, field) in fields.enumerated() {
@@ -164,7 +225,8 @@ struct AssessmentView: View {
                     guard yPosition.isFinite else { continue }
                     let fieldName = (field.fieldName ?? "Unknown").trimmingCharacters(in: .whitespacesAndNewlines)
                     let valueRaw = field.valueString?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-                    let label = "Q: \(fieldName)"
+                    let fullQuestion = questionTextMapping[fieldName] ?? fieldName
+                    let label = "Q: \(fullQuestion)"
                     let answer: String
 
                     if valueRaw == "true" {
@@ -177,8 +239,8 @@ struct AssessmentView: View {
                         answer = valueRaw
                     }
 
-                    label.draw(at: CGPoint(x: 50, y: yPosition), withAttributes: contentAttributes)
-                    answer.draw(at: CGPoint(x: 300, y: yPosition), withAttributes: contentAttributes)
+                    let combinedText = "\(label)  \(answer)"
+                    combinedText.draw(at: CGPoint(x: 50, y: yPosition), withAttributes: contentAttributes)
                 }
             }
         }
@@ -349,3 +411,4 @@ struct BackupAssessmentWrapperView: View {
             .environmentObject(coreDataManager)
     }
 }
+ 
