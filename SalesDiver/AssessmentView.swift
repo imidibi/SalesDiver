@@ -4,6 +4,7 @@ import PDFKit
 
 struct AssessmentView: View {
     @AppStorage("selectedCompany") private var selectedCompany: String = ""
+    @AppStorage("myCompanyName") private var myCompanyName = ""
     @State private var assessmentDate: Date = Date()
     @State private var currentAssessmentID: String = ""
 
@@ -414,6 +415,33 @@ struct AssessmentView: View {
         }
 
         let data = renderer.pdfData { context in
+            // --- FRONT PAGE ---
+            context.beginPage()
+            let titleFont = UIFont.boldSystemFont(ofSize: 24)
+            let bodyFont = UIFont.systemFont(ofSize: 18)
+            let centerStyle = NSMutableParagraphStyle()
+            centerStyle.alignment = .center
+
+            let titleAttributes: [NSAttributedString.Key: Any] = [
+                .font: titleFont,
+                .paragraphStyle: centerStyle
+            ]
+
+            let bodyAttributes: [NSAttributedString.Key: Any] = [
+                .font: bodyFont,
+                .paragraphStyle: centerStyle
+            ]
+
+            let companyNameToDisplay = myCompanyName.isEmpty ? "Your Company Name" : myCompanyName
+            let frontPageTitle = "IT Assessment for \(selectedCompany)"
+            let performedBy = "Performed by \(companyNameToDisplay)"
+            let dateString = "Dated: \(formattedDate(assessmentDate))"
+
+            frontPageTitle.draw(in: CGRect(x: 0, y: 200, width: pageWidth, height: 30), withAttributes: titleAttributes)
+            performedBy.draw(in: CGRect(x: 0, y: 250, width: pageWidth, height: 30), withAttributes: bodyAttributes)
+            dateString.draw(in: CGRect(x: 0, y: 300, width: pageWidth, height: 30), withAttributes: bodyAttributes)
+
+            // --- SECTION PAGES ---
             for (sectionTitle, categoryKey) in categories {
                 context.beginPage()
 
