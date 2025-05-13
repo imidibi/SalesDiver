@@ -108,6 +108,23 @@ struct AssessmentView: View {
 
     func exportAssessmentAsPDF() {
         let questionTextMapping: [String: String] = [
+            // Email section mappings
+            "Email Providers": "Who is your email provider?",
+            "Authentication Methods": "How do you authenticate your users?",
+            "Email Has MFA": "Do you have MFA on your email service?",
+            "Email Has Email Security": "Do you have email security tools in place?",
+            "Email Security Brand": "If so, which brand?",
+            "Phishing Attempts": "Do you experience phishing attempts?",
+            "Backs Up Email": "Do you back up your email accounts?",
+            "Email Backup Method": "If so, how?",
+            "File Sharing Method": "How does your team do file sharing?",
+            "Email Malware": "Have you experienced email malware or account takeover?",
+            "Malware Details": "If so, what are the details?",
+            "Email Satisfaction": "Are you happy with your email service?",
+            "Employee Count": "How many employees do you have?",
+            "All Have Email": "Do all employees have an email account?",
+            "With Email Count": "If not, how many do?",
+            "Email License Types": "What license types (e.g. Business Basic, Premium, etc) do you have?",
             "Windows PCs": "How many Windows PCs do you have?",
             "Windows Managed": "Are these Windows PCs managed?",
             "Macs": "How many Macs do you have?",
@@ -122,9 +139,9 @@ struct AssessmentView: View {
             "Android Managed": "Are these Android devices managed?",
             "Runs Windows 11": "Do your PCs all run Windows 11?",
             "Windows Version": "If not, which Windows version do they run?",
-            "Has MDM": "Are any of your devices managed by an MDM solution?",
+            "Device Has MDM": "Are any of your devices managed by an MDM solution?",
             "MDM Provider": "If so, which one?",
-            "Has AUP": "Does your company have an Acceptable Use Policy?",
+            "Device Has AUP": "Does your company have an Acceptable Use Policy?",
             "Allows BYOD": "Do you allow personal devices to access company data or email?",
             "Are Encrypted": "Are your computers encrypted?",
             // Added server-related mappings
@@ -140,7 +157,145 @@ struct AssessmentView: View {
             "Migrate to Cloud": "Do you plan to migrate your servers to the cloud?",
             "Migration Timeframe": "What is your timeframe for migration?",
             "Had Outage": "Have you experienced a major server outage?",
-            "Recovery Time": "How long did it take to recover from the server outage?"
+            "Server Recovery Time": "How long did it take to recover from the server outage?",
+            // Network-related mappings
+            "Has Firewall": "Do you have a Firewall?",
+            "Firewall Brand": "What Brand is it?",
+            "Firewall Licensed": "Is the software licensed and current?",
+            "Has Switches": "Do you have any network switches?",
+            "Switch Brand": "If so, what brand?",
+            "Has WiFi Network": "Do you have a WiFi Network?",
+            "WiFi Brand": "What brand are the Access Points?",
+            "Wired or WiFi": "Are most users wired or on WiFi?",
+            // Phone System mappings
+            "Has VOIP Phone System": "Do you have a VOIP Phone system?",
+            "Phone Software": "What software are you using?",
+            "Phone Handset Brand": "What brand are the handsets?",
+            "Uses Mobile Devices": "Do employees use mobile devices to access the phone system?",
+            "Happy with Phone Service": "Are you happy with your phone service?",
+            "Phone Service Comments": "If not, why?",
+            // Additional Phone System mappings (new field names)
+            "Has VOIP": "Do you have a VOIP Phone system?",
+            "VOIP Software": "What software are you using?",
+            "Handset Brand": "What brand are the handsets?",
+            "Uses Mobile Access": "Do employees use mobile devices to access the phone system?",
+            "Phone Satisfied": "Are you happy with your phone service?",
+            "Phone Dissatisfaction Reason": "If not, why?",
+            // Cloud Services mappings (legacy)
+            "Cloud Email and File Sharing": "Is your email and file sharing in the cloud?",
+            "Cloud Service Used": "Which cloud service do you use?",
+            "Cloud Infrastructure Services": "Do you use infrastructure services in the cloud?",
+            "Cloud Provider Used": "Which cloud provider do you use?",
+            "Cloud Servers": "Do you use servers?",
+            "Cloud Storage": "Do you use cloud storage?",
+            "Cloud Storage Capacity": "What is the storage capacity?",
+            "Cloud Firewalls": "Do you use cloud firewalls?",
+            "Other Cloud Services": "Do you use other cloud services?",
+            "Other Cloud Services Details": "Please describe the other services:",
+            "Cloud Management Tool": "Do you use a cloud management tool such as Nerdio?",
+            "Cloud Management Tool Used": "Which tool do you use?",
+            // Cloud Services mappings (new fields)
+            "emailAndFileSharingCloud": "Is your email and file sharing in the cloud?",
+            "cloudServiceUsed": "Which cloud service do you use?",
+            "usesCloudInfrastructure": "Do you use infrastructure services in the cloud?",
+            "selectedCloudProvider": "Which cloud provider do you use?",
+            "usesServers": "Do you use servers?",
+            "serverQuantity": "How many servers?",
+            "usesStorage": "Do you use cloud storage?",
+            "storageCapacity": "What is the storage capacity?",
+            "usesFirewalls": "Do you use cloud firewalls?",
+            "firewallDetails": "Please describe your firewall setup:",
+            "usesOther": "Do you use other cloud services?",
+            "otherDetails": "Please describe the other services:",
+            "usesCloudManagementTool": "Do you use a cloud management tool such as Nerdio?",
+            "cloudManagementToolName": "Which tool do you use?",
+            // Backup-related mappings (with correct field names and full questions)
+            "backupEndpoints": "Do you backup your EndPoints?",
+            "backupEndpointsHow": "If so, how?",
+            "backupCloudServices": "Do you backup your cloud services?",
+            "backupCloudServicesHow": "If so, how?",
+            "backupServers": "Do you backup your servers?",
+            "backupServersHow": "If so, how?",
+            "hasOffsiteBackup": "Do you have an offsite backup?",
+            "offsiteLocation": "If so, where is it stored?",
+            "hasCloudBackup": "Do you have a cloud backup of your data?",
+            "cloudBackupLocation": "If so, where?",
+            "cloudBackupsBootable": "Are your cloud backups bootable?",
+            "cloudBootableHow": "If so, how?",
+            "canContinueAfterDisaster": "If your building had a fire or disaster, would you be able to continue in business?",
+            "hasBackupTest": "Have you done a backup recovery test?",
+            "backupTestWhen": "If so, when?",
+            "confidentInBackup": "Are you comfortable your backup approach protects you from disaster or cyber-security threats?"
+            ,
+            // Directory Services mappings
+            "Workgroup or Domain": "Are your users in a Workgroup configuration or a Domain?",
+            "Authentication Method": "How do they authenticate?",
+            "Password Policy": "Do you have a password policy in place?",
+            "Encryption Policy": "Do you have an encryption policy in place?",
+            "Directory MFA Enforced": "Do you have MFA enforced?",
+            "SSO in Place": "Do you have SSO in place?",
+            "Which SSO": "Which one?",
+            "Last Policy Review": "When was the last time you reviewed IT policies and acceptable use?"
+            // Network/Physical Security additional mappings
+            ,"numberOfOffices": "How many offices do you have?",
+            "hasFirewall": "Does each have a firewall?",
+            "hasVPN": "Is there a VPN in place?",
+            "vpnType": "If so, which?",
+            "hasMFA": "Is it protected by MFA?",
+            "mfaMethod": "If so, how?",
+            "isp": "Who is your ISP?",
+            "hasSecondaryISP": "Do you have a secondary ISP for backup?",
+            "secondaryISP": "If so, who?",
+            "hasLoadBalancer": "Do you have a load balancer in place?",
+            "loadBalancerType": "If so, which?",
+            "happyWithNetwork": "Are you happy with your network speed and reliability?",
+            "networkIssues": "If not, why?",
+            "hasSecurityCameras": "Do you employ cameras for security?",
+            "cameraBrand": "If so, what brand?",
+            "protectsAssets": "Do you protect IT assets by key codes or locks?",
+            "hadBreakIn": "Have you experienced a break in?",
+            "breakInDetails": "If so, what happened?",
+            // Security & Compliance mappings
+            "Experienced Attack": "Have you experienced a cyber-security attack?",
+            "Attack Description": "Please describe what happened?",
+            "Security Recovery Time": "How long did it take you to recover?",
+            "Business Impact": "What was the impact on your business?",
+            "Well Secured": "Do you consider your company as well secured?",
+            "Has AV": "Do you have an AV solution in place?",
+            "AV Solution": "Which one?",
+            "Has EDR": "Do you have End Point Detection and Response in place?",
+            "EDR Solution": "Which one?",
+            "Security Has Email Security": "Do you have an email security solution?",
+            "Email Security Solution": "Which one?",
+            "Has SIEM": "Do you have a SIEM Solution?",
+            "SIEM Solution": "Which one?",
+            "Has Training": "Do you have cyber-security training?",
+            "Training Solution": "Which one?",
+            "Has DNS Protection": "Do you have DNS protection?",
+            "DNS Solution": "Which one?",
+            "Security Has MFA": "Are your apps and email protected by MFA?",
+            "MFA How": "How?",
+            "Security MFA Enforced": "Is MFA enforced for all users?",
+            "MFA Enforced How": "How?",
+            "Security Has MDM": "Do you have a mobile device management solution?",
+            "MDM Solution": "Which one?",
+            "Allows Personal Mobile": "Do you allow employees to access email or company files on their own mobile devices?",
+            "Security Has AUP": "Do you have a published Acceptable Use Policy?",
+            "Locked Servers": "Are your server and network equipment secured by a lock?",
+            "Has Physical Security": "Do you have any physical security such as camera systems and key codes?",
+            "Physical Security Solution": "Which one?",
+            "Gets Dark Web Reports": "Do you receive reports on your credentials being traded on the dark web?",
+            "Has Password Policy": "Do you have an enforced password policy?",
+            "Has Cyber Insurance": "Do you have a cyber-insurance policy in place?",
+            "Insurance Renewal": "When is it renewed?",
+            "Has Compliance Obligations": "Does your organization have compliance obligations?",
+            "Complies With HIPAA": "HIPAA?",
+            "Complies With PCI": "PCI?",
+            "Complies With FINRA": "FINRA?",
+            "Complies With Other": "Other?",
+            "Other Compliance Details": "Which?",
+            "Is Currently Compliant": "Are you currently compliant?",
+            "Interested In Assessment": "Are you interested in a comprehensive security assessment?"
         ]
 
         let pdfMetaData = [
@@ -169,6 +324,119 @@ struct AssessmentView: View {
             ("💾 Backup", "Backup")
         ]
 
+        let preferredOrder = [
+            // Numeric prefixes for locked ordering
+            // Endpoints
+            "01 - Windows PCs", "02 - Windows Managed",
+            "03 - Macs", "04 - Mac Managed",
+            "05 - iPhones", "06 - iPhone Managed",
+            "07 - iPads", "08 - iPad Managed",
+            "09 - Chromebooks", "10 - Chromebook Managed",
+            "11 - Android", "12 - Android Managed",
+            "13 - Runs Windows 11", "14 - Windows Version",
+            "15 - Device Has MDM", "16 - MDM Provider",
+            "17 - Device Has AUP", "18 - Allows BYOD", "19 - Are Encrypted",
+            // Email
+            "20 - Email Has MFA",
+            "21 - Email Has Email Security", "22 - Email Security Brand", "23 - Phishing Attempts",
+            "24 - Backs Up Email", "25 - Email Backup Method",
+            "26 - File Sharing Method", "27 - Email Malware", "28 - Malware Details", "29 - Email Satisfaction",
+            "30 - Employee Count", "31 - All Have Email", "32 - With Email Count", "33 - Email License Types",
+            // Server
+            "34 - Physical Servers", "35 - Physical Managed",
+            "36 - Virtual Servers", "37 - Virtual Managed",
+            "38 - Hypervisors", "39 - Hypervisor Managed",
+            "40 - Server OS", "41 - Hypervisor OS", "42 - Server Apps",
+            "43 - Migrate to Cloud", "44 - Migration Timeframe",
+            "45 - Had Outage", "46 - Server Recovery Time",
+            // Network
+            "47 - Has Firewall", "48 - Firewall Brand", "49 - Firewall Licensed",
+            "50 - Has Switches", "51 - Switch Brand",
+            "52 - Has WiFi Network", "53 - WiFi Brand", "54 - Wired or WiFi",
+            // Phone
+            "55 - Has VOIP Phone System", "56 - Phone Software", "57 - Phone Handset Brand",
+            "58 - Uses Mobile Devices", "59 - Happy with Phone Service", "60 - Phone Service Comments",
+            "61 - Has VOIP", "62 - VOIP Software", "63 - Handset Brand", "64 - Uses Mobile Access", "65 - Phone Satisfied", "66 - Phone Dissatisfaction Reason",
+            // Cloud Services
+            "67 - Cloud Email and File Sharing", "68 - Cloud Service Used", "69 - Cloud Infrastructure Services",
+            "70 - Cloud Provider Used", "71 - Cloud Servers", "72 - Cloud Storage", "73 - Cloud Storage Capacity",
+            "74 - Cloud Firewalls", "75 - Other Cloud Services", "76 - Other Cloud Services Details",
+            "77 - Cloud Management Tool", "78 - Cloud Management Tool Used",
+            // Cloud Services (new fields)
+            "79 - emailAndFileSharingCloud", "80 - cloudServiceUsed", "81 - usesCloudInfrastructure",
+            "82 - selectedCloudProvider", "83 - usesServers", "84 - serverQuantity", "85 - usesStorage", "86 - storageCapacity",
+            "87 - usesFirewalls", "88 - firewallDetails", "89 - usesOther", "90 - otherDetails",
+            "91 - usesCloudManagementTool", "92 - cloudManagementToolName",
+            // Backup
+            "93 - backupEndpoints", "94 - backupEndpointsHow",
+            "95 - backupCloudServices", "96 - backupCloudServicesHow",
+            "97 - backupServers", "98 - backupServersHow",
+            "99 - hasOffsiteBackup", "100 - offsiteLocation",
+            "101 - hasCloudBackup", "102 - cloudBackupLocation",
+            "103 - cloudBackupsBootable", "104 - cloudBootableHow",
+            "105 - canContinueAfterDisaster",
+            "106 - hasBackupTest", "107 - backupTestWhen",
+            "108 - confidentInBackup",
+            // Directory Services
+            "109 - Workgroup or Domain", "110 - Authentication Method", "111 - Password Policy", "112 - Encryption Policy",
+            "113 - Directory MFA Enforced", "114 - SSO in Place", "115 - Which SSO", "116 - Last Policy Review",
+            // Network/Physical Security
+            "117 - numberOfOffices", "118 - hasFirewall", "119 - hasVPN", "120 - vpnType",
+            "121 - hasMFA", "122 - mfaMethod", "123 - isp", "124 - hasSecondaryISP", "125 - secondaryISP",
+            "126 - hasLoadBalancer", "127 - loadBalancerType", "128 - happyWithNetwork", "129 - networkIssues",
+            "130 - hasSecurityCameras", "131 - cameraBrand", "132 - protectsAssets", "133 - hadBreakIn", "134 - breakInDetails",
+            // Security & Compliance
+            "135 - Experienced Attack",
+            "136 - Attack Description",
+            "137 - Security Recovery Time",
+            "138 - Business Impact",
+            "139 - Well Secured",
+            "140 - Has AV",
+            "141 - AV Solution",
+            "142 - Has EDR",
+            "143 - EDR Solution",
+            "144 - Security Has Email Security",
+            "145 - Email Security Solution",
+            "146 - Has SIEM",
+            "147 - SIEM Solution",
+            "148 - Has Training",
+            "149 - Training Solution",
+            "150 - Has DNS Protection",
+            "151 - DNS Solution",
+            "152 - Security Has MFA",
+            "153 - MFA How",
+            "154 - Security MFA Enforced",
+            "155 - MFA Enforced How",
+            "156 - Security Has MDM",
+            "157 - MDM Solution",
+            "158 - Allows Personal Mobile",
+            "159 - Security Has AUP",
+            "160 - Locked Servers",
+            "161 - Has Physical Security",
+            "162 - Physical Security Solution",
+            "163 - Gets Dark Web Reports",
+            "164 - Has Password Policy",
+            "165 - Has Cyber Insurance",
+            "166 - Insurance Renewal",
+            "167 - Has Compliance Obligations",
+            "168 - Complies With HIPAA",
+            "169 - Complies With PCI",
+            "170 - Complies With FINRA",
+            "171 - Complies With Other",
+            "172 - Other Compliance Details",
+            "173 - Is Currently Compliant",
+            "174 - Interested In Assessment"
+        ]
+
+        // Helper to strip numeric prefix
+        func stripNumericPrefix(_ s: String) -> String {
+            let pattern = #"^\d+\s*-\s*"#
+            if let range = s.range(of: pattern, options: .regularExpression) {
+                return String(s[range.upperBound...])
+            }
+            return s
+        }
+
         let data = renderer.pdfData { context in
             for (sectionTitle, categoryKey) in categories {
                 context.beginPage()
@@ -188,44 +456,36 @@ struct AssessmentView: View {
                     .paragraphStyle: paragraphStyle
                 ]
 
-                sectionTitle.draw(at: CGPoint(x: 50, y: 50), withAttributes: titleAttributes)
+                let clientTitle = "\(sectionTitle) - \(selectedCompany)"
+                clientTitle.draw(at: CGPoint(x: 50, y: 50), withAttributes: titleAttributes)
 
-                let preferredOrder = [
-                    "Windows PCs", "Windows Managed",
-                    "Macs", "Mac Managed",
-                    "iPhones", "iPhone Managed",
-                    "iPads", "iPad Managed",
-                    "Chromebooks", "Chromebook Managed",
-                    "Android", "Android Managed",
-                    "Runs Windows 11", "Windows Version",
-                    "Has MDM", "MDM Provider",
-                    "Has AUP", "Allows BYOD", "Are Encrypted",
-                    // Server section preferred order
-                    "Physical Servers", "Physical Managed",
-                    "Virtual Servers", "Virtual Managed",
-                    "Hypervisors", "Hypervisor Managed",
-                    "Server OS", "Hypervisor OS", "Server Apps",
-                    "Migrate to Cloud", "Migration Timeframe",
-                    "Had Outage", "Recovery Time"
-                ]
-
+                // Sort fields using numeric-prefixed preferredOrder, matching by stripping numeric prefix
                 let fields = coreDataManager
                     .loadAllAssessmentFields(for: selectedCompany, category: categoryKey)
                     .sorted {
-                        guard let firstIndex = preferredOrder.firstIndex(of: $0.fieldName ?? ""),
-                              let secondIndex = preferredOrder.firstIndex(of: $1.fieldName ?? "") else {
-                            return false
-                        }
-                        return firstIndex < secondIndex
+                        let name1 = ($0.fieldName ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+                        let name2 = ($1.fieldName ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+                        // Find index in preferredOrder by matching after stripping numeric prefix from preferredOrder
+                        let idx1 = preferredOrder.firstIndex(where: { stripNumericPrefix($0) == name1 }) ?? Int.max
+                        let idx2 = preferredOrder.firstIndex(where: { stripNumericPrefix($0) == name2 }) ?? Int.max
+                        return idx1 < idx2
                     }
                 print("Loaded \(fields.count) fields for \(categoryKey)")
 
-                for (index, field) in fields.enumerated() {
-                    let yPosition = CGFloat(100 + (index * 30))
-                    guard yPosition.isFinite else { continue }
+                var yPosition = CGFloat(100)
+                let lineSpacing: CGFloat = 8
+                let textRectWidth = pageWidth - 100
+                let maxY = pageHeight - 50
+                for field in fields {
                     let fieldName = (field.fieldName ?? "Unknown").trimmingCharacters(in: .whitespacesAndNewlines)
                     let valueRaw = field.valueString?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-                    let fullQuestion = questionTextMapping[fieldName] ?? fieldName
+                    let fullQuestion: String
+                    if let mappedQuestion = questionTextMapping[fieldName] {
+                        fullQuestion = mappedQuestion
+                    } else {
+                        print("Missing mapping for field: \(fieldName)")
+                        fullQuestion = fieldName
+                    }
                     let label = "Q: \(fullQuestion)"
                     let answer: String
 
@@ -240,7 +500,15 @@ struct AssessmentView: View {
                     }
 
                     let combinedText = "\(label)  \(answer)"
-                    combinedText.draw(at: CGPoint(x: 50, y: yPosition), withAttributes: contentAttributes)
+                    let textRect = CGRect(x: 50, y: yPosition, width: textRectWidth, height: .greatestFiniteMagnitude)
+                    let bounding = (combinedText as NSString).boundingRect(with: CGSize(width: textRectWidth, height: .greatestFiniteMagnitude), options: .usesLineFragmentOrigin, attributes: contentAttributes, context: nil)
+                    (combinedText as NSString).draw(with: CGRect(x: 50, y: yPosition, width: textRectWidth, height: bounding.height), options: .usesLineFragmentOrigin, attributes: contentAttributes, context: nil)
+                    yPosition += bounding.height + lineSpacing
+                    // Page break if needed
+                    if yPosition > maxY {
+                        context.beginPage()
+                        yPosition = 50
+                    }
                 }
             }
         }
