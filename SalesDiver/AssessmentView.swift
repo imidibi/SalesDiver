@@ -21,7 +21,7 @@ struct AssessmentView: View {
         ("EndPoints", "desktopcomputer"),
         ("Servers", "server.rack"),
         ("Network", "network"),
-        ("Phone System", "phone"),
+        ("PhoneSystem", "phone"),
         ("Email", "envelope"),
         ("Security & Compliance", "lock.shield"),
         ("Directory Services", "person.3"),
@@ -85,7 +85,7 @@ struct AssessmentView: View {
             }
         case "Network":
             NetworkAssessmentView().environmentObject(coreDataManager)
-        case "Phone System":
+        case "PhoneSystem":
             PhoneSystemAssessmentView().environmentObject(coreDataManager)
         case "Email":
             EmailAssessmentView().environmentObject(coreDataManager)
@@ -122,14 +122,14 @@ struct AssessmentView: View {
 
         let categories: [(String, String)] = [
             ("🖥️ Endpoint", "Endpoint"),
-            ("🗄️ Servers", "Servers"),
+            ("🗄️ Servers", "Server"),
             ("🌐 Network", "Network"),
-            ("📞 Phone System", "Phone System"),
+            ("📞 Phone System", "Phone"),
             ("📧 Email", "Email"),
             ("🛡️ Security & Compliance", "Security & Compliance"),
             ("📂 Directory Services", "Directory Services"),
             ("☁️ Infrastructure", "Infrastructure"),
-            ("🧩 Cloud Services", "Cloud Services"),
+            ("🧩 Cloud Services", "CloudServices"),
             ("💾 Backup", "Backup")
         ]
 
