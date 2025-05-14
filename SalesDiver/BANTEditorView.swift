@@ -45,6 +45,19 @@ struct BANTEditorView: View {
         }
     }
 
+    var keyQuestion: String {
+        switch bantType {
+        case .budget:
+            return "Is the client’s budget adequate to meet their needs?"
+        case .authority:
+            return "Have you met the individual with the budget authority and the power to make the final purchase decision?"
+        case .need:
+            return "Do you know the specific problems or challenges the prospect is facing that your solution can address?"
+        case .timing:
+            return "When does the client need the solution implemented by?"
+        }
+    }
+
     var body: some View {
         NavigationStack {
             Form {
@@ -61,6 +74,11 @@ struct BANTEditorView: View {
                     TextEditor(text: $commentary)
                         .frame(height: 100)
                         .border(Color.gray, width: 1)
+                }
+
+                Section(header: Text("Key Question")) {
+                    Text(keyQuestion)
+                        .italic()
                 }
             }
             .navigationTitle(title)

@@ -43,6 +43,11 @@ struct MEDDICEditorView: View {
                         .frame(height: 100)
                         .border(Color.gray, width: 1)
                 }
+
+                Section(header: Text("Key Question")) {
+                    Text(keyQuestion)
+                        .italic()
+                }
             }
             .navigationTitle("\(metricType) Qualification")
             .toolbar {
@@ -56,6 +61,25 @@ struct MEDDICEditorView: View {
                     }
                 }
             }
+        }
+    }
+
+    var keyQuestion: String {
+        switch metricType {
+        case "Metrics":
+            return "What are the quantifiable results and business objectives that the prospect is trying to achieve?"
+        case "Economic Buyer":
+            return "Have you met the individual with the budget authority and the power to make the final purchase decision?"
+        case "Decision Criteria":
+            return "Do you know the specific requirements, standards, and guidelines the prospect will use to evaluate your proposal?"
+        case "Decision Process":
+            return "Do you know the series of steps and stakeholders involved in the buying decision?"
+        case "Identify Pain":
+            return "Do you know the specific problems or challenges the prospect is facing that your solution can address?"
+        case "Champion":
+            return "Have you created an internal advocate within the prospect's organization who can support your solution and help navigate the sales process?"
+        default:
+            return ""
         }
     }
 }
