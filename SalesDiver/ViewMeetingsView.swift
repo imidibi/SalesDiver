@@ -8,6 +8,7 @@ struct ViewMeetingsView: View {
     @State private var isEditSheetPresented = false
     @State private var refreshID = UUID()  // New state for refresh ID
     @State private var isAddMeetingPresented = false
+    @State private var navigateToAddMeeting = false
 
     private func fetchMeetings() {
         let request: NSFetchRequest<MeetingsEntity> = MeetingsEntity.fetchRequest()
@@ -35,21 +36,19 @@ struct ViewMeetingsView: View {
     }
 
     var body:  some View {
-        NavigationView {
+        NavigationStack {
             VStack {
                 List {
                     ForEach(meetings, id: \.objectID) { meeting in
                         ZStack {
-                            HStack {
+                            HStack(alignment: .top) {
                                 MeetingRowView(meeting: meeting)
-
-                                Spacer()
 
                                 if let opportunity = meeting.opportunity {
                                     OpportunityDetailsView(opportunity: opportunity)
+                                        .padding(.leading, 16) // Optional visual spacing
                                 }
                             }
-                            .padding()
                             .background(selectedMeeting == meeting ? Color.blue.opacity(0.1) : Color.clear)
                             .cornerRadius(8)
                             .onTapGesture {
@@ -70,30 +69,31 @@ struct ViewMeetingsView: View {
                             isEditSheetPresented = true
                         }
                         .disabled(selectedMeeting == nil)
-
-                        if let meetingToStart = selectedMeeting {
-                            NavigationLink(
-                                destination: RecordMeetingView(meeting: meetingToStart)
-                            ) {
-                                Text("Record Meeting")
-                            }
-                        } else {
-                            Text("Record Meeting")
-                                .foregroundColor(.gray)
-                        }
                     }
-
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Button(action: {
-                            isAddMeetingPresented = true
+                            navigateToAddMeeting = true
                         }) {
                             Image(systemName: "plus")
                         }
                     }
-
                     ToolbarItem(placement: .navigationBarLeading) {
                         EditButton()
                     }
+                }
+                .navigationDestination(isPresented: $navigateToAddMeeting) {
+                    PlanMeetingView().environment(\.managedObjectContext, viewContext)
+                }
+
+                if let meetingToStart = selectedMeeting {
+                    NavigationLink(
+                        destination: RecordMeetingView(meeting: meetingToStart)
+                    ) {
+                        Text("Record Meeting")
+                    }
+                } else {
+                    Text("Record Meeting")
+                        .foregroundColor(.gray)
                 }
             }
         }
@@ -114,13 +114,6 @@ struct ViewMeetingsView: View {
                 }
                 refreshID = UUID()  // Update refresh ID
             }
-        }
-        .sheet(isPresented: $isAddMeetingPresented, onDismiss: {
-            fetchMeetings()
-            refreshID = UUID()
-        }) {
-            PlanMeetingView()
-                .environment(\.managedObjectContext, viewContext)
         }
     }
 }
@@ -217,5 +210,6 @@ struct OpportunityDetailsView: View {
                 .scaleEffect(0.7)
                 .padding(.top, 4)
         }
+        .frame(maxWidth: .infinity, alignment: .trailing)
     }
 }

@@ -105,7 +105,7 @@ struct SettingsView: View {
     }
 
     private func importSelectedOpportunities() {
-        guard let selectedCompanyID = selectedCompanyID else {
+        guard let companyID = selectedCompanyID else {
             print("❌ No company selected.")
             return
         }
@@ -113,7 +113,7 @@ struct SettingsView: View {
         let context = CoreDataManager.shared.persistentContainer.viewContext
 
         // Fetch or create the company entity
-        CoreDataManager.shared.fetchOrCreateCompany(companyID: selectedCompanyID, companyName: companyName) { companyEntity in
+        CoreDataManager.shared.fetchOrCreateCompany(companyID: companyID, companyName: companyName) { [self] companyEntity in
             for opportunity in selectedOpportunities {
                 if let cached = opportunityImportCache.first(where: { $0.1 == opportunity.name }) {
                     opportunity.autotaskID = Int64(cached.0)
@@ -139,8 +139,12 @@ struct SettingsView: View {
             // Clear state and show confirmation
             searchResults.removeAll()
             opportunityImportCache.removeAll()
+            // Clear companyName and selectedCompanyID after import
+            companyName = ""
+            selectedCompanyID = nil
+            // Show user confirmation and hide sync button
+            testResult = "✅ Imported \(selectedOpportunities.count) opportunities successfully for company \(companyName)."
             showSyncButton = false
-            testResult = "Imported opportunities successfully for company \(companyName)."
         }
     }
 
@@ -150,6 +154,13 @@ struct SettingsView: View {
                 .font(.headline)
                 .padding()
             
+            // Search field for opportunities
+            TextField("Search opportunities", text: $companyName, onCommit: {
+                fetchAllOpportunitiesForSelectedCompany()
+            })
+            .textFieldStyle(RoundedBorderTextFieldStyle())
+            .padding([.leading, .trailing])
+
             ScrollView {
                 LazyVStack {
                     ForEach(searchResults, id: \.0) { result in
@@ -376,13 +387,15 @@ struct SettingsView: View {
             if selectedCategory == "Contact" || selectedCategory == "Opportunity" {
                 if selectedCompanyID == nil {
                     resultsScrollView  // Display company list for selection
-                } else if selectedCategory == "Contact" {
-                    contactSearchField  // Display contact search field after company is selected
-                } else if selectedCategory == "Opportunity" {
-                    opportunitySearchField
-                        .onAppear {
-                            fetchAllOpportunitiesForSelectedCompany()  // Trigger the API call when the view appears
-                        }
+                } else {
+                    if selectedCategory == "Contact" {
+                        contactSearchField  // Display contact search field after company is selected
+                    } else if selectedCategory == "Opportunity" {
+                        opportunitySearchField
+                            .onAppear {
+                                fetchAllOpportunitiesForSelectedCompany()  // Trigger the API call when the view appears
+                            }
+                    }
                 }
             }
 
@@ -400,9 +413,11 @@ struct SettingsView: View {
 
     // Extracted commit handler
     private func handleSearchCommit() {
-        if selectedCategory == "Contact" {
+        if selectedCategory == "Contact" || selectedCategory == "Opportunity" {
             if !companyName.trimmingCharacters(in: .whitespaces).isEmpty {
-                searchCompanyForContacts()
+                // Only open the overlay for company selection here, do not show the second-level search yet
+                searchCompaniesForSelection()
+                // Do NOT set showContactSearch or showOpportunitySearch here.
             }
         } else {
             searchCompaniesForSelection()
@@ -745,9 +760,12 @@ private func importSelectedContacts() {
             CoreDataManager.shared.saveContext()
             print("✅ Imported \(fetchedContacts.count) contacts successfully.")
             selectedContacts.removeAll()
+            // Show user confirmation and hide sync button
+            testResult = "✅ Imported \(fetchedContacts.count) contacts successfully for company \(companyName)."
+            showSyncButton = false
         }
     }
-    }
+}
     private func filterForCompany(_ company: String) -> [String: String] {
         let trimmed = normalizeCompanyName(company)
         return ["op": "contains", "field": "companyName", "value": trimmed]
@@ -765,25 +783,31 @@ private func importSelectedContacts() {
         switch selectedCategory {
         case "Company":
             let company = name1
+            // Toggle selection logic for multi-select
             if selectedCompanies.contains(company) {
                 selectedCompanies.remove(company)
             } else {
-                selectedCompanies = [company] // Allow only single selection for Company
+                selectedCompanies.insert(company)
             }
             selectedCompanyID = tappedID
             print("Attempting to fetch contacts. Current selectedCompanyID: \(selectedCompanyID ?? -1)")
-            
-        case "Contact", "Opportunity":
-            if selectedCompanyID == nil || selectedCompanyID != tappedID {
-                // Selecting a company for contact or opportunity search
-                selectedCompanyID = tappedID
-                companyName = name1
-                selectedContacts.removeAll()
-                selectedOpportunities.removeAll()
-                searchResults.removeAll()
-                
-            }
-            
+
+        case "Contact":
+            selectedCompanyID = tappedID
+            companyName = name1
+            selectedContacts.removeAll()
+            searchResults.removeAll()
+            fetchAllContactsForSelectedCompany()
+            showContactSearch = true
+
+        case "Opportunity":
+            selectedCompanyID = tappedID
+            companyName = name1
+            selectedOpportunities.removeAll()
+            searchResults.removeAll()
+            fetchAllOpportunitiesForSelectedCompany()
+            showOpportunitySearch = true
+
         default:
             break
         }
@@ -837,6 +861,13 @@ private func importSelectedContacts() {
             Text("Select Contacts")
                 .font(.headline)
                 .padding()
+
+            // Search field for contacts
+            TextField("Enter contact name", text: $contactName, onCommit: {
+                searchContactsForCompany()
+            })
+            .textFieldStyle(RoundedBorderTextFieldStyle())
+            .padding([.leading, .trailing])
             
             ScrollView {
                 LazyVStack {
@@ -865,6 +896,9 @@ private func importSelectedContacts() {
             
             Button("Done") {
                 showContactSearch = false
+                if !selectedContacts.isEmpty {
+                    showSyncButton = true
+                }
             }
             .padding()
         }
