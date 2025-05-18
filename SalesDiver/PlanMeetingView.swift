@@ -229,8 +229,15 @@ struct PlanMeetingView: View {
     }
     
     private func loadQuestionsForCurrentCategory() {
-        let categories = ["Budget", "Authority", "Need", "Timescale"]
-        
+        let categories: [String]
+        switch currentMethodology {
+        case "MEDDIC":
+            categories = ["Metrics", "Economic Buyer", "Decision Criteria", "Decision Process", "Identify Pain", "Champion"]
+        case "SCUBATANK":
+            categories = ["Solution", "Competition", "Uniques", "Benefits", "Authority", "Timescale", "Action Plan", "Need", "Kash"]
+        default:
+            categories = ["Budget", "Authority", "Need", "Timescale"]
+        }
         // If we've processed all categories, finish the cycle.
         guard currentCategoryIndex < categories.count else {
             showQuestionSelection = false
