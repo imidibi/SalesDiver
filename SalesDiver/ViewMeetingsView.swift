@@ -9,6 +9,7 @@ struct ViewMeetingsView: View {
     @State private var refreshID = UUID()  // New state for refresh ID
     @State private var isAddMeetingPresented = false
     @State private var navigateToAddMeeting = false
+    @State private var searchText: String = ""
 
     private func fetchMeetings() {
         let request: NSFetchRequest<MeetingsEntity> = MeetingsEntity.fetchRequest()
@@ -39,7 +40,12 @@ struct ViewMeetingsView: View {
         NavigationStack {
             VStack {
                 List {
-                    ForEach(meetings, id: \.objectID) { meeting in
+                    ForEach(meetings.filter { meeting in
+                        searchText.isEmpty ||
+                        (meeting.company?.name?.localizedCaseInsensitiveContains(searchText) == true) ||
+                        (meeting.opportunity?.name?.localizedCaseInsensitiveContains(searchText) == true) ||
+                        (meeting.date != nil && dateFormatter.string(from: meeting.date!).localizedCaseInsensitiveContains(searchText))
+                    }, id: \.objectID) { meeting in
                         ZStack {
                             HStack(alignment: .top) {
                                 MeetingRowView(meeting: meeting)
@@ -62,6 +68,7 @@ struct ViewMeetingsView: View {
                 .onAppear {
                     fetchMeetings()
                 }
+                .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search by company, opportunity, or date")
                 .navigationTitle("View Meetings")
                 .toolbar {
                     ToolbarItemGroup(placement: .navigationBarTrailing) {
