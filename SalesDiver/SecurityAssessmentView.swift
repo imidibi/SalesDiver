@@ -58,16 +58,15 @@ struct SecurityAssessmentView: View {
                     if selectedCustomer == nil {
                         searchField
                     } else {
-                    Text("\(selectedCustomer ?? "Unknown") - Security Review \(assessmentDate != nil ? assessmentDate!.formatted(date: .numeric, time: .omitted) : "")")
+                        Text("\(selectedCustomer ?? "Unknown") - Security Review \(assessmentDate != nil ? assessmentDate!.formatted(date: .numeric, time: .omitted) : "")")
                             .font(.title)
                             .bold()
                             .padding(.bottom, 10)
                     }
 
-                    // Security Assessment Grid
-                    let columns = Array(repeating: GridItem(.flexible(minimum: 0)), count: 4) // Enforce 4 columns
-                    ScrollView { // Make grid vertically scrollable
-                        securityGrid(columns: columns, geometry: geometry)
+                    // Fixed 4x4 Security Assessment Grid
+                    ScrollView {
+                        securityGrid(geometry: geometry)
                     }
                 }
                 .onChange(of: selectedCustomer) { oldValue, newValue in
@@ -180,10 +179,15 @@ struct SecurityAssessmentView: View {
         }
     }
     
-    private func securityGrid(columns: [GridItem], geometry: GeometryProxy) -> some View {
-        LazyVGrid(columns: columns, spacing: 20) {
+    private func securityGrid(geometry: GeometryProxy) -> some View {
+        let columns = Array(repeating: GridItem(.flexible()), count: 4)
+        let availableWidth = geometry.size.width
+        let availableHeight = geometry.size.height
+        let cellSize = min(availableWidth, availableHeight) / 4 - 10 // Adjust for spacing
+
+        return LazyVGrid(columns: columns, spacing: 10) {
             ForEach(securityOptions, id: \.name) { option in
-                SecurityGridItem(option: option, geometry: geometry, selectedStatus: $selectedStatus, selectedCustomer: $selectedCustomer, statusToUpdate: $statusToUpdate, showStatusSelection: $showStatusSelection, showErrorMessage: $showErrorMessage)
+                SecurityGridItem(option: option, cellSize: cellSize, selectedStatus: $selectedStatus, selectedCustomer: $selectedCustomer, statusToUpdate: $statusToUpdate, showStatusSelection: $showStatusSelection, showErrorMessage: $showErrorMessage)
             }
         }
     }
@@ -191,7 +195,7 @@ struct SecurityAssessmentView: View {
 
 struct SecurityGridItem: View {
     let option: (name: String, icon: String)
-    let geometry: GeometryProxy
+    let cellSize: CGFloat
     @Binding var selectedStatus: [String: SecurityAssessmentView.Status]
     @Binding var selectedCustomer: String?
     @Binding var statusToUpdate: String?
@@ -199,9 +203,8 @@ struct SecurityGridItem: View {
     @Binding var showErrorMessage: Bool
 
     var body: some View {
-        let itemWidth = max((geometry.size.width / 4) - 30, 0)
-        let iconSize = max(itemWidth * 0.25, 0)
-        let textSize = max(itemWidth * 0.1, 0)
+        let iconSize = cellSize * 0.4
+        let textSize = cellSize * 0.12
 
         VStack {
             HStack {
@@ -219,7 +222,7 @@ struct SecurityGridItem: View {
                 .font(.system(size: textSize))
                 .multilineTextAlignment(.center)
         }
-        .frame(width: itemWidth, height: itemWidth)
+        .frame(width: cellSize, height: cellSize)
         .background(selectedStatus[option.name]?.color.opacity(0.3) ?? Color(.systemGray6))
         .cornerRadius(10)
         .onTapGesture {
