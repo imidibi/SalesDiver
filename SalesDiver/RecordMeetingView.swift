@@ -71,45 +71,77 @@ struct RecordMeetingView: View {
             if currentQuestionIndex < sortedQuestions.count {
                 let question = sortedQuestions[currentQuestionIndex]
 
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Question \(currentQuestionIndex + 1) of \(sortedQuestions.count):")
-                        .font(.headline)
+                ZStack {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Question \(currentQuestionIndex + 1) of \(sortedQuestions.count):")
+                            .font(.headline)
 
-                    Text(question.questionText ?? "")
-                        .font(.body)
+                        Text(question.questionText ?? "")
+                            .font(.body)
 
-                    TextEditor(text: $speechManager.transcribedText)
-                        .frame(height: 100)
-                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray))
-                        .onChange(of: speechManager.transcribedText) {
-                            currentAnswer = speechManager.transcribedText
+                        TextEditor(text: $speechManager.transcribedText)
+                            .frame(height: 100)
+                            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray))
+                            .onChange(of: speechManager.transcribedText) {
+                                currentAnswer = speechManager.transcribedText
+                            }
+
+                        Button(action: {
+                            // Example flagging action - you might expand this logic
+                            question.answer = (question.answer ?? "") + "\n[INSIGHT] " + currentAnswer
+                            do {
+                                try viewContext.save()
+                            } catch {
+                                print("Error saving flagged insight: \(error.localizedDescription)")
+                            }
+                        }) {
+                            Label("Pin Insight", systemImage: "star.fill")
+                                .foregroundColor(.yellow)
                         }
+                        .padding(.top, 4)
 
-                    HStack {
-                        Button("Start Recording") {
-                            try? speechManager.startTranscribing()
-                        }
-                        Button("Stop Recording") {
-                            speechManager.stopTranscribing()
-                            // Do not clear transcribedText here
-                        }
-                    }
-
-                    HStack {
-                        Button("Previous Question") {
-                            if currentQuestionIndex > 0 {
-                                currentQuestionIndex -= 1
-                                let previousQuestion = sortedQuestions[currentQuestionIndex]
-                                currentAnswer = previousQuestion.answer ?? ""
-                                speechManager.transcribedText = currentAnswer
+                        HStack {
+                            Button("Start Recording") {
+                                try? speechManager.startTranscribing()
+                            }
+                            Button("Stop Recording") {
+                                speechManager.stopTranscribing()
+                                // Do not clear transcribedText here
                             }
                         }
-                        .buttonStyle(.borderedProminent)
-                        .tint(.blue)
-                        .padding(.trailing, 8)
 
-                        Button("Next Question") {
-                            if currentQuestionIndex < sortedQuestions.count {
+                        // Optional Handwriting Area
+                        NavigationLink(destination: HandwritingCaptureView(onSave: { handwritingText in
+                            currentAnswer += "\n" + handwritingText
+                            speechManager.transcribedText = currentAnswer
+                        })) {
+                            Text("Add Handwritten Notes")
+                                .font(.body)
+                                .foregroundColor(.blue)
+                                .padding(.top, 4)
+                        }
+
+                        HStack {
+                            Button("Previous Question") {
+                                let question = sortedQuestions[currentQuestionIndex]
+                                question.answer = currentAnswer
+                                do {
+                                    try viewContext.save()
+                                } catch {
+                                    print("Error saving answer: \(error.localizedDescription)")
+                                }
+                                if currentQuestionIndex > 0 {
+                                    currentQuestionIndex -= 1
+                                    let previousQuestion = sortedQuestions[currentQuestionIndex]
+                                    currentAnswer = previousQuestion.answer ?? ""
+                                    speechManager.transcribedText = currentAnswer
+                                }
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .tint(.blue)
+                            .padding(.trailing, 8)
+
+                            Button("Next Question") {
                                 let question = sortedQuestions[currentQuestionIndex]
                                 question.answer = currentAnswer
                                 do {
@@ -127,11 +159,11 @@ struct RecordMeetingView: View {
                                     speechManager.transcribedText = ""
                                 }
                             }
+                            .buttonStyle(.borderedProminent)
+                            .tint(.blue)
                         }
-                        .buttonStyle(.borderedProminent)
-                        .tint(.blue)
+                        .padding(.top)
                     }
-                    .padding(.top)
                 }
             } else {
                 Text("All questions answered. Thank you!")

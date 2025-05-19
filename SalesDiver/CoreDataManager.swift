@@ -236,8 +236,8 @@ func fetchEntityDescriptions() {
     let model = context.persistentStoreCoordinator?.managedObjectModel
 
     if let entities = model?.entities {
-        for entity in entities {
-            // print("✅ Loaded entity: \(entity.name ?? "Unnamed Entity")")
+        for _ in entities {
+            // print("✅ Loaded entity.")
         }
     } else {
         print("❌ No entities found in the Core Data model.")

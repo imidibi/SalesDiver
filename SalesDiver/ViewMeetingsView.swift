@@ -102,6 +102,18 @@ struct ViewMeetingsView: View {
                     Text("Record Meeting")
                         .foregroundColor(.gray)
                 }
+
+                // Add Review Meeting Summary button
+                if let meetingToReview = selectedMeeting {
+                    NavigationLink(
+                        destination: MeetingSummaryView(meeting: meetingToReview)
+                    ) {
+                        Text("Review Meeting Summary")
+                    }
+                } else {
+                    Text("Review Meeting Summary")
+                        .foregroundColor(.gray)
+                }
             }
         }
         .navigationViewStyle(.stack)

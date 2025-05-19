@@ -668,7 +668,7 @@ class AutotaskAPIManager {
                 guard let id = item["id"] as? Int,
                       let name = item["name"] as? String,
                       let description = item["description"] as? String,
-                      let invoiceDescription = item["invoiceDescription"] as? String,
+                      let _ = item["invoiceDescription"] as? String,
                       let unitCost = item["unitCost"] as? Double,
                       let unitPrice = item["unitPrice"] as? Double,
                       let sku = item["sku"] as? String,
