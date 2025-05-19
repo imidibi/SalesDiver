@@ -141,10 +141,16 @@ struct FollowUpsView: View {
 
     @State private var showingNewFollowUp = false
     @State private var selectedFollowUp: FollowUpsEntity?
+    @State private var searchText: String = ""
 
     var body: some View {
         List {
-            ForEach(followUps) { followUp in
+            ForEach(followUps.filter { followUp in
+                searchText.isEmpty ||
+                (followUp.opportunity?.company?.name?.localizedCaseInsensitiveContains(searchText) == true) ||
+                (followUp.opportunity?.name?.localizedCaseInsensitiveContains(searchText) == true) ||
+                (followUp.assignedTo?.localizedCaseInsensitiveContains(searchText) == true)
+            }) { followUp in
                 HStack {
                     VStack(alignment: .leading) {
                         Text(followUp.name ?? "Untitled")
@@ -182,6 +188,7 @@ struct FollowUpsView: View {
                 }
             }
         }
+        .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search by company, opportunity, or assignee")
         .sheet(isPresented: $showingNewFollowUp) {
             NavigationView {
                 AddFollowUpView()
