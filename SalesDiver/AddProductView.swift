@@ -25,8 +25,8 @@ struct AddProductView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section(header: Text("Product Information")) {
-                    TextField("Product Name", text: $name)
+                Section(header: Text("Service Information")) {
+                    TextField("Service Name", text: $name)
 
                     Picker("Type", selection: $type) {
                         ForEach(productTypes, id: \.self) { type in
@@ -65,7 +65,7 @@ struct AddProductView: View {
                         .frame(height: 100)
                 }
             }
-            .navigationTitle("Add Product")
+            .navigationTitle("Add Service")
             .navigationBarItems(
                 leading: Button("Cancel") { dismiss() },
                 trailing: Button("Save") {

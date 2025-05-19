@@ -237,7 +237,7 @@ func fetchEntityDescriptions() {
 
     if let entities = model?.entities {
         for entity in entities {
-            print("✅ Loaded entity: \(entity.name ?? "Unnamed Entity")")
+            // print("✅ Loaded entity: \(entity.name ?? "Unnamed Entity")")
         }
     } else {
         print("❌ No entities found in the Core Data model.")
@@ -347,12 +347,12 @@ func saveAssessmentFields(for company: String, category: String, fields: [(Strin
             fieldEntity.valueNumber = Double(stringValue) ?? 0.0
         }
 
-        print("✅ Saved field '\(fieldEntity.fieldName ?? "unnamed")' with valueNumber: \(fieldEntity.valueNumber), valueString: \(fieldEntity.valueString ?? "nil")")
+        // print("✅ Saved field '\(fieldEntity.fieldName ?? "unnamed")' with valueNumber: \(fieldEntity.valueNumber), valueString: \(fieldEntity.valueString ?? "nil")")
     }
 
     saveContext()
     context.refresh(assessment, mergeChanges: true)
-    print("✅ Assessment fields saved successfully for company: \(company)")
+    // print("✅ Assessment fields saved successfully for company: \(company)")
 }
 
 func loadAssessmentFields(for company: String, category: String) -> [AssessmentFieldEntity] {
@@ -366,13 +366,13 @@ func loadAssessmentFields(for company: String, category: String) -> [AssessmentF
         return []
     }
 
-    print("📥 Loading saved \(category) assessment for: \(company)")
-    print("✅ Loaded assessment for company: \(company)")
-    print("🧠 Loaded assessment: \(company) with \(fieldSet.count) total fields")
+    // print("📥 Loading saved \(category) assessment for: \(company)")
+    // print("✅ Loaded assessment for company: \(company)")
+    // print("🧠 Loaded assessment: \(company) with \(fieldSet.count) total fields")
 
-    for field in fieldSet {
-        print("🔍 Inspecting field: \(field.fieldName ?? "(unknown)"), valueNumber: \(field.valueNumber), valueString: \(field.valueString ?? "nil")")
-    }
+    // for field in fieldSet {
+    //     print("🔍 Inspecting field: \(field.fieldName ?? "(unknown)"), valueNumber: \(field.valueNumber), valueString: \(field.valueString ?? "nil")")
+    // }
 
     let filteredFields = fieldSet.filter { $0.category == category }
     return Array(filteredFields)

@@ -70,7 +70,7 @@ struct WaveShape: Shape {
 struct GridView: View {
     let menuItems: [(name: String, icon: String, destination: AnyView)] = [
         ("Companies", "building.2.fill", AnyView(CompanyDataView())),
-        ("Products", "cart.fill", AnyView(ProductDataView())),
+        ("Services", "desktopcomputer", AnyView(ProductDataView())),
         ("Opportunities", "chart.bar.fill", AnyView(OpportunityDataView())),
         ("Contacts", "person.2.fill", AnyView(ContactsView())),
         ("Meetings", "calendar.badge.clock", AnyView(ViewMeetingsView())),

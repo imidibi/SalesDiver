@@ -67,7 +67,7 @@ struct EditOpportunityView: View {
                     // 🎯 Selectable Product Field
                     Button(action: { isSelectingProduct = true }) {
                         HStack {
-                            Text("Product")
+                            Text("Service")
                             Spacer()
                             Text(selectedProduct?.name ?? opportunity.productName)
                                 .foregroundColor(.gray)

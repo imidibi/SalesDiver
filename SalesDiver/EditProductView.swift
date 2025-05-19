@@ -35,8 +35,8 @@ struct EditProductView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section(header: Text("Product Information")) {
-                    TextField("Product Name", text: $name)
+                Section(header: Text("Service Information")) {
+                    TextField("Service Name", text: $name)
                     Picker("Type", selection: $type) {
                         ForEach(["Hardware", "Software", "Service", "Labor", "Bundle"], id: \.self) { Text($0) }
                     }
@@ -69,7 +69,7 @@ struct EditProductView: View {
                         .frame(height: 100)
                 }
             }
-            .navigationTitle("Edit Product")
+            .navigationTitle("Edit Service")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {

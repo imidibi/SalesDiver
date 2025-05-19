@@ -69,7 +69,7 @@ struct AddOpportunityView: View {
                         }
 
                         // 🎨 Searchable Product Selector
-                        SelectionCard(title: "Product", subtitle: selectedProduct?.name ?? "") {
+                        SelectionCard(title: "Service", subtitle: selectedProduct?.name ?? "") {
                             sheetManager.showProductSearch()
                         }
 

@@ -27,7 +27,7 @@ struct SelectedQualificationItem: Identifiable, Equatable {
 
 enum OpportunitySortOption: String, CaseIterable {
     case companyName = "Company Name"
-    case productName = "Product Name"
+    case productName = "Service Name"
     case closeDate = "Close Date"
 }
 
@@ -114,7 +114,7 @@ struct OpportunityDataView: View {
 
                             let trimmedProduct = opportunity.productName.trimmingCharacters(in: .whitespacesAndNewlines)
                             if !trimmedProduct.isEmpty && trimmedProduct.lowercased() != "unknown product" {
-                                Text("Product: \(trimmedProduct)")
+                                Text("Service: \(trimmedProduct)")
                                     .foregroundColor(.gray)
                             }
 

@@ -44,8 +44,8 @@ struct SettingsView: View {
             return "Search Contacts in Autotask"
         case "Opportunity":
             return "Search Opportunities in Autotask"
-        case "Product":
-            return "Search Products or Services in Autotask"
+        case "Service":
+            return "Search Services in Autotask"
         default:
             return "Search Companies in Autotask"
         }
@@ -312,7 +312,7 @@ struct SettingsView: View {
     // Extracted LazyVGrid of buttons
     private var dataTypeButtonsGrid: some View {
         LazyVGrid(columns: gridColumns, spacing: 10) {
-            ForEach(["Company", "Contact", "Opportunity", "Product"], id: \.self) { category in
+            ForEach(["Company", "Contact", "Opportunity", "Service"], id: \.self) { category in
                 dataTypeButton(for: category)
             }
         }
@@ -369,9 +369,9 @@ struct SettingsView: View {
     private var searchAndResultsSection: some View {
         Section(header: Text(searchHeaderText)) {
             Group {
-                if selectedCategory == "Product" {
-                    TextField("Enter product or service name", text: $companyName, onCommit: {
-                        if selectedCategory == "Product" {
+                if selectedCategory == "Service" {
+                    TextField("Enter service name", text: $companyName, onCommit: {
+                        if selectedCategory == "Service" {
                             searchProductsByName()
                         } else {
                             handleSearchCommit()
@@ -399,7 +399,7 @@ struct SettingsView: View {
                 }
             }
 
-            if selectedCategory == "Product" {
+            if selectedCategory == "Service" {
                 productSearchField
             }
 
@@ -473,7 +473,7 @@ struct SettingsView: View {
             .background(Color.blue)
             .foregroundColor(.white)
             .cornerRadius(8)
-        } else if selectedCategory == "Product", !selectedProducts.isEmpty && showSyncButton {
+        } else if selectedCategory == "Service", !selectedProducts.isEmpty && showSyncButton {
             Button("Sync Products/Services now") {
                 importSelectedProducts()
             }
@@ -976,7 +976,7 @@ private func importSelectedContacts() {
                 fetchAllProductsFromAutotask()
             }) {
                 HStack {
-                    Text(selectedProducts.isEmpty ? "Select Products/Services" :
+                    Text(selectedProducts.isEmpty ? "Select Services" :
                         selectedProducts.map { $0.name ?? "Unnamed" }.joined(separator: ", "))
                         .foregroundColor(selectedProducts.isEmpty ? .gray : .primary)
                     Spacer()
@@ -1022,8 +1022,22 @@ private func importSelectedContacts() {
 
         let completionBlock: ([(Int, String, String, Double, Double, String, String, Date?)]) -> Void = { results in
             DispatchQueue.main.async {
-                // For productSearchResults, consistently use $0.1 as the product name, and blank $0.2 for display.
-                productSearchResults = results.map { ($0.0, $0.1, "") }
+                // Debug: Print all product fields for each result
+//                for result in results {
+//                    print("""
+//                    📝 SearchProductsByName Debug:
+//                    ID: \(result.0)
+//                    Name: \(result.1)
+//                    Description: \(result.2)
+//                    Unit Cost: \(result.3)
+//                    Unit Price: \(result.4)
+//                    Invoice Description: \(result.5)
+//                    Catalog/Part Number: \(result.6)
+//                    Last Modified Date: \(String(describing: result.7))
+//                    """)
+//                }
+                // Use $0.2 for description so both product name and description are available/displayed.
+                productSearchResults = results.map { ($0.0, $0.1, $0.2) }
                 productImportCache = results.map { tuple in
                     let (id, name, description, unitCost, unitPrice, invoiceDescription, _, lastModifiedDate) = tuple
                     return (
@@ -1045,18 +1059,26 @@ private func importSelectedContacts() {
     // MARK: - Product Selection Overlay
     private var productSelectionOverlay: some View {
         VStack {
-            Text("Select Products / Services")
+            Text("Select Services")
                 .font(.headline)
                 .padding()
 
             ScrollView {
                 LazyVStack {
                     ForEach(productSearchResults, id: \.0) { result in
-                        let productName = result.1
+                        // result: (Int, String, String)
                         HStack {
-                            Text(productName)
+                            VStack(alignment: .leading) {
+                                Text(result.1).bold() // Product Name
+                                Text("Description: \(result.2)").font(.subheadline).foregroundColor(.gray)
+                                // Try to get the invoice description from productImportCache
+                                if let idx = productImportCache.firstIndex(where: { $0.0 == result.0 && $0.1 == result.1 }) {
+                                    let invoiceDescription = productImportCache[idx].3
+                                    Text("Invoice Description: \(invoiceDescription)").font(.subheadline).foregroundColor(.secondary)
+                                }
+                            }
                             Spacer()
-                            if selectedProducts.contains(where: { $0.name == productName }) {
+                            if selectedProducts.contains(where: { $0.name == result.1 }) {
                                 Image(systemName: "checkmark")
                                     .foregroundColor(.blue)
                             }
@@ -1064,11 +1086,11 @@ private func importSelectedContacts() {
                         .padding()
                         .background(Color(UIColor.systemBackground))
                         .onTapGesture {
-                            if let index = selectedProducts.firstIndex(where: { $0.name == productName }) {
+                            if let index = selectedProducts.firstIndex(where: { $0.name == result.1 }) {
                                 selectedProducts.remove(at: index)
                             } else {
                                 let newProduct = ProductEntity(context: CoreDataManager.shared.persistentContainer.viewContext)
-                                newProduct.name = productName
+                                newProduct.name = result.1
                                 selectedProducts.append(newProduct)
                             }
                         }
@@ -1107,6 +1129,7 @@ private func importSelectedContacts() {
                     product.autotaskID = Int64(cached.0)
                     product.name = cached.1
                     product.type = "Service"
+                    product.units = "Per Device"
                     product.prodDescription = cached.2
                     product.benefits = cached.3
                     product.unitCost = cached.4 ?? 0.0
@@ -1147,6 +1170,20 @@ private func importSelectedContacts() {
                     print("⚠️ No products/services found.")
                 } else {
                     print("✅ Retrieved \(results.count) products/services.")
+                    // Debug: Print all product fields for each result
+//                    for product in results {
+//                        print("""
+//                        📝 Product Debug Info:
+//                        ID: \(product.0)
+//                        Name: \(product.1)
+//                        Description: \(product.2)
+//                        Unit Cost: \(product.3)
+//                        Unit Price: \(product.4)
+//                        Invoice Description: \(product.5)
+//                        Catalog Number / Part Number: \(product.6)
+//                        Last Modified Date: \(String(describing: product.7))
+//                        """)
+//                    }
                 }
                 productSearchResults = results.map { ($0.0, $0.1, $0.2) }
                 productImportCache = results.map { tuple in

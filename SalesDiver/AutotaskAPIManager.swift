@@ -666,6 +666,7 @@ class AutotaskAPIManager {
 
             let services: [(Int, String, String, Double, Double, String, String, Date?)] = items.compactMap { item in
                 guard let id = item["id"] as? Int,
+                      let name = item["name"] as? String,
                       let description = item["description"] as? String,
                       let invoiceDescription = item["invoiceDescription"] as? String,
                       let unitCost = item["unitCost"] as? Double,
@@ -676,7 +677,7 @@ class AutotaskAPIManager {
                 }
 
                 let lastModified = (item["lastModifiedDate"] as? String).flatMap { ISO8601DateFormatter().date(from: $0) }
-                return (id, description, invoiceDescription, unitCost, unitPrice, sku, catalogNumber, lastModified)
+                return (id, name, description, unitCost, unitPrice, sku, catalogNumber, lastModified)
             }
 
             completion(services)
