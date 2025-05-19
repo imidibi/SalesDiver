@@ -249,7 +249,8 @@ struct AddOpportunityView: View {
 
     // ✅ Save Opportunity
     private func saveOpportunity() {
-        guard let company = selectedCompany, let product = selectedProduct else { return }
+        guard let company = selectedCompany else { return }
+        let product = selectedProduct
         let monthly = Double(monthlyRevenue) ?? 0.0
         let onetime = Double(onetimeRevenue) ?? 0.0
         let estimated = Double(estimatedValue) ?? 0.0

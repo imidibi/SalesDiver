@@ -60,14 +60,18 @@ class OpportunityViewModel: ObservableObject {
         }
     }
     
-    func addOpportunity(name: String, closeDate: Date, company: CompanyWrapper, product: ProductWrapper, probability: Int16, monthlyRevenue: Double, onetimeRevenue: Double, estimatedValue: Double, status: Int16) {
+    func addOpportunity(name: String, closeDate: Date, company: CompanyWrapper, product: ProductWrapper?, probability: Int16, monthlyRevenue: Double, onetimeRevenue: Double, estimatedValue: Double, status: Int16) {
         let entity = NSEntityDescription.entity(forEntityName: "OpportunityEntity", in: context)!
         let newOpportunity = NSManagedObject(entity: entity, insertInto: context)
 
         newOpportunity.setValue(name, forKey: "name")
         newOpportunity.setValue(closeDate, forKey: "closeDate")
         newOpportunity.setValue(company.managedObject, forKey: "company")
-        newOpportunity.setValue(product.managedObject, forKey: "product")
+        if let product = product {
+            newOpportunity.setValue(product.managedObject, forKey: "product")
+        } else {
+            newOpportunity.setValue(nil, forKey: "product")
+        }
         newOpportunity.setValue(probability, forKey: "probability")
         newOpportunity.setValue(monthlyRevenue, forKey: "monthlyRevenue")
         newOpportunity.setValue(onetimeRevenue, forKey: "onetimeRevenue")
