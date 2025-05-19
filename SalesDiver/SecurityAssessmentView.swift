@@ -183,7 +183,8 @@ struct SecurityAssessmentView: View {
         let columns = Array(repeating: GridItem(.flexible()), count: 4)
         let availableWidth = geometry.size.width
         let availableHeight = geometry.size.height
-        let cellSize = min(availableWidth, availableHeight) / 4 - 10 // Adjust for spacing
+        let rawCellSize = min(availableWidth, availableHeight) / 4 - 10
+        let cellSize = max(rawCellSize, 50) // Ensure cell size is never too small or negative
 
         return LazyVGrid(columns: columns, spacing: 10) {
             ForEach(securityOptions, id: \.name) { option in
