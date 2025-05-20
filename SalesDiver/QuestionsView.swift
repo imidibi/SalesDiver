@@ -80,7 +80,7 @@ struct QuestionsView: View {
     
     private var questionInputView: some View {
         VStack {
-            TextField("Enter BANT Question", text: $questionText)
+            TextField("Enter New Question", text: $questionText)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .padding()
 

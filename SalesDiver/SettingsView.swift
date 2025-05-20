@@ -32,7 +32,7 @@ struct SettingsView: View {
     @State private var selectedOpportunities: [OpportunityEntity] = []
     @State private var showOpportunitySearch = false
     @State private var showSyncButton = false
-    @State private var opportunityImportCache: [(Int, String, Int?, Double?, Double?, Int?)] = []
+    @State private var opportunityImportCache: [(Int, String, Int?, Double?, Double?, Int?, Date?)] = []
     // Product selection state
     @State private var selectedProducts: [ProductEntity] = []
     @State private var showProductSearch = false
@@ -61,7 +61,7 @@ struct SettingsView: View {
 
         let requestBody: [String: Any] = [
             "MaxRecords": 100,
-            "IncludeFields": ["id", "title", "amount", "probability", "monthlyRevenue", "onetimeRevenue", "status"],
+            "IncludeFields": ["id", "title", "amount", "probability", "monthlyRevenue", "onetimeRevenue", "status", "projectedCloseDate"],
             "Filter": [
                 [
                     "op": "and",
@@ -73,9 +73,10 @@ struct SettingsView: View {
         ]
 
         AutotaskAPIManager.shared.searchOpportunitiesFromBody(requestBody) { results in
+            // results: [(Int, String, Int?, Double?, Double?, Int?, Date?)]
             DispatchQueue.main.async {
                 searchResults = results.map { ($0.0, $0.1, "") }
-                opportunityImportCache = results
+                opportunityImportCache = results.map { ($0.0, $0.1, $0.2, $0.3, $0.4, $0.5, $0.6) }
                 print("✅ Opportunities Fetched: \(searchResults.count)")
             }
         }
@@ -127,6 +128,9 @@ struct SettingsView: View {
                         opportunity.status = Int16(rawStatus)
                     } else {
                         opportunity.status = 1 // default to Active
+                    }
+                    if let cachedCloseDate = cached.6 {
+                        opportunity.closeDate = cachedCloseDate
                     }
                 }
                 opportunity.company = companyEntity

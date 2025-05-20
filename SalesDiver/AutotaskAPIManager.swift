@@ -469,7 +469,7 @@ class AutotaskAPIManager {
             completion(contacts)
         }.resume()
     }
-    func searchOpportunitiesFromBody(_ requestBody: [String: Any], completion: @escaping ([(Int, String, Int?, Double?, Double?, Int?)]) -> Void) {
+    func searchOpportunitiesFromBody(_ requestBody: [String: Any], completion: @escaping ([(Int, String, Int?, Double?, Double?, Int?, Date?)]) -> Void) {
         guard let url = URL(string: "https://webservices24.autotask.net/ATServicesRest/V1.0/Opportunities/query") else {
             print("❌ Invalid URL for Opportunities API")
             return
@@ -479,7 +479,7 @@ class AutotaskAPIManager {
         print("📄 Request Body: \(requestBody)")
         
         var modifiedRequestBody = requestBody
-        modifiedRequestBody["IncludeFields"] = ["id", "title", "amount", "probability", "monthlyRevenue", "onetimeRevenue", "status"]
+        modifiedRequestBody["IncludeFields"] = ["id", "title", "amount", "probability", "monthlyRevenue", "onetimeRevenue", "status", "projectedCloseDate"]
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -526,7 +526,7 @@ class AutotaskAPIManager {
                 if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
                    let items = json["items"] as? [[String: Any]] {
                     
-                    let opportunities = items.compactMap { item -> (Int, String, Int?, Double?, Double?, Int?)? in
+                    let opportunities = items.compactMap { item -> (Int, String, Int?, Double?, Double?, Int?, Date?)? in
                         if let id = item["id"] as? Int,
                            let title = item["title"] as? String,
                            let status = item["status"] as? Int,
@@ -534,7 +534,10 @@ class AutotaskAPIManager {
                             let probability = item["probability"] as? Int
                             let monthlyRevenue = item["monthlyRevenue"] as? Double
                             let onetimeRevenue = item["onetimeRevenue"] as? Double
-                            return (id, title, probability, monthlyRevenue, onetimeRevenue, status)
+                            let projectedCloseDateString = item["projectedCloseDate"] as? String
+                            let formatter = ISO8601DateFormatter()
+                            let projectedCloseDate = projectedCloseDateString.flatMap { formatter.date(from: $0) }
+                            return (id, title, probability, monthlyRevenue, onetimeRevenue, status, projectedCloseDate)
                         }
                         return nil
                     }
