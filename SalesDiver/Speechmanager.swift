@@ -7,6 +7,7 @@
 import Foundation
 import Speech
 import AVFoundation
+import Combine
 
 class SpeechManager: NSObject, ObservableObject {
     private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
@@ -15,6 +16,8 @@ class SpeechManager: NSObject, ObservableObject {
     private let audioEngine = AVAudioEngine()
 
     @Published var transcribedText: String = ""
+    @Published var isRecording: Bool = false
+    @Published var isTranscribingAvailable: Bool = false
 
     override init() {
         super.init()
@@ -26,8 +29,14 @@ class SpeechManager: NSObject, ObservableObject {
             switch authStatus {
             case .authorized:
                 print("Speech recognition authorized.")
+                DispatchQueue.main.async {
+                    self.isTranscribingAvailable = true
+                }
             default:
                 print("Speech recognition not authorized.")
+                DispatchQueue.main.async {
+                    self.isTranscribingAvailable = false
+                }
             }
         }
     }
@@ -62,6 +71,9 @@ class SpeechManager: NSObject, ObservableObject {
 
         audioEngine.prepare()
         try audioEngine.start()
+        DispatchQueue.main.async {
+            self.isRecording = true
+        }
     }
 
     func stopTranscribing() {
@@ -69,5 +81,8 @@ class SpeechManager: NSObject, ObservableObject {
         audioEngine.inputNode.removeTap(onBus: 0)
         recognitionRequest?.endAudio()
         recognitionTask?.cancel()
+        DispatchQueue.main.async {
+            self.isRecording = false
+        }
     }
 }

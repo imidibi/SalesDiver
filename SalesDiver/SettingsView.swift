@@ -1120,7 +1120,7 @@ private func importSelectedContacts() {
 
     // MARK: - Import Selected Products
     private func importSelectedProducts() {
-        _ = CoreDataManager.shared.persistentContainer.viewContext
+        let context = CoreDataManager.shared.persistentContainer.viewContext
         let semaphore = DispatchSemaphore(value: 3)
         let group = DispatchGroup()
 
@@ -1130,15 +1130,31 @@ private func importSelectedContacts() {
 
             DispatchQueue.global().async {
                 if let cached = productImportCache.first(where: { $0.1 == product.name }) {
-                    product.autotaskID = Int64(cached.0)
-                    product.name = cached.1
-                    product.type = "Service"
-                    product.units = "Per Device"
-                    product.prodDescription = cached.2
-                    product.benefits = cached.3
-                    product.unitCost = cached.4 ?? 0.0
-                    product.unitPrice = cached.5 ?? 0.0
-                    product.lastModified = cached.6
+                    let fetchRequest: NSFetchRequest<ProductEntity> = ProductEntity.fetchRequest()
+                    fetchRequest.predicate = NSPredicate(format: "autotaskID == %lld", Int64(cached.0))
+                    let existingProduct = try? context.fetch(fetchRequest).first
+                    if let existingProduct = existingProduct {
+                        // Update existing product
+                        existingProduct.type = "Service"
+                        existingProduct.units = "Per Device"
+                        existingProduct.prodDescription = cached.2
+                        existingProduct.benefits = cached.3
+                        existingProduct.unitCost = cached.4 ?? 0.0
+                        existingProduct.unitPrice = cached.5 ?? 0.0
+                        existingProduct.lastModified = cached.6
+                    } else {
+                        // Create new product
+                        let newProduct = ProductEntity(context: context)
+                        newProduct.autotaskID = Int64(cached.0)
+                        newProduct.name = cached.1
+                        newProduct.type = "Service"
+                        newProduct.units = "Per Device"
+                        newProduct.prodDescription = cached.2
+                        newProduct.benefits = cached.3
+                        newProduct.unitCost = cached.4 ?? 0.0
+                        newProduct.unitPrice = cached.5 ?? 0.0
+                        newProduct.lastModified = cached.6
+                    }
                 }
 
                 DispatchQueue.main.async {

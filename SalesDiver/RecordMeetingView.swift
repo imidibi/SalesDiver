@@ -101,13 +101,25 @@ struct RecordMeetingView: View {
                         .padding(.top, 4)
 
                         HStack {
-                            Button("Start Recording") {
+                            Button(action: {
                                 try? speechManager.startTranscribing()
+                            }) {
+                                Image(systemName: "record.circle.fill")
+                                    .resizable()
+                                    .frame(width: 40, height: 40)
+                                    .foregroundColor(.red)
                             }
-                            Button("Stop Recording") {
+                            .disabled(!speechManager.isTranscribingAvailable)
+
+                            Button(action: {
                                 speechManager.stopTranscribing()
-                                // Do not clear transcribedText here
+                            }) {
+                                Image(systemName: "stop.circle.fill")
+                                    .resizable()
+                                    .frame(width: 40, height: 40)
+                                    .foregroundColor(.gray)
                             }
+                            .disabled(!speechManager.isRecording)
                         }
 
                         // Optional Handwriting Area
@@ -130,11 +142,13 @@ struct RecordMeetingView: View {
                                 } catch {
                                     print("Error saving answer: \(error.localizedDescription)")
                                 }
+                                speechManager.stopTranscribing()
                                 if currentQuestionIndex > 0 {
                                     currentQuestionIndex -= 1
                                     let previousQuestion = sortedQuestions[currentQuestionIndex]
                                     currentAnswer = previousQuestion.answer ?? ""
                                     speechManager.transcribedText = currentAnswer
+                                    try? speechManager.startTranscribing()
                                 }
                             }
                             .buttonStyle(.borderedProminent)
@@ -149,11 +163,13 @@ struct RecordMeetingView: View {
                                 } catch {
                                     print("Error saving answer: \(error.localizedDescription)")
                                 }
+                                speechManager.stopTranscribing()
                                 currentQuestionIndex += 1
                                 if currentQuestionIndex < sortedQuestions.count {
                                     let nextQuestion = sortedQuestions[currentQuestionIndex]
                                     currentAnswer = nextQuestion.answer ?? ""
                                     speechManager.transcribedText = currentAnswer
+                                    try? speechManager.startTranscribing()
                                 } else {
                                     currentAnswer = ""
                                     speechManager.transcribedText = ""
