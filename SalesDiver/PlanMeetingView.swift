@@ -241,7 +241,7 @@ struct PlanMeetingView: View {
         // If we've processed all categories, finish the cycle.
         guard currentCategoryIndex < categories.count else {
             showQuestionSelection = false
-            dialogueText = "All categories have been processed. The AI dialogue generation is complete."
+            dialogueText = "All categories have been processed."
 //            print("DEBUG: AI Dialogue process complete.")
             return
         }
@@ -694,7 +694,7 @@ struct PlanMeetingView: View {
             // Display AI Generated Dialogue
             if !dialogueText.isEmpty {
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("AI Generated Dialogue")
+                    Text("Questions Dialogue")
                         .font(.headline)
 
                     ScrollView {
@@ -715,7 +715,7 @@ struct PlanMeetingView: View {
         return Button(action: {
             generateBANTDialogue()
         }) {
-            Text("Generate AI Dialogue")
+            Text("Select Qualification Questions")
                 .font(.headline)
                 .padding()
                 .background(Color.blue)

@@ -180,6 +180,12 @@ struct RecordMeetingView: View {
                         }
                         .padding(.top)
                     }
+                    .onAppear {
+                        if currentQuestionIndex == 0 && currentAnswer.isEmpty {
+                            currentAnswer = question.answer ?? ""
+                            speechManager.transcribedText = currentAnswer
+                        }
+                    }
                 }
             } else {
                 Text("All questions answered. Thank you!")
