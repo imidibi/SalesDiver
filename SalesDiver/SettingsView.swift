@@ -16,8 +16,14 @@ struct SettingsView: View {
     @AppStorage("myCompanyName") private var myCompanyName = ""
     @AppStorage("myCompanyURL") private var myCompanyURL = ""
     @AppStorage("selectedMethodology") private var selectedMethodology = "BANT"
+    @AppStorage("openAIKey") private var openAIKey = ""
+    @AppStorage("openAISelectedModel") private var openAISelectedModel: String = ""
+
+    // Store available OpenAI chat models for dynamic Picker
+    @State private var availableModels: [String] = []
     
     @State private var testResult: String = ""
+    @State private var openAIModel: String = "Not yet retrieved"
     @State private var isTesting = false
     @State private var companyName: String = ""
     @State private var searchResults: [(Int, String, String)] = []
@@ -282,6 +288,54 @@ struct SettingsView: View {
                         Text("SCUBATANK").tag("SCUBATANK")
                     }
                     .pickerStyle(SegmentedPickerStyle())
+                }
+
+                // --- OpenAI Integration Section ---
+                Section(header: Text("OpenAI Integration")) {
+                    HStack {
+                        Text("OpenAI API Key:")
+                        SecureField("sk-...", text: $openAIKey)
+                            .textContentType(.password)
+                            .autocapitalization(.none)
+                    }
+
+                    if isTesting {
+                        ProgressView("Testing...")
+                    } else {
+                        Button("Test API Key") {
+                            testOpenAIKey()
+                        }
+                    }
+
+                    if !testResult.isEmpty {
+                        Text(testResult)
+                            .foregroundColor(testResult.contains("✅") ? .green : .red)
+                        Text("Model in Use: \(openAISelectedModel.isEmpty ? openAIModel : openAISelectedModel)")
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                    }
+
+                    // Manual Model Picker (dynamic)
+                    if !availableModels.isEmpty {
+                        Picker("Preferred Model", selection: $openAISelectedModel) {
+                            Text("Auto-Detect").tag("")
+                            ForEach(availableModels, id: \.self) { model in
+                                Text(model).tag(model)
+                            }
+                        }
+                        .pickerStyle(MenuPickerStyle())
+                    } else {
+                        Text("Please load a valid OpenAI key to select a model.")
+                            .foregroundColor(.secondary)
+                    }
+                    Text("Detected Default Model: \(openAIModel)")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                }
+                .onAppear {
+                    if !openAIKey.isEmpty && availableModels.isEmpty {
+                        testOpenAIKey()
+                    }
                 }
 
                 autotaskIntegrationSection
@@ -701,6 +755,73 @@ private func searchContactsForCompany() {
         }
     }
 }
+
+// MARK: - OpenAI API Key Test
+    private func testOpenAIKey() {
+        guard !openAIKey.isEmpty else {
+            testResult = "❌ Please enter your OpenAI API Key."
+            return
+        }
+
+        isTesting = true
+        testResult = ""
+
+        let url = URL(string: "https://api.openai.com/v1/models")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(openAIKey)", forHTTPHeaderField: "Authorization")
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            DispatchQueue.main.async {
+                isTesting = false
+                if let error = error {
+                    testResult = "❌ Error: \(error.localizedDescription)"
+                    return
+                }
+
+                if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 {
+                    if let data = data,
+                       let modelResponse = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
+                       let models = modelResponse["data"] as? [[String: Any]] {
+                        // Refined: Only include chat-appropriate models, exclude audio and non-chat models
+                        let chatModels = models
+                            .compactMap { $0["id"] as? String }
+                            .filter {
+                                let id = $0.lowercased()
+                                return id.contains("gpt") &&
+                                       !id.contains("instruct") &&
+                                       !id.contains("edit") &&
+                                       !id.contains("dall") &&
+                                       !id.contains("whisper") &&
+                                       !id.contains("tts") &&
+                                       !id.contains("audio")
+                            }
+
+                        availableModels = chatModels.sorted()
+
+                        let preferredModel = chatModels.first(where: { $0.contains("gpt-4") }) ??
+                                             chatModels.first(where: { $0.contains("gpt-3.5") }) ??
+                                             chatModels.first
+
+                        if let model = preferredModel {
+                            testResult = "✅ OpenAI API Key is valid."
+                            if openAISelectedModel.isEmpty {
+                                openAIModel = model
+                            }
+                        } else {
+                            testResult = "✅ OpenAI API Key is valid, but no suitable chat model found."
+                        }
+                    } else {
+                        testResult = "✅ OpenAI API Key is valid, but model list could not be parsed."
+                        availableModels = []
+                    }
+                } else {
+                    testResult = "❌ Invalid API Key or access error."
+                    availableModels = []
+                }
+            }
+        }.resume()
+    }
 
 private func importSelectedContacts() {
     guard let selectedCompanyID = selectedCompanyID else {

@@ -18,6 +18,7 @@ struct MeetingSummaryView: View {
     @State private var selectedSCUBATANKType: SCUBATANKType?
     @StateObject private var viewModel = OpportunityViewModel()
     @State private var selectedOpportunity: OpportunityWrapper?
+    @State private var aiRecommendation: String = ""
 
     var body: some View {
         let resolvedDate = meeting.date ?? Date()
@@ -104,6 +105,8 @@ struct MeetingSummaryView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Qualification Summary:")
                         .font(.headline)
+                    Text("Please edit the qualification status based on the meeting outcome:")
+                        .foregroundColor(.secondary)
                     if let opportunity = meeting.opportunity {
                         let wrapper = OpportunityWrapper(managedObject: opportunity)
                         switch currentMethodology {
@@ -134,9 +137,29 @@ struct MeetingSummaryView: View {
                     }
                 }
 
+                Divider()
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("AI Recommendation:")
+                        .font(.headline)
+                    Text(aiRecommendation)
+                        .foregroundColor(.primary)
+                        .padding(.top, 2)
+                    Button("Generate Recommendation") {
+                        generateAIRecommendation()
+                    }
+                    .padding(.top, 8)
+                }
+
                 Spacer()
             }
             .padding()
+        }
+        .onAppear {
+            if aiRecommendation.isEmpty,
+               let saved = meeting.aiRecommendation,
+               !saved.isEmpty {
+                aiRecommendation = saved
+            }
         }
         .navigationTitle("Meeting Summary")
         .sheet(isPresented: $showingQualificationEditor) {
@@ -149,6 +172,83 @@ struct MeetingSummaryView: View {
                 viewModel: viewModel
             )
         }
+    }
+    private func generateAIRecommendation() {
+        var summary = ""
+
+        if let questions = meeting.questions as? Set<MeetingQuestionEntity> {
+            let answered = questions
+                .filter { ($0.answer ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false }
+                .map { "Q: \($0.questionText ?? "")\nA: \($0.answer ?? "")" }
+                .joined(separator: "\n\n")
+            summary += "Meeting Q&A:\n" + answered + "\n\n"
+        }
+
+        if let opportunity = meeting.opportunity {
+            let wrapper = OpportunityWrapper(managedObject: opportunity)
+            summary += "Qualification Summary:\n"
+            summary += "Budget: \(wrapper.budgetStatus)\n"
+            summary += "Authority: \(wrapper.authorityStatus)\n"
+            summary += "Need: \(wrapper.needStatus)\n"
+            summary += "Timing: \(wrapper.timingStatus)\n"
+        }
+
+        let prompt = """
+This data represents the latest sales meeting between a Managed service provider sales person and their prospect, as well as the sales person's latest qualification assessment. Given this, what would be the logical next step for the sales person to do? Please create a recommendation for the sales person, which can include qualifying out of the deal if the situation looks like it will be time wasted.
+
+\(summary)
+"""
+
+        guard let apiKey = UserDefaults.standard.string(forKey: "openAIKey"), !apiKey.isEmpty else {
+            aiRecommendation = "⚠️ OpenAI API key is not set."
+            return
+        }
+
+        let model = UserDefaults.standard.string(forKey: "openAISelectedModel") ?? ""
+        let chosenModel = model.isEmpty ? "gpt-4" : model
+
+        let body: [String: Any] = [
+            "model": chosenModel,
+            "messages": [
+                ["role": "system", "content": "You are a helpful assistant for sales strategy in the managed IT services space."],
+                ["role": "user", "content": prompt]
+            ],
+            "temperature": 0.7,
+            "max_tokens": 400
+        ]
+
+        var request = URLRequest(url: URL(string: "https://api.openai.com/v1/chat/completions")!)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body, options: [])
+
+        aiRecommendation = "Generating recommendation..."
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            DispatchQueue.main.async {
+                if let data = data,
+                   let result = try? JSONDecoder().decode(OpenAIResponse.self, from: data),
+                   let message = result.choices.first?.message.content {
+                    aiRecommendation = message.trimmingCharacters(in: .whitespacesAndNewlines)
+                    meeting.aiRecommendation = aiRecommendation
+                    try? meeting.managedObjectContext?.save()
+                } else {
+                    if let data = data,
+                       let debug = String(data: data, encoding: .utf8) {
+                        if debug.contains("insufficient_quota") {
+                            aiRecommendation = "⚠️ Your OpenAI account has no available quota. Please visit https://platform.openai.com/account/billing to update your plan."
+                        } else {
+                            aiRecommendation = "❌ OpenAI error: \(debug)"
+                        }
+                    } else if let error = error {
+                        aiRecommendation = "❌ Request failed: \(error.localizedDescription)"
+                    } else {
+                        aiRecommendation = "⚠️ Failed to retrieve recommendation from OpenAI."
+                    }
+                }
+            }
+        }.resume()
     }
 }
 
@@ -187,5 +287,15 @@ struct QualificationEditorRouter: View {
         } else {
             ProgressView("Loading...")
         }
+    }
+}
+
+struct OpenAIResponse: Codable {
+    let choices: [Choice]
+    struct Choice: Codable {
+        let message: Message
+    }
+    struct Message: Codable {
+        let content: String
     }
 }
