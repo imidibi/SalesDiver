@@ -17,6 +17,7 @@ struct MeetingSummaryView: View {
     @State private var selectedMEDDICType: MEDDICType?
     @State private var selectedSCUBATANKType: SCUBATANKType?
     @StateObject private var viewModel = OpportunityViewModel()
+    @State private var selectedOpportunity: OpportunityWrapper?
 
     var body: some View {
         let resolvedDate = meeting.date ?? Date()
@@ -108,18 +109,21 @@ struct MeetingSummaryView: View {
                         switch currentMethodology {
                         case "BANT":
                             BANTIndicatorView(opportunity: wrapper, onBANTSelected: { selected in
+                                selectedOpportunity = wrapper
                                 selectedBANTType = selected
                                 editorType = "BANT"
                                 showingQualificationEditor = true
                             })
                         case "MEDDIC":
                             MEDDICIndicatorView(opportunity: wrapper, onMEDDICSelected: { selected in
+                                selectedOpportunity = wrapper
                                 selectedMEDDICType = selected
                                 editorType = "MEDDIC"
                                 showingQualificationEditor = true
                             })
                         case "SCUBATANK":
                             SCUBATANKIndicatorView(opportunity: wrapper, onSCUBATANKSelected: { selected in
+                                selectedOpportunity = wrapper
                                 selectedSCUBATANKType = selected
                                 editorType = "SCUBATANK"
                                 showingQualificationEditor = true
@@ -136,25 +140,52 @@ struct MeetingSummaryView: View {
         }
         .navigationTitle("Meeting Summary")
         .sheet(isPresented: $showingQualificationEditor) {
-            if let opportunity = meeting.opportunity {
-                let wrapper = OpportunityWrapper(managedObject: opportunity)
-                switch editorType {
-                case "BANT":
-                    if let type = selectedBANTType {
-                        BANTEditorView(viewModel: viewModel, opportunity: wrapper, bantType: type)
-                    }
-                case "MEDDIC":
-                    if let type = selectedMEDDICType {
-                        MEDDICEditorView(viewModel: viewModel, opportunity: wrapper, metricType: type.rawValue)
-                    }
-                case "SCUBATANK":
-                    if let type = selectedSCUBATANKType {
-                        SCUBATANKEditorView(viewModel: viewModel, opportunity: wrapper, elementType: type.rawValue)
-                    }
-                default:
-                    EmptyView()
+            QualificationEditorRouter(
+                editorType: editorType,
+                wrapper: selectedOpportunity,
+                bantType: selectedBANTType,
+                meddicType: selectedMEDDICType,
+                scubatankType: selectedSCUBATANKType,
+                viewModel: viewModel
+            )
+        }
+    }
+}
+
+struct QualificationEditorRouter: View {
+    let editorType: String
+    let wrapper: OpportunityWrapper?
+    let bantType: BANTIndicatorView.BANTType?
+    let meddicType: MEDDICType?
+    let scubatankType: SCUBATANKType?
+    let viewModel: OpportunityViewModel
+
+    var body: some View {
+        if let wrapper = wrapper {
+            switch editorType {
+            case "BANT":
+                if let type = bantType {
+                    BANTEditorView(viewModel: viewModel, opportunity: wrapper, bantType: type)
+                } else {
+                    Text("Missing BANT type")
                 }
+            case "MEDDIC":
+                if let type = meddicType {
+                    MEDDICEditorView(viewModel: viewModel, opportunity: wrapper, metricType: type.rawValue)
+                } else {
+                    Text("Missing MEDDIC type")
+                }
+            case "SCUBATANK":
+                if let type = scubatankType {
+                    SCUBATANKEditorView(viewModel: viewModel, opportunity: wrapper, elementType: type.rawValue)
+                } else {
+                    Text("Missing SCUBATANK type")
+                }
+            default:
+                Text("Unknown qualification method")
             }
+        } else {
+            ProgressView("Loading...")
         }
     }
 }
