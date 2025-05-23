@@ -10,6 +10,14 @@ import CoreData
 struct MeetingSummaryView: View {
     @ObservedObject var meeting: MeetingsEntity
 
+    @AppStorage("selectedMethodology") private var currentMethodology: String = "BANT"
+    @State private var showingQualificationEditor = false
+    @State private var editorType: String = ""
+    @State private var selectedBANTType: BANTIndicatorView.BANTType?
+    @State private var selectedMEDDICType: MEDDICType?
+    @State private var selectedSCUBATANKType: SCUBATANKType?
+    @StateObject private var viewModel = OpportunityViewModel()
+
     var body: some View {
         let resolvedDate = meeting.date ?? Date()
         ScrollView {
@@ -91,12 +99,35 @@ struct MeetingSummaryView: View {
                     Divider()
                 }
 
-                // Qualification Status Placeholder (expand later)
+                // Qualification Status Section with interactive icons
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Qualification Summary:")
                         .font(.headline)
-                    Text("Status overview of BANT / MEDDIC / SCUBATANK goes here.")
-                        .foregroundColor(.secondary)
+                    if let opportunity = meeting.opportunity {
+                        let wrapper = OpportunityWrapper(managedObject: opportunity)
+                        switch currentMethodology {
+                        case "BANT":
+                            BANTIndicatorView(opportunity: wrapper, onBANTSelected: { selected in
+                                selectedBANTType = selected
+                                editorType = "BANT"
+                                showingQualificationEditor = true
+                            })
+                        case "MEDDIC":
+                            MEDDICIndicatorView(opportunity: wrapper, onMEDDICSelected: { selected in
+                                selectedMEDDICType = selected
+                                editorType = "MEDDIC"
+                                showingQualificationEditor = true
+                            })
+                        case "SCUBATANK":
+                            SCUBATANKIndicatorView(opportunity: wrapper, onSCUBATANKSelected: { selected in
+                                selectedSCUBATANKType = selected
+                                editorType = "SCUBATANK"
+                                showingQualificationEditor = true
+                            })
+                        default:
+                            EmptyView()
+                        }
+                    }
                 }
 
                 Spacer()
@@ -104,5 +135,26 @@ struct MeetingSummaryView: View {
             .padding()
         }
         .navigationTitle("Meeting Summary")
+        .sheet(isPresented: $showingQualificationEditor) {
+            if let opportunity = meeting.opportunity {
+                let wrapper = OpportunityWrapper(managedObject: opportunity)
+                switch editorType {
+                case "BANT":
+                    if let type = selectedBANTType {
+                        BANTEditorView(viewModel: viewModel, opportunity: wrapper, bantType: type)
+                    }
+                case "MEDDIC":
+                    if let type = selectedMEDDICType {
+                        MEDDICEditorView(viewModel: viewModel, opportunity: wrapper, metricType: type.rawValue)
+                    }
+                case "SCUBATANK":
+                    if let type = selectedSCUBATANKType {
+                        SCUBATANKEditorView(viewModel: viewModel, opportunity: wrapper, elementType: type.rawValue)
+                    }
+                default:
+                    EmptyView()
+                }
+            }
+        }
     }
 }
