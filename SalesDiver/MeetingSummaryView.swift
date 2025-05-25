@@ -187,10 +187,36 @@ struct MeetingSummaryView: View {
         if let opportunity = meeting.opportunity {
             let wrapper = OpportunityWrapper(managedObject: opportunity)
             summary += "Qualification Summary:\n"
-            summary += "Budget: \(wrapper.budgetStatus)\n"
-            summary += "Authority: \(wrapper.authorityStatus)\n"
-            summary += "Need: \(wrapper.needStatus)\n"
-            summary += "Timing: \(wrapper.timingStatus)\n"
+
+            switch currentMethodology {
+            case "BANT":
+                summary += "BANT Qualification:\n"
+                summary += "• Budget: \(wrapper.budgetStatus) — \(wrapper.budgetCommentary)\n"
+                summary += "• Authority: \(wrapper.authorityStatus) — \(wrapper.authorityCommentary)\n"
+                summary += "• Need: \(wrapper.needStatus) — \(wrapper.needCommentary)\n"
+                summary += "• Timing: \(wrapper.timingStatus) — \(wrapper.timingCommentary)\n"
+            case "MEDDIC":
+                summary += "MEDDIC Qualification:\n"
+                summary += "• Metrics: \(wrapper.metricsStatus) — \(wrapper.metricsCommentary)\n"
+                summary += "• Economic Buyer: \(wrapper.authorityStatus) — \(wrapper.authorityCommentary)\n"
+                summary += "• Decision Criteria: \(wrapper.decisionCriteriaStatus) — \(wrapper.decisionCriteriaCommentary)\n"
+                summary += "• Decision Process: \(wrapper.timingStatus) — \(wrapper.timingCommentary)\n"
+                summary += "• Identify Pain: \(wrapper.needStatus) — \(wrapper.needCommentary)\n"
+                summary += "• Champion: \(wrapper.championStatus) — \(wrapper.championCommentary)\n"
+            case "SCUBATANK":
+                summary += "SCUBATANK Qualification:\n"
+                summary += "• Solution: \(wrapper.solutionStatus) — \(wrapper.solutionCommentary)\n"
+                summary += "• Competition: \(wrapper.competitionStatus) — \(wrapper.competitionCommentary)\n"
+                summary += "• Uniques: \(wrapper.uniquesStatus) — \(wrapper.uniquesCommentary)\n"
+                summary += "• Benefits: \(wrapper.benefitsStatus) — \(wrapper.benefitsCommentary)\n"
+                summary += "• Authority: \(wrapper.authorityStatus) — \(wrapper.authorityCommentary)\n"
+                summary += "• Timescale: \(wrapper.timingStatus) — \(wrapper.timingCommentary)\n"
+                summary += "• Action Plan: \(wrapper.actionPlanStatus) — \(wrapper.actionPlanCommentary)\n"
+                summary += "• Need: \(wrapper.needStatus) — \(wrapper.needCommentary)\n"
+                summary += "• Kash: \(wrapper.budgetStatus) — \(wrapper.budgetCommentary)\n"
+            default:
+                summary += "Unknown methodology.\n"
+            }
         }
 
         let prompt = """

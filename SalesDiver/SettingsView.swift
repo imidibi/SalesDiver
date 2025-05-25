@@ -43,6 +43,7 @@ struct SettingsView: View {
     @State private var selectedProducts: [ProductEntity] = []
     @State private var showProductSearch = false
     @State private var productImportCache: [(Int, String, String, String, Double?, Double?, Date?)] = []
+    @State private var hasValidatedOpenAIKey = false
     
     private var searchHeaderText: String {
         switch selectedCategory {
@@ -278,6 +279,7 @@ struct SettingsView: View {
                         Text("My Company URL:")
                         TextField("", text: $myCompanyURL)
                             .keyboardType(.URL)
+                            .autocapitalization(.none)
                     }
                 }
 
@@ -307,16 +309,28 @@ struct SettingsView: View {
                         }
                     }
 
+                    // Show currently used model if set
+                    if !openAISelectedModel.isEmpty {
+                        HStack {
+                            Text("Currently used model:")
+                                .font(.subheadline)
+                                .foregroundColor(.primary)
+                            Spacer()
+                            Text(openAISelectedModel)
+                                .font(.body)
+                                .bold()
+                                .foregroundColor(.accentColor)
+                        }
+                    }
+
                     if !testResult.isEmpty {
                         Text(testResult)
                             .foregroundColor(testResult.contains("✅") ? .green : .red)
-                        Text("Model in Use: \(openAISelectedModel.isEmpty ? openAIModel : openAISelectedModel)")
-                            .font(.footnote)
-                            .foregroundColor(.secondary)
                     }
 
-                    // Manual Model Picker (dynamic)
+                    // Manual Model Picker (dynamic, loaded on tap)
                     if !availableModels.isEmpty {
+                        // Only show when models are loaded
                         Picker("Preferred Model", selection: $openAISelectedModel) {
                             Text("Auto-Detect").tag("")
                             ForEach(availableModels, id: \.self) { model in
@@ -325,16 +339,11 @@ struct SettingsView: View {
                         }
                         .pickerStyle(MenuPickerStyle())
                     } else {
-                        Text("Please load a valid OpenAI key to select a model.")
-                            .foregroundColor(.secondary)
-                    }
-                    Text("Detected Default Model: \(openAIModel)")
-                        .font(.footnote)
-                        .foregroundColor(.secondary)
-                }
-                .onAppear {
-                    if !openAIKey.isEmpty && availableModels.isEmpty {
-                        testOpenAIKey()
+                        // Only fetch models when user taps to open picker
+                        Button("Load Alternative Models") {
+                            testOpenAIKey()
+                        }
+                        .foregroundColor(.blue)
                     }
                 }
 
@@ -405,7 +414,10 @@ struct SettingsView: View {
     // Extracted additional settings below main grid
     private var additionalSettingsSections: some View {
         Group {
-            if !testResult.isEmpty {
+            if !testResult.isEmpty &&
+               !testResult.contains("OpenAI") &&
+               !testResult.contains("API Key") &&
+               !testResult.contains("Model") {
                 Section(header: Text("Autotask Sync Status")) {
                     Text(testResult)
                         .foregroundColor(

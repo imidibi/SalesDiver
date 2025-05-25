@@ -59,29 +59,39 @@ struct ContactsView: View {
                         VStack(alignment: .leading) {
                             Text("\(contact.firstName ?? "Unknown") \(contact.lastName ?? "")")
                                 .font(.headline)
-                            
+                                .onTapGesture {
+                                    selectedContact = contact
+                                }
+
                             if let companyName = contact.company?.name, !companyName.isEmpty {
                                 Text("Company: \(companyName)")
                                     .font(.subheadline)
                                     .foregroundColor(.gray)
                             }
-                            
+
                             if let email = contact.emailAddress, !email.isEmpty {
                                 Text("Email: \(email)")
                             }
-                            
+
                             if let phone = contact.phone, !phone.isEmpty {
                                 Text("Phone: \(phone)")
                             }
-                            
+
                             if let title = contact.title, !title.isEmpty {
                                 Text("Title: \(title)")
                             }
+
+                            if let email = contact.emailAddress, !email.isEmpty, let emailURL = URL(string: "mailto:\(email)") {
+                                HStack {
+                                    Spacer()
+                                    Link(destination: emailURL) {
+                                        Image(systemName: "envelope.fill")
+                                            .foregroundColor(.blue)
+                                    }
+                                }
+                            }
                         }
                         .padding(.vertical, 5)
-                        .onTapGesture {
-                            selectedContact = contact
-                        }
                     }
                     .onDelete(perform: deleteContact)
                 }
