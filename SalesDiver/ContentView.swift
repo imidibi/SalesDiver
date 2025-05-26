@@ -19,6 +19,13 @@ struct ContentView: View {
                 .padding()
                 .toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {
+                        NavigationLink(destination: HelpView()) {
+                            Image(systemName: "questionmark.circle")
+                                .imageScale(.large)
+                                .padding(5)
+                        }
+                    }
+                    ToolbarItem(placement: .navigationBarTrailing) {
                         NavigationLink(destination: SettingsView()) {
                             Image(systemName: "gearshape.fill")
                                 .imageScale(.large)
@@ -116,5 +123,49 @@ struct GridView: View {
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
         ContentView()
+    }
+}
+
+// MARK: - Help View
+struct HelpView: View {
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Welcome to SalesDiver!")
+                    .font(.title)
+                    .bold()
+                Text("Our goal is to help you dive into your sales pipeline and to help you qualify and close the treasure therein!")
+
+                Text("SalesDiver is based on the new or existing companies you want to sell to, the contacts in those companies you will meet and interact with, the services you plan to sell to them, all wrapped up in the opportunities you hope to close.")
+
+                Text("The odds of closing those opportunities increase the better you qualify those opportunities. Qualification is achieved by asking questions to better understand your position. SalesDiver therefore allows you to create a customized list of questions to ask in your sales meetings to ensure you really understand where you stand.")
+
+                Text("Qualification is important in not only reflecting where you are, but also in helping you build an action plan to increase your chances of closing the deal. It offers three methodologies, with differing levels of complexity and thoroughness. Those methodologies are:")
+
+                Group {
+                    Text("• BANT – Budget, Authority, Need and Timescale")
+                    Text("• MEDDIC – Metrics, Economic Buyer, Decision Maker, Decision Process, Identify Pain, Champion")
+                    Text("• SCUBATANK – Solution, Competition, Uniques, Benefits, Authority, Timescale, Action Plan, Need and Kash.")
+                }.padding(.leading)
+
+                Text("The first two are industry standard methodologies and the third is a SalesDiver special! Please select your preferred methodology in settings (the gear icon).")
+
+                Text("• BANT is very effective for opportunities that have a short deal cycle and which are not overly complex from a decision structure. It is used extensively by SDR’s in the SaaS software and online selling marketplace as it hits to the heart of the matter.")
+
+                Text("• MEDDIC is very good for larger deals with a more complex decision structure and is oriented to digging deep into client pain, identifying it and structuring the proposal around relieving that pain.")
+
+                Text("• SCUBATANK is a further level of refinement and is focused on more competitive deals where understanding the competition, articulating your unique capabilities and benefits, and engaging the client as much as possible through an action plan can drive differentiation.")
+
+                Text("SalesDiver offers an icon for each element in these methodologies to allow you to track your progress on each deal. All red shows a totally unqualified deal whereas all green is a deal you should win!")
+
+                Text("The icons for each qualification area can be red for unqualified, yellow if you are making progress but not yet fully satisfied, and green if you are confident in that item. Be honest and track your progress towards more successfully closed deals.")
+
+                Text("Happy Salesdiving!")
+                    .font(.headline)
+                    .padding(.top)
+            }
+            .padding()
+        }
+        .navigationTitle("Help")
     }
 }

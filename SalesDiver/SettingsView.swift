@@ -23,6 +23,7 @@ struct SettingsView: View {
     @State private var availableModels: [String] = []
     
     @State private var testResult: String = ""
+    @State private var autotaskResult: String = ""
     @State private var openAIModel: String = "Not yet retrieved"
     @State private var isTesting = false
     @State private var companyName: String = ""
@@ -154,7 +155,7 @@ struct SettingsView: View {
             companyName = ""
             selectedCompanyID = nil
             // Show user confirmation and hide sync button
-            testResult = "✅ Imported \(selectedOpportunities.count) opportunities successfully for company \(companyName)."
+            autotaskResult = "✅ Imported \(selectedOpportunities.count) opportunities successfully for company \(companyName)."
             showSyncButton = false
         }
     }
@@ -414,16 +415,13 @@ struct SettingsView: View {
     // Extracted additional settings below main grid
     private var additionalSettingsSections: some View {
         Group {
-            if !testResult.isEmpty &&
-               !testResult.contains("OpenAI") &&
-               !testResult.contains("API Key") &&
-               !testResult.contains("Model") {
+            if !autotaskResult.isEmpty {
                 Section(header: Text("Autotask Sync Status")) {
-                    Text(testResult)
+                    Text(autotaskResult)
                         .foregroundColor(
-                            testResult.contains("Failed") ||
-                            testResult.contains("Error") ||
-                            testResult.contains("No companies found")
+                            autotaskResult.contains("Failed") ||
+                            autotaskResult.contains("Error") ||
+                            autotaskResult.contains("No companies found")
                             ? .red : .primary
                         )
                 }
@@ -556,12 +554,12 @@ struct SettingsView: View {
     
     private func syncWithAutotask() {
         guard !apiUsername.isEmpty, !apiSecret.isEmpty, !apiTrackingID.isEmpty else {
-            testResult = "Please enter API credentials and Tracking ID."
+            autotaskResult = "Please enter API credentials and Tracking ID."
             return
         }
         
         isTesting = true
-        testResult = "Syncing with Autotask..."
+        autotaskResult = "Syncing with Autotask..."
         
         let apiBaseURL = "https://webservices24.autotask.net/ATServicesRest/V1.0/Companies/query"
         var request = URLRequest(url: URL(string: apiBaseURL)!)
@@ -597,7 +595,7 @@ struct SettingsView: View {
             let jsonData = try JSONSerialization.data(withJSONObject: requestBody, options: [])
             request.httpBody = jsonData
         } catch {
-            testResult = "Failed to encode query."
+            autotaskResult = "Failed to encode query."
             isTesting = false
             return
         }
@@ -610,14 +608,14 @@ struct SettingsView: View {
             DispatchQueue.main.async {
                 isTesting = false
                 if let error = error {
-                    testResult = "Sync Failed: \(error.localizedDescription)"
+                    autotaskResult = "Sync Failed: \(error.localizedDescription)"
                 } else if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200, let data = data {
                     if let dataString = String(data: data, encoding: .utf8) {
                         print("Full API Response: \(dataString)")
                     }
                     processFetchedCompanies(data)
                 } else {
-                    testResult = "Failed to authenticate (Unknown status)"
+                    autotaskResult = "Failed to authenticate (Unknown status)"
                 }
             }
         }.resume()
@@ -655,16 +653,16 @@ struct SettingsView: View {
                 if !companiesToSync.isEmpty {
                     // Updated to pass tuple with zipCode, webAddress, companyType to the Core Data manager method
                     CoreDataManager.shared.syncCompaniesFromAutotask(companies: companiesToSync)
-                    testResult = "Synced \(companiesToSync.count) companies successfully."
+                    autotaskResult = "Synced \(companiesToSync.count) companies successfully."
                 } else {
-                    testResult = "No companies found matching selection."
+                    autotaskResult = "No companies found matching selection."
                 }
                 selectedCompanies.removeAll()
             } else {
-                testResult = "No companies found."
+                autotaskResult = "No companies found."
             }
         } catch {
-            testResult = "Error parsing data."
+            autotaskResult = "Error parsing data."
         }
     }
     
@@ -894,12 +892,12 @@ private func importSelectedContacts() {
                 }
             }
             
-            CoreDataManager.shared.saveContext()
-            print("✅ Imported \(fetchedContacts.count) contacts successfully.")
-            selectedContacts.removeAll()
-            // Show user confirmation and hide sync button
-            testResult = "✅ Imported \(fetchedContacts.count) contacts successfully for company \(companyName)."
-            showSyncButton = false
+        CoreDataManager.shared.saveContext()
+        print("✅ Imported \(fetchedContacts.count) contacts successfully.")
+        selectedContacts.removeAll()
+        // Show user confirmation and hide sync button
+        autotaskResult = "✅ Imported \(fetchedContacts.count) contacts successfully for company \(companyName)."
+        showSyncButton = false
         }
     }
 }
@@ -1299,7 +1297,7 @@ private func importSelectedContacts() {
 
         group.notify(queue: .main) {
             CoreDataManager.shared.saveContext()
-            testResult = "✅ Imported \(selectedProducts.count) products/services successfully."
+            autotaskResult = "✅ Imported \(selectedProducts.count) products/services successfully."
             selectedProducts.removeAll()
             showSyncButton = false
         }
