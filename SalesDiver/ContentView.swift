@@ -3,11 +3,15 @@ import CoreData
 // No import needed — just ensure FollowUpsView.swift is in the same target
 
 struct ContentView: View {
+    @AppStorage("disableBubbleAnimation") private var disableBubbleAnimation: Bool = false
+
     var body: some View {
         NavigationStack {
             ZStack {
                 WaterBackgroundView() // ✅ Added Water Background
-                BubbleLayerView() // 🫧 animated bubbles beneath content
+                if !disableBubbleAnimation {
+                    BubbleLayerView() // 🫧 animated bubbles beneath content
+                }
                 VStack(spacing: 40) {
                     Text("SalesDiver Dashboard")
                         .font(.largeTitle)

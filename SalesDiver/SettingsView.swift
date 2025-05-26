@@ -7,6 +7,7 @@ struct Contact: Hashable {
 }
 
 struct SettingsView: View {
+    @AppStorage("disableBubbleAnimation") private var disableBubbleAnimation: Bool = false
     @AppStorage("autotaskEnabled") private var autotaskEnabled = false
     @AppStorage("autotaskAPIUsername") private var apiUsername = ""
     @AppStorage("autotaskAPISecret") private var apiSecret = ""
@@ -373,6 +374,10 @@ struct SettingsView: View {
                 }
 
                 additionalSettingsSections
+                
+                Section {
+                    Toggle("Turn off bubble animations", isOn: $disableBubbleAnimation)
+                }
             }
             .navigationTitle("Settings")
             .overlay(
