@@ -210,7 +210,7 @@ struct MeetingSummaryView: View {
         }
 
         let prompt = """
-This data represents the latest sales meeting between a Managed service provider sales person and their prospect, as well as the sales person's latest qualification assessment. Given this, what would be the logical next step for the sales person to do? Please create a recommendation for the sales person, which can include qualifying out of the deal if the situation looks like it will be time wasted.
+This data represents the latest sales meeting between a Managed service provider sales person and their prospect, as well as the sales person's latest qualification assessment. Given this, what would be the logical next step for the sales person to do? Please create a recommendation for the sales person for logical next steps. This can include qualifying out of the deal if the qualification status is poor and little progress is being made.
 
 \(summary)
 """
