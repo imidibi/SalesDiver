@@ -7,6 +7,7 @@ struct ContentView: View {
         NavigationStack {
             ZStack {
                 WaterBackgroundView() // ✅ Added Water Background
+                BubbleLayerView() // 🫧 animated bubbles beneath content
                 VStack(spacing: 40) {
                     Text("SalesDiver Dashboard")
                         .font(.largeTitle)
@@ -116,6 +117,65 @@ struct GridView: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - Bubble Animation
+struct Bubble: Identifiable {
+    let id = UUID()
+    var x: CGFloat
+    var size: CGFloat
+    var speed: Double
+    var yOffset: CGFloat = UIScreen.main.bounds.height
+}
+
+struct BubbleLayerView: View {
+    @State private var bubbles: [Bubble] = []
+
+    var body: some View {
+        ZStack {
+            ForEach(bubbles) { bubble in
+                Circle()
+                    .fill(bubbleColor)
+                    .frame(width: bubble.size, height: bubble.size)
+                    .position(x: bubble.x, y: bubble.yOffset)
+                    .opacity(1.0)
+                    .onAppear {
+                        withAnimation(.easeOut(duration: bubble.speed)) {
+                            if let index = bubbles.firstIndex(where: { $0.id == bubble.id }) {
+                                bubbles[index].yOffset = 150 // stop below wave crest
+                                bubbles[index].x += CGFloat.random(in: -60...60)
+                            }
+                        }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + bubble.speed) {
+                            bubbles.removeAll { $0.id == bubble.id }
+                        }
+                    }
+            }
+        }
+        .onAppear {
+            Timer.scheduledTimer(withTimeInterval: 0.6, repeats: true) { _ in
+                let newBubble = Bubble(
+                    x: UIScreen.main.bounds.width / 2,
+                    size: CGFloat.random(in: 8...18),
+                    speed: Double.random(in: 4...7)
+                )
+                bubbles.append(newBubble)
+            }
+        }
+    }
+
+    private var bubbleColor: Color {
+        Color(UIColor { trait in
+            switch trait.userInterfaceStyle {
+            case .dark:
+                // Match top gradient color of the background in dark mode
+                return UIColor.systemBlue.withAlphaComponent(0.25)
+            default:
+                // Match top gradient color of the background in light mode
+                return UIColor.white.withAlphaComponent(0.25)
+            }
+        })
     }
 }
 
