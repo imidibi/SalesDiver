@@ -7,15 +7,15 @@
 import SwiftUI
 import CoreData
 
+
+
 struct MeetingSummaryView: View {
     @ObservedObject var meeting: MeetingsEntity
 
     @AppStorage("selectedMethodology") private var currentMethodology: String = "BANT"
-    @State private var showingQualificationEditor = false
-    @State private var editorType: String = ""
-    @State private var selectedBANTType: BANTIndicatorView.BANTType?
-    @State private var selectedMEDDICType: MEDDICType?
-    @State private var selectedSCUBATANKType: SCUBATANKType?
+    @State private var selectedBANTItem: SelectedBANTItem? = nil
+    @State private var selectedMEDDICItem: SelectedQualificationItem? = nil
+    @State private var selectedSCUBATANKItem: SelectedSCUBATANKItem? = nil
     @StateObject private var viewModel = OpportunityViewModel()
     @State private var selectedOpportunity: OpportunityWrapper?
     @State private var aiRecommendation: String = ""
@@ -112,24 +112,15 @@ struct MeetingSummaryView: View {
                         switch currentMethodology {
                         case "BANT":
                             BANTIndicatorView(opportunity: wrapper, onBANTSelected: { selected in
-                                selectedOpportunity = wrapper
-                                selectedBANTType = selected
-                                editorType = "BANT"
-                                showingQualificationEditor = true
+                                selectedBANTItem = SelectedBANTItem(opportunity: wrapper, bantType: selected)
                             })
                         case "MEDDIC":
                             MEDDICIndicatorView(opportunity: wrapper, onMEDDICSelected: { selected in
-                                selectedOpportunity = wrapper
-                                selectedMEDDICType = selected
-                                editorType = "MEDDIC"
-                                showingQualificationEditor = true
+                                selectedMEDDICItem = SelectedQualificationItem(opportunity: wrapper, qualificationType: selected.rawValue)
                             })
                         case "SCUBATANK":
                             SCUBATANKIndicatorView(opportunity: wrapper, onSCUBATANKSelected: { selected in
-                                selectedOpportunity = wrapper
-                                selectedSCUBATANKType = selected
-                                editorType = "SCUBATANK"
-                                showingQualificationEditor = true
+                                selectedSCUBATANKItem = SelectedSCUBATANKItem(opportunity: wrapper, scubatankType: selected)
                             })
                         default:
                             EmptyView()
@@ -162,15 +153,14 @@ struct MeetingSummaryView: View {
             }
         }
         .navigationTitle("Meeting Summary")
-        .sheet(isPresented: $showingQualificationEditor) {
-            QualificationEditorRouter(
-                editorType: editorType,
-                wrapper: selectedOpportunity,
-                bantType: selectedBANTType,
-                meddicType: selectedMEDDICType,
-                scubatankType: selectedSCUBATANKType,
-                viewModel: viewModel
-            )
+        .sheet(item: $selectedBANTItem) { (item: SelectedBANTItem) in
+            BANTEditorView(viewModel: viewModel, opportunity: item.opportunity, bantType: item.bantType)
+        }
+        .sheet(item: $selectedMEDDICItem) { (item: SelectedQualificationItem) in
+            MEDDICEditorView(viewModel: viewModel, opportunity: item.opportunity, metricType: item.qualificationType)
+        }
+        .sheet(item: $selectedSCUBATANKItem) { (item: SelectedSCUBATANKItem) in
+            SCUBATANKEditorView(viewModel: viewModel, opportunity: item.opportunity, elementType: item.scubatankType.rawValue)
         }
     }
     private func generateAIRecommendation() {
@@ -324,4 +314,11 @@ struct OpenAIResponse: Codable {
     struct Message: Codable {
         let content: String
     }
+}
+
+// If not available globally, define SelectedSCUBATANKItem here:
+struct SelectedSCUBATANKItem: Identifiable {
+    let id = UUID()
+    let opportunity: OpportunityWrapper
+    let scubatankType: SCUBATANKType
 }
