@@ -224,7 +224,16 @@ struct SettingsView: View {
     }
     
     private var autotaskIntegrationSection: some View {
-        Section(header: Text("Autotask Integration")) {
+        Section(header:
+            HStack {
+                Text("Autotask Integration")
+                Spacer()
+                NavigationLink(destination: AutotaskHelpView()) {
+                    Image(systemName: "questionmark.circle")
+                        .foregroundColor(.blue)
+                }
+            }
+        ) {
             Toggle("Enable Autotask API", isOn: $autotaskEnabled)
                 .onChange(of: autotaskEnabled) { oldValue, newValue in
                     if newValue {
@@ -294,7 +303,16 @@ struct SettingsView: View {
                 }
 
                 // --- OpenAI Integration Section ---
-                Section(header: Text("OpenAI Integration")) {
+                Section(header:
+                    HStack {
+                        Text("OpenAI Integration")
+                        Spacer()
+                        NavigationLink(destination: OpenAIHelpView()) {
+                            Image(systemName: "questionmark.circle")
+                                .foregroundColor(.blue)
+                        }
+                    }
+                ) {
                     HStack {
                         Text("OpenAI API Key:")
                         SecureField("sk-...", text: $openAIKey)
@@ -1355,3 +1373,55 @@ private func importSelectedContacts() {
     }
 }
 
+
+// MARK: - Help Views
+
+struct OpenAIHelpView: View {
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("OpenAI API Setup Instructions")
+                    .font(.title2)
+                    .bold()
+
+                Text("1. Create an OpenAI account at [https://platform.openai.com/](https://platform.openai.com/).")
+                Text("2. Go to your API Keys page after logging in.")
+                Text("3. Click 'Create new secret key' and name it for your reference (e.g., SalesDiver).")
+                Text("4. Copy and store the key safely. You won’t be able to see it again.")
+                Text("5. Enter your key in the SalesDiver settings under 'OpenAI API Key'.")
+                Text("6. Click 'Test API Key' to verify and load available models.")
+                Text("A paid OpenAI account is required to access the GPT-4 and GPT-3.5 APIs.")
+            }
+            .padding()
+        }
+        .navigationTitle("OpenAI Help")
+    }
+}
+
+struct AutotaskHelpView: View {
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Autotask API Setup Instructions")
+                    .font(.title2)
+                    .bold()
+
+                Group {
+                    Text("1. Log in to Autotask: Access your Autotask account using your credentials.")
+                    Text("2. Navigate to Admin > Resources/Users: Go to the Admin section and select Resources/Users.")
+                    Text("3. Create New API User: Click the 'New' button and then select 'New API User' from the dropdown menu.")
+                    Text("4. Fill in Required Fields:")
+                    Text("    - First Name, Last Name, Email Address: Enter the basic information for the API user.")
+                    Text("    - Security Level: Choose 'API User (System)'.")
+                    Text("    - Username and Password: Generate a unique username and password or use the 'Generate' button.")
+                    Text("      Note: The password must meet the criteria configured in your Autotask system settings.")
+                    Text("5. For API Tracking Identifier, choose 'Custom' and enter: SalesDiver")
+                    Text("6. Please store the username, password (secret), and Tracking Identifier securely.")
+                    Text("You will need all three to connect SalesDiver with Autotask.")
+                }
+            }
+            .padding()
+        }
+        .navigationTitle("Autotask Help")
+    }
+}
