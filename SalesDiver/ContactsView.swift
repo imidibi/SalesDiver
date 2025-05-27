@@ -56,42 +56,45 @@ struct ContactsView: View {
 
                 List {
                     ForEach(filteredContacts, id: \.self) { contact in
-                        VStack(alignment: .leading) {
-                            Text("\(contact.firstName ?? "Unknown") \(contact.lastName ?? "")")
-                                .font(.headline)
-                                .onTapGesture {
-                                    selectedContact = contact
+                        HStack(alignment: .top) {
+                            Button(action: {
+                                selectedContact = contact
+                            }) {
+                                VStack(alignment: .leading) {
+                                    Text("\(contact.firstName ?? "Unknown") \(contact.lastName ?? "")")
+                                        .font(.headline)
+
+                                    if let companyName = contact.company?.name, !companyName.isEmpty {
+                                        Text("Company: \(companyName)")
+                                            .font(.subheadline)
+                                            .foregroundColor(.gray)
+                                    }
+
+                                    if let email = contact.emailAddress, !email.isEmpty {
+                                        Text("Email: \(email)")
+                                    }
+
+                                    if let phone = contact.phone, !phone.isEmpty {
+                                        Text("Phone: \(phone)")
+                                    }
+
+                                    if let title = contact.title, !title.isEmpty {
+                                        Text("Title: \(title)")
+                                    }
                                 }
-
-                            if let companyName = contact.company?.name, !companyName.isEmpty {
-                                Text("Company: \(companyName)")
-                                    .font(.subheadline)
-                                    .foregroundColor(.gray)
+                                .padding(.vertical, 5)
+                                .foregroundColor(.primary)
                             }
-
-                            if let email = contact.emailAddress, !email.isEmpty {
-                                Text("Email: \(email)")
-                            }
-
-                            if let phone = contact.phone, !phone.isEmpty {
-                                Text("Phone: \(phone)")
-                            }
-
-                            if let title = contact.title, !title.isEmpty {
-                                Text("Title: \(title)")
-                            }
+                            .buttonStyle(PlainButtonStyle())
 
                             if let email = contact.emailAddress, !email.isEmpty, let emailURL = URL(string: "mailto:\(email)") {
-                                HStack {
-                                    Spacer()
-                                    Link(destination: emailURL) {
-                                        Image(systemName: "envelope.fill")
-                                            .foregroundColor(.blue)
-                                    }
+                                Spacer()
+                                Link(destination: emailURL) {
+                                    Image(systemName: "envelope.fill")
+                                        .foregroundColor(.blue)
                                 }
                             }
                         }
-                        .padding(.vertical, 5)
                     }
                     .onDelete(perform: deleteContact)
                 }

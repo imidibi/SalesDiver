@@ -4,6 +4,7 @@ import CoreData
 
 struct ContentView: View {
     @AppStorage("disableBubbleAnimation") private var disableBubbleAnimation: Bool = false
+    @StateObject private var companyViewModel = CompanyViewModel()
 
     var body: some View {
         NavigationStack {
@@ -17,7 +18,7 @@ struct ContentView: View {
                         .font(.largeTitle)
                         .bold()
                     
-                    GridView()
+                    GridView(companyViewModel: companyViewModel)
 
                     Spacer()
                 }
@@ -31,7 +32,7 @@ struct ContentView: View {
                         }
                     }
                     ToolbarItem(placement: .navigationBarTrailing) {
-                        NavigationLink(destination: SettingsView()) {
+                        NavigationLink(destination: SettingsView(companyViewModel: companyViewModel)) {
                             Image(systemName: "gearshape.fill")
                                 .imageScale(.large)
                                 .padding(5)
@@ -80,17 +81,7 @@ struct WaveShape: Shape {
 
 // MARK: - Grid Menu View
 struct GridView: View {
-    let menuItems: [(name: String, icon: String, destination: AnyView)] = [
-        ("Companies", "building.2.fill", AnyView(CompanyDataView())),
-        ("Services", "desktopcomputer", AnyView(ProductDataView())),
-        ("Opportunities", "chart.bar.fill", AnyView(OpportunityDataView())),
-        ("Contacts", "person.2.fill", AnyView(ContactsView())),
-        ("Meetings", "calendar.badge.clock", AnyView(ViewMeetingsView())),
-        ("Follow Ups", "checkmark.circle.fill", AnyView(FollowUpsView())),
-        ("Security Review", "shield.fill", AnyView(SecurityAssessmentView())),
-        ("Questions", "questionmark.circle.fill", AnyView(QuestionsView())),
-        ("Assessments", "doc.text.magnifyingglass", AnyView(AssessmentView().environmentObject(CoreDataManager.shared))) // Injected CoreDataManager
-    ]
+    let companyViewModel: CompanyViewModel
 
     let columns = [
         GridItem(.flexible(), spacing: 20),
@@ -99,6 +90,17 @@ struct GridView: View {
     ]
 
     var body: some View {
+        let menuItems: [(name: String, icon: String, destination: AnyView)] = [
+            ("Companies", "building.2.fill", AnyView(CompanyDataView(viewModel: companyViewModel))),
+            ("Services", "desktopcomputer", AnyView(ProductDataView())),
+            ("Opportunities", "chart.bar.fill", AnyView(OpportunityDataView())),
+            ("Contacts", "person.2.fill", AnyView(ContactsView())),
+            ("Meetings", "calendar.badge.clock", AnyView(ViewMeetingsView())),
+            ("Follow Ups", "checkmark.circle.fill", AnyView(FollowUpsView())),
+            ("Security Review", "shield.fill", AnyView(SecurityAssessmentView())),
+            ("Questions", "questionmark.circle.fill", AnyView(QuestionsView())),
+            ("Assessments", "doc.text.magnifyingglass", AnyView(AssessmentView().environmentObject(CoreDataManager.shared)))
+        ]
         LazyVGrid(columns: columns, spacing: 40) {
             ForEach(menuItems, id: \.name) { item in
                 NavigationLink(destination: item.destination) {

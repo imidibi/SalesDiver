@@ -7,6 +7,7 @@ struct Contact: Hashable {
 }
 
 struct SettingsView: View {
+    @ObservedObject var companyViewModel: CompanyViewModel
     @AppStorage("disableBubbleAnimation") private var disableBubbleAnimation: Bool = false
     @AppStorage("autotaskEnabled") private var autotaskEnabled = false
     @AppStorage("autotaskAPIUsername") private var apiUsername = ""
@@ -41,8 +42,11 @@ struct SettingsView: View {
     @State private var showOpportunitySearch = false
     @State private var showSyncButton = false
     @State private var opportunityImportCache: [(Int, String, Int?, Double?, Double?, Int?, Date?)] = []
-    // Product selection state
-    @State private var selectedProducts: [ProductEntity] = []
+// Product selection state
+struct ProductSelection: Hashable {
+    let name: String
+}
+@State private var selectedProductNames: Set<String> = []
     @State private var showProductSearch = false
     @State private var productImportCache: [(Int, String, String, String, Double?, Double?, Date?)] = []
     @State private var hasValidatedOpenAIKey = false
@@ -66,7 +70,7 @@ struct SettingsView: View {
         selectedCompanies.removeAll()
         selectedContacts.removeAll()
         selectedOpportunities.removeAll()
-        selectedProducts.removeAll()
+        selectedProductNames.removeAll()
         searchResults.removeAll()
         contactName = ""
         productSearchResults.removeAll()
@@ -147,7 +151,7 @@ struct SettingsView: View {
 
         // Fetch or create the company entity
         CoreDataManager.shared.fetchOrCreateCompany(companyID: companyID, companyName: companyName) { [self] companyEntity in
-            for opportunity in selectedOpportunities {
+            for opportunity in selectedOpportunities where opportunity.name != nil {
                 if let cached = opportunityImportCache.first(where: { $0.1 == opportunity.name }) {
                     opportunity.autotaskID = Int64(cached.0)
                     opportunity.probability = Int16(cached.2 ?? 0)
@@ -215,9 +219,9 @@ struct SettingsView: View {
                             if let index = selectedOpportunities.firstIndex(where: { $0.name == opportunityName }) {
                                 selectedOpportunities.remove(at: index)
                             } else {
-                                let newOpportunity = OpportunityEntity(context: CoreDataManager.shared.persistentContainer.viewContext)
-                                newOpportunity.name = opportunityName
-                                selectedOpportunities.append(newOpportunity)
+                                let tempOpportunity = OpportunityEntity(context: NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType))
+                                tempOpportunity.name = opportunityName
+                                selectedOpportunities.append(tempOpportunity)
                             }
                         }
                     }
@@ -587,7 +591,7 @@ struct SettingsView: View {
             .background(Color.blue)
             .foregroundColor(.white)
             .cornerRadius(8)
-        } else if selectedCategory == "Service", !selectedProducts.isEmpty && showSyncButton {
+        } else if selectedCategory == "Service", !selectedProductNames.isEmpty && showSyncButton {
             Button("Sync Products/Services now") {
                 importSelectedProducts()
             }
@@ -699,6 +703,8 @@ struct SettingsView: View {
                 if !companiesToSync.isEmpty {
                     // Updated to pass tuple with zipCode, webAddress, companyType to the Core Data manager method
                     CoreDataManager.shared.syncCompaniesFromAutotask(companies: companiesToSync)
+                    // Manual refresh to update in-memory view model with newly saved companies
+                    companyViewModel.fetchCompanies()
                     autotaskResult = "Synced \(companiesToSync.count) companies successfully."
                     resetImportState()
                 } else {
@@ -1161,9 +1167,9 @@ private func importSelectedContacts() {
                 fetchAllProductsFromAutotask()
             }) {
                 HStack {
-                    Text(selectedProducts.isEmpty ? "Select Services" :
-                        selectedProducts.map { $0.name ?? "Unnamed" }.joined(separator: ", "))
-                        .foregroundColor(selectedProducts.isEmpty ? .gray : .primary)
+                    Text(selectedProductNames.isEmpty ? "Select Services" :
+                        selectedProductNames.joined(separator: ", "))
+                        .foregroundColor(selectedProductNames.isEmpty ? .gray : .primary)
                     Spacer()
                     Image(systemName: "chevron.right")
                         .foregroundColor(.gray)
@@ -1263,7 +1269,7 @@ private func importSelectedContacts() {
                                 }
                             }
                             Spacer()
-                            if selectedProducts.contains(where: { $0.name == result.1 }) {
+                            if selectedProductNames.contains(result.1) {
                                 Image(systemName: "checkmark")
                                     .foregroundColor(.blue)
                             }
@@ -1271,12 +1277,10 @@ private func importSelectedContacts() {
                         .padding()
                         .background(Color(UIColor.systemBackground))
                         .onTapGesture {
-                            if let index = selectedProducts.firstIndex(where: { $0.name == result.1 }) {
-                                selectedProducts.remove(at: index)
+                            if selectedProductNames.contains(result.1) {
+                                selectedProductNames.remove(result.1)
                             } else {
-                                let newProduct = ProductEntity(context: CoreDataManager.shared.persistentContainer.viewContext)
-                                newProduct.name = result.1
-                                selectedProducts.append(newProduct)
+                                selectedProductNames.insert(result.1)
                             }
                         }
                     }
@@ -1285,7 +1289,7 @@ private func importSelectedContacts() {
 
             Button("Done") {
                 showProductSearch = false
-                if !selectedProducts.isEmpty {
+                if !selectedProductNames.isEmpty {
                     showSyncButton = true
                 }
             }
@@ -1305,12 +1309,11 @@ private func importSelectedContacts() {
         let semaphore = DispatchSemaphore(value: 3)
         let group = DispatchGroup()
 
-        for product in selectedProducts {
+        for name in selectedProductNames {
             group.enter()
             semaphore.wait()
-
             DispatchQueue.global().async {
-                if let cached = productImportCache.first(where: { $0.1 == product.name }) {
+                if let cached = productImportCache.first(where: { $0.1 == name }), !cached.1.isEmpty {
                     let fetchRequest: NSFetchRequest<ProductEntity> = ProductEntity.fetchRequest()
                     fetchRequest.predicate = NSPredicate(format: "autotaskID == %lld", Int64(cached.0))
                     let existingProduct = try? context.fetch(fetchRequest).first
@@ -1325,6 +1328,14 @@ private func importSelectedContacts() {
                         existingProduct.lastModified = cached.6
                     } else {
                         // Create new product
+                        guard !cached.1.isEmpty else {
+                            print("⚠️ Skipping product with missing name.")
+                            DispatchQueue.main.async {
+                                semaphore.signal()
+                                group.leave()
+                            }
+                            return
+                        }
                         let newProduct = ProductEntity(context: context)
                         newProduct.autotaskID = Int64(cached.0)
                         newProduct.name = cached.1
@@ -1336,6 +1347,13 @@ private func importSelectedContacts() {
                         newProduct.unitPrice = cached.5 ?? 0.0
                         newProduct.lastModified = cached.6
                     }
+                } else {
+                    print("⚠️ Skipping product with missing or unmatched cache entry.")
+                    DispatchQueue.main.async {
+                        semaphore.signal()
+                        group.leave()
+                    }
+                    return
                 }
 
                 DispatchQueue.main.async {
@@ -1347,8 +1365,8 @@ private func importSelectedContacts() {
 
         group.notify(queue: .main) {
             CoreDataManager.shared.saveContext()
-            autotaskResult = "✅ Imported \(selectedProducts.count) products/services successfully."
-            selectedProducts.removeAll()
+            autotaskResult = "✅ Imported \(selectedProductNames.count) products/services successfully."
+            selectedProductNames.removeAll()
             showSyncButton = false
             resetImportState()
         }

@@ -10,7 +10,7 @@ import CoreData
 import MapKit
 
 struct CompanyDataView: View {
-    @StateObject private var viewModel = CompanyViewModel()
+    @ObservedObject var viewModel: CompanyViewModel
     @State private var isShowingAddSheet = false
     @State private var selectedCompany: CompanyWrapper?
     @State private var searchText: String = ""  // ✅ Search state
@@ -137,7 +137,9 @@ struct CompanyDataView: View {
             .sheet(item: $selectedCompany) { company in
                 EditCompanyView(viewModel: viewModel, company: company) // ✅ Opens EditCompanyView
             }
-            .sheet(isPresented: $isShowingAddSheet) {
+            .sheet(isPresented: $isShowingAddSheet, onDismiss: {
+                viewModel.fetchCompanies()
+            }) {
                 AddCompanyView(viewModel: viewModel)
             }
             .alert(isPresented: $showAlert) { // Display alert if there's an error message
