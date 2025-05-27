@@ -59,6 +59,24 @@ struct SettingsView: View {
             return "Search Companies in Autotask"
         }
     }
+    
+    private func resetImportState() {
+        companyName = ""
+        selectedCompanyID = nil
+        selectedCompanies.removeAll()
+        selectedContacts.removeAll()
+        selectedOpportunities.removeAll()
+        selectedProducts.removeAll()
+        searchResults.removeAll()
+        contactName = ""
+        productSearchResults.removeAll()
+        opportunityImportCache.removeAll()
+        productImportCache.removeAll()
+        showContactSearch = false
+        showOpportunitySearch = false
+        showProductSearch = false
+        showSyncButton = false
+    }
 
     private func fetchAllOpportunitiesForSelectedCompany() {
         print("📡 Triggering Opportunities API Call...")  // Confirm function is called
@@ -120,6 +138,10 @@ struct SettingsView: View {
             return
         }
 
+        // Set the result message *before* clearing companyName/selectedCompanyID, capturing correct values.
+        let companyCopy = companyName
+        autotaskResult = "✅ Imported \(selectedOpportunities.count) opportunities successfully for company \(companyCopy)."
+
         let context = CoreDataManager.shared.persistentContainer.viewContext
 
         // Fetch or create the company entity
@@ -156,8 +178,8 @@ struct SettingsView: View {
             companyName = ""
             selectedCompanyID = nil
             // Show user confirmation and hide sync button
-            autotaskResult = "✅ Imported \(selectedOpportunities.count) opportunities successfully for company \(companyName)."
             showSyncButton = false
+            resetImportState()
         }
     }
 
@@ -677,6 +699,7 @@ struct SettingsView: View {
                     // Updated to pass tuple with zipCode, webAddress, companyType to the Core Data manager method
                     CoreDataManager.shared.syncCompaniesFromAutotask(companies: companiesToSync)
                     autotaskResult = "Synced \(companiesToSync.count) companies successfully."
+                    resetImportState()
                 } else {
                     autotaskResult = "No companies found matching selection."
                 }
@@ -888,13 +911,15 @@ private func importSelectedContacts() {
         
         AutotaskAPIManager.shared.searchFullContactDetail(requestBody) { contactDetails in
             DispatchQueue.main.async {
+                defer {
+                    semaphore.signal()
+                    group.leave()
+                }
                 if let details = contactDetails.first {
                     fetchedContacts.append(details)
                 } else {
                     print("❌ No contact details found for \(contact.firstName) \(contact.lastName).")
                 }
-                semaphore.signal()  // <-- ADD THIS
-                group.leave()
             }
         }
     }
@@ -921,6 +946,7 @@ private func importSelectedContacts() {
         // Show user confirmation and hide sync button
         autotaskResult = "✅ Imported \(fetchedContacts.count) contacts successfully for company \(companyName)."
         showSyncButton = false
+            resetImportState()
         }
     }
 }
@@ -1323,6 +1349,7 @@ private func importSelectedContacts() {
             autotaskResult = "✅ Imported \(selectedProducts.count) products/services successfully."
             selectedProducts.removeAll()
             showSyncButton = false
+            resetImportState()
         }
     }
 
