@@ -93,7 +93,8 @@ struct SettingsView: View {
                 [
                     "op": "and",
                     "items": [
-                        ["op": "eq", "field": "CompanyID", "value": companyID]
+                        ["op": "eq", "field": "CompanyID", "value": companyID],
+                        ["op": "eq", "field": "status", "value": 1]
                     ]
                 ]
             ]

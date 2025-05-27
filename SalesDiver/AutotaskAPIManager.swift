@@ -686,4 +686,70 @@ class AutotaskAPIManager {
             completion(services)
         }.resume()
     }
+
+    /// Fetches full company details for a specific company ID, including address and company type.
+    /// - Parameters:
+    ///   - companyID: The ID of the company to fetch.
+    ///   - completion: Completion handler with an array of tuples containing company details.
+    func fetchFullCompanyDetails(companyID: Int, completion: @escaping ([(Int, String?, String?, String?, String?, String?, String?, Int?)]) -> Void) {
+        guard let url = URL(string: "https://webservices24.autotask.net/ATServicesRest/V1.0/Companies/query"),
+              let (apiUsername, apiSecret, apiTrackingID) = getAutotaskCredentials() else {
+            print("❌ Invalid URL or missing credentials")
+            completion([])
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "accept")
+        request.setValue(apiUsername, forHTTPHeaderField: "UserName")
+        request.setValue(apiSecret, forHTTPHeaderField: "Secret")
+        request.setValue(apiTrackingID, forHTTPHeaderField: "ApiIntegrationCode")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let requestBody: [String: Any] = [
+            "MaxRecords": 1,
+            "IncludeFields": [
+                "id", "companyName", "address1", "address2", "city", "state", "postalCode", "webAddress", "companyType"
+            ],
+            "Filter": [[
+                "op": "eq",
+                "field": "id",
+                "value": companyID
+            ]]
+        ]
+
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: requestBody, options: [])
+        } catch {
+            print("❌ Failed to encode request body: \(error)")
+            completion([])
+            return
+        }
+
+        apiSemaphore.wait()
+        session.dataTask(with: request) { data, response, error in
+            guard let data = data,
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let items = json["items"] as? [[String: Any]],
+                  let item = items.first,
+                  let id = item["id"] as? Int else {
+                print("❌ Failed to fetch or decode company details")
+                self.apiSemaphore.signal()
+                completion([])
+                return
+            }
+
+            let address1 = item["address1"] as? String
+            let address2 = item["address2"] as? String
+            let city = item["city"] as? String
+            let state = item["state"] as? String
+            let zip = item["postalCode"] as? String
+            let web = item["webAddress"] as? String
+            let companyType = item["companyType"] as? Int
+
+            self.apiSemaphore.signal()
+            completion([(id, address1, address2, city, state, zip, web, companyType)])
+        }.resume()
+    }
 }

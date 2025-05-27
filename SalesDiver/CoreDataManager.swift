@@ -201,35 +201,38 @@ func importContacts(contacts: [String], company: CompanyEntity) {
     saveContext()
 }
 
-func fetchOrCreateCompany(companyID: Int, companyName: String? = nil, completion: @escaping (CompanyEntity) -> Void) {
-    let context = persistentContainer.viewContext
-    let fetchRequest: NSFetchRequest<CompanyEntity> = CompanyEntity.fetchRequest()
+    func fetchOrCreateCompany(companyID: Int, companyName: String, completion: @escaping (CompanyEntity) -> Void) {
+        let context = persistentContainer.viewContext
+        let fetchRequest: NSFetchRequest<CompanyEntity> = CompanyEntity.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "autotaskID == %d", companyID)
 
-    // Search by name only
-    if let companyName = companyName {
-        fetchRequest.predicate = NSPredicate(format: "name ==[c] %@", companyName)
-    }
-    
-    do {
-        if let existingCompany = try context.fetch(fetchRequest).first {
-            // ✅ Update the Autotask CompanyID if it's missing or different
-            if existingCompany.autotaskID == 0 {
-                existingCompany.autotaskID = Int64(companyID)
-                try context.save()
-            }
-            completion(existingCompany)
+        if let existing = try? context.fetch(fetchRequest).first {
+            completion(existing)
         } else {
-            // No existing company found, create a new one
-            let newCompany = CompanyEntity(context: context)
-            newCompany.autotaskID = Int64(companyID)  // Store the Autotask CompanyID
-            newCompany.name = companyName
-            try context.save()
-            completion(newCompany)
+            // Not found, fetch from Autotask
+            AutotaskAPIManager.shared.fetchFullCompanyDetails(companyID: companyID) { results in
+                DispatchQueue.main.async {
+                    let newCompany = CompanyEntity(context: context)
+                    newCompany.autotaskID = Int64(companyID)
+                    newCompany.name = companyName
+
+                    if let fullCompany = results.first {
+                        // fullCompany = (id, address1, address2, city, state, zip, web, companyType)
+                        newCompany.address = fullCompany.1
+                        newCompany.address2 = fullCompany.2
+                        newCompany.city = fullCompany.3
+                        newCompany.state = fullCompany.4
+                        newCompany.zipCode = fullCompany.5
+                        newCompany.webAddress = fullCompany.6
+                        newCompany.companyType = Int16(fullCompany.7 ?? 0)
+                    }
+
+                    self.saveContext()
+                    completion(newCompany)
+                }
+            }
         }
-    } catch {
-        print("❌ Failed to fetch or create company: \(error)")
     }
-}
 
 func fetchEntityDescriptions() {
     let context = persistentContainer.viewContext
