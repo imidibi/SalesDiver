@@ -29,12 +29,12 @@ struct MEDDICIndicatorView: View {
                 .onTapGesture { onMEDDICSelected(.metrics) }
             QualificationIcon(iconName: "person.fill", status: opportunity.authorityStatus)
                 .onTapGesture { onMEDDICSelected(.economicBuyer) }
-            QualificationIcon(iconName: "exclamationmark.circle.fill", status: opportunity.needStatus)
-                .onTapGesture { onMEDDICSelected(.identifyPain) }
             QualificationIcon(iconName: "clock.fill", status: opportunity.timingStatus)
                 .onTapGesture { onMEDDICSelected(.decisionProcess) }
             QualificationIcon(iconName: "checkmark.circle.fill", status: opportunity.decisionCriteriaStatus)
                 .onTapGesture { onMEDDICSelected(.decisionCriteria) }
+            QualificationIcon(iconName: "exclamationmark.circle.fill", status: opportunity.needStatus)
+                .onTapGesture { onMEDDICSelected(.identifyPain) }
             QualificationIcon(iconName: "star.circle.fill", status: opportunity.championStatus)
                 .onTapGesture { onMEDDICSelected(.champion) }
         }

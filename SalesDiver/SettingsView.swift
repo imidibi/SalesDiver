@@ -219,7 +219,7 @@ struct ProductSelection: Hashable {
                             if let index = selectedOpportunities.firstIndex(where: { $0.name == opportunityName }) {
                                 selectedOpportunities.remove(at: index)
                             } else {
-                                let tempOpportunity = OpportunityEntity(context: NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType))
+                                let tempOpportunity = OpportunityEntity(context: CoreDataManager.shared.persistentContainer.viewContext)
                                 tempOpportunity.name = opportunityName
                                 selectedOpportunities.append(tempOpportunity)
                             }
