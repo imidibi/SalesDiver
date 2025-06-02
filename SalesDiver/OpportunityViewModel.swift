@@ -8,6 +8,10 @@ class OpportunityViewModel: ObservableObject {
     
     @Published var searchText: String = ""
     @Published var sortOption: SortOption = .companyName
+
+    // AI Guidance overlay state
+    @Published var showAIGuidanceOverlay: Bool = false
+    @Published var selectedOpportunityForAI: OpportunityWrapper? = nil
     
     enum SortOption {
         case companyName, opportunityName, closeDate

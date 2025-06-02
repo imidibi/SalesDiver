@@ -143,14 +143,12 @@ struct ProductSelection: Hashable {
             return
         }
 
-        // Set the result message *before* clearing companyName/selectedCompanyID, capturing correct values.
         let companyCopy = companyName
         autotaskResult = "✅ Imported \(selectedOpportunities.count) opportunities successfully for company \(companyCopy)."
 
-        let context = CoreDataManager.shared.persistentContainer.viewContext
+        CoreDataManager.shared.fetchOrCreateCompany(companyID: companyID, companyName: companyName) { companyEntity in
+            let context = CoreDataManager.shared.persistentContainer.viewContext
 
-        // Fetch or create the company entity
-        CoreDataManager.shared.fetchOrCreateCompany(companyID: companyID, companyName: companyName) { [self] companyEntity in
             for opportunity in selectedOpportunities where opportunity.name != nil {
                 if let cached = opportunityImportCache.first(where: { $0.1 == opportunity.name }) {
                     opportunity.autotaskID = Int64(cached.0)
@@ -158,33 +156,21 @@ struct ProductSelection: Hashable {
                     opportunity.monthlyRevenue = cached.3 ?? 0
                     opportunity.onetimeRevenue = cached.4 ?? 0
                     opportunity.estimatedValue = (cached.3 ?? 0) * 12 + (cached.4 ?? 0)
-                    // Accept only status values 1, 2, or 3. Default to 1 (Active) otherwise.
-                    let rawStatus = cached.5 ?? 0
-                    if (1...3).contains(rawStatus) {
-                        opportunity.status = Int16(rawStatus)
-                    } else {
-                        opportunity.status = 1 // default to Active
-                    }
-                    if let cachedCloseDate = cached.6 {
-                        opportunity.closeDate = cachedCloseDate
-                    }
+                    opportunity.status = (1...3).contains(cached.5 ?? 0) ? Int16(cached.5!) : 1
+                    opportunity.closeDate = cached.6
                 }
+
                 opportunity.company = companyEntity
                 context.insert(opportunity)
             }
 
             CoreDataManager.shared.saveContext()
-            print("✅ Imported \(selectedOpportunities.count) opportunities successfully and linked to company \(companyName).")
-            selectedOpportunities.removeAll()
-            // Clear state and show confirmation
-            searchResults.removeAll()
-            opportunityImportCache.removeAll()
-            // Clear companyName and selectedCompanyID after import
-            companyName = ""
-            selectedCompanyID = nil
-            // Show user confirmation and hide sync button
-            showSyncButton = false
-            resetImportState()
+
+            DispatchQueue.main.async {
+                print("✅ Imported \(selectedOpportunities.count) opportunities for company \(companyName)")
+                autotaskResult = "✅ Imported \(selectedOpportunities.count) opportunities successfully for company \(companyName)."
+                resetImportState()
+            }
         }
     }
 
@@ -194,12 +180,11 @@ struct ProductSelection: Hashable {
                 .font(.headline)
                 .padding()
             
-            // Search field for opportunities
-            TextField("Search opportunities", text: $companyName, onCommit: {
-                fetchAllOpportunitiesForSelectedCompany()
-            })
-            .textFieldStyle(RoundedBorderTextFieldStyle())
-            .padding([.leading, .trailing])
+            // Search field for opportunities (locked TextField)
+            TextField("Search opportunities", text: $companyName)
+                .disabled(true)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+                .padding([.leading, .trailing])
 
             ScrollView {
                 LazyVStack {
@@ -233,6 +218,11 @@ struct ProductSelection: Hashable {
                 if !selectedOpportunities.isEmpty {
                     // Trigger the display of the sync button
                     showSyncButton = true
+                }
+                // Only clear companyName and selectedCompanyID if no opportunities are selected
+                if selectedOpportunities.isEmpty {
+                    companyName = ""
+                    selectedCompanyID = nil
                 }
             }
             .padding()
@@ -499,6 +489,7 @@ struct ProductSelection: Hashable {
                 } else {
                     TextField("Enter company name", text: $companyName, onCommit: handleSearchCommit)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .disabled(showOpportunitySearch || showContactSearch)
                 }
             }
 
@@ -993,6 +984,7 @@ private func importSelectedContacts() {
 
         case "Opportunity":
             selectedCompanyID = tappedID
+            showOpportunitySearch = false
             companyName = name1
             selectedOpportunities.removeAll()
             searchResults.removeAll()
