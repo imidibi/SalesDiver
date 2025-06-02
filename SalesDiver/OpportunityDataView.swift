@@ -44,6 +44,7 @@ struct OpportunityDataView: View {
     @State private var editingOpportunity: OpportunityWrapper?   // ✅ Used for Opportunity Editing
     @State private var isPresentingAddOpportunity = false  // ✅ Added state for modal
     @State private var isPresentingEditOpportunity = false // ✅ Added state for editing
+    @State private var isPresentingAIGuidance = false
 
     var filteredOpportunities: [OpportunityWrapper] {
         print("Rebuilding filtered opportunities: \(viewModel.opportunities.map { $0.id })")
@@ -157,6 +158,20 @@ struct OpportunityDataView: View {
                             }
                         }
                     }
+                    .contentShape(Rectangle())
+                    .simultaneousGesture(
+                        TapGesture()
+                            .onEnded {
+                                editingOpportunity = opportunity
+                                isPresentingEditOpportunity = true
+                            }
+                    )
+                    .gesture(
+                        LongPressGesture(minimumDuration: 0.6)
+                            .onEnded { _ in
+                                isPresentingAIGuidance = true
+                            }
+                    )
                 }
             }
             .navigationTitle("Opportunities")
@@ -191,6 +206,20 @@ struct OpportunityDataView: View {
             .sheet(item: $editingOpportunity) { opportunity in
                 EditOpportunityView(viewModel: viewModel, opportunity: opportunity)
             }
+            .sheet(isPresented: $isPresentingAIGuidance) {
+                AIGuidancePlaceholderView()
+            }
+        }
+    }
+}
+
+struct AIGuidancePlaceholderView: View {
+    var body: some View {
+        VStack {
+            Text("AI Guidance")
+                .font(.largeTitle)
+                .padding()
+            Spacer()
         }
     }
 }
