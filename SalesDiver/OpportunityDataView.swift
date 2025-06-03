@@ -36,6 +36,7 @@ struct OpportunitySummaryView: View {
 
     var body: some View {
         VStack(alignment: .leading) {
+
             Text("Company: \(opportunity.companyName)")
                 .foregroundColor(.gray)
 
@@ -95,6 +96,7 @@ struct OpportunityDataView: View {
     @State private var isPresentingEditOpportunity = false // ✅ Added state for editing
     @State private var isPresentingAIGuidance = false
     @State private var aiGuidanceText: String = ""
+    @State private var isPresentingHelp = false
 
     var filteredOpportunities: [OpportunityWrapper] {
         print("Rebuilding filtered opportunities: \(viewModel.opportunities.map { $0.id })")
@@ -163,6 +165,12 @@ struct OpportunityDataView: View {
             .navigationTitle("Opportunities")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: { isPresentingHelp = true }) {
+                        Image(systemName: "questionmark.circle")
+                    }
+                }
+
+                ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { isPresentingAddOpportunity = true }) {
                         Image(systemName: "plus")
                     }
@@ -194,6 +202,9 @@ struct OpportunityDataView: View {
             }
             .sheet(isPresented: $isPresentingAIGuidance) {
                 AIGuidancePlaceholderView(aiText: aiGuidanceText)
+            }
+            .sheet(isPresented: $isPresentingHelp) {
+                OpportunityHelpView()
             }
         }
     }
@@ -305,5 +316,28 @@ struct OpportunityRowView: View {
                     }
                 }
         )
+    }
+}
+
+struct OpportunityHelpView: View {
+    var body: some View {
+        VStack(alignment: .leading) {
+            Text("Help Information")
+            Text("Use the search bar to filter opportunities.")
+            Text("Sort opportunities using the segmented control.")
+            Text("Tap an opportunity to edit its details.")
+            Text("Long press on an opportunity for AI guidance.")
+            
+            Text("Qualification Edit:")
+                .font(.headline)
+                .padding(.top)
+
+            Text("Please select each icon relating to your chosen methodology and update its status with comments")
+
+            Text("Red = unqualified")
+            Text("Yellow = partially qualified")
+            Text("Green = Qualified")
+        }
+        .padding()
     }
 }
