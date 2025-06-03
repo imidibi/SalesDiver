@@ -103,6 +103,90 @@ struct AIRecommendationManager {
             }
         }.resume()
     }
+
+    static func generateOpportunityGuidance(for opportunity: OpportunityWrapper, completion: @escaping (String) -> Void) {
+        let methodology = UserDefaults.standard.string(forKey: "selectedMethodology") ?? "Unknown"
+        var summary = "Qualification Summary:\n"
+
+        switch methodology {
+        case "BANT":
+            summary += """
+            BANT Qualification:
+            • Budget: \(opportunity.budgetStatus) — \(opportunity.budgetCommentary)
+            • Authority: \(opportunity.authorityStatus) — \(opportunity.authorityCommentary)
+            • Need: \(opportunity.needStatus) — \(opportunity.needCommentary)
+            • Timing: \(opportunity.timingStatus) — \(opportunity.timingCommentary)
+            """
+        case "MEDDIC":
+            summary += """
+            MEDDIC Qualification:
+            • Metrics: \(opportunity.metricsStatus) — \(opportunity.metricsCommentary)
+            • Economic Buyer: \(opportunity.authorityStatus) — \(opportunity.authorityCommentary)
+            • Decision Criteria: \(opportunity.decisionCriteriaStatus) — \(opportunity.decisionCriteriaCommentary)
+            • Decision Process: \(opportunity.timingStatus) — \(opportunity.timingCommentary)
+            • Identify Pain: \(opportunity.needStatus) — \(opportunity.needCommentary)
+            • Champion: \(opportunity.championStatus) — \(opportunity.championCommentary)
+            """
+        case "SCUBATANK":
+            summary += """
+            SCUBATANK Qualification:
+            • Solution: \(opportunity.solutionStatus) — \(opportunity.solutionCommentary)
+            • Competition: \(opportunity.competitionStatus) — \(opportunity.competitionCommentary)
+            • Uniques: \(opportunity.uniquesStatus) — \(opportunity.uniquesCommentary)
+            • Benefits: \(opportunity.benefitsStatus) — \(opportunity.benefitsCommentary)
+            • Authority: \(opportunity.authorityStatus) — \(opportunity.authorityCommentary)
+            • Timescale: \(opportunity.timingStatus) — \(opportunity.timingCommentary)
+            • Action Plan: \(opportunity.actionPlanStatus) — \(opportunity.actionPlanCommentary)
+            • Need: \(opportunity.needStatus) — \(opportunity.needCommentary)
+            • Kash: \(opportunity.budgetStatus) — \(opportunity.budgetCommentary)
+            """
+        default:
+            summary += "Unknown methodology."
+        }
+
+        let prompt = """
+        This data represents the latest sales opportunity and its current qualification status. Based on this data, what would be the logical next step for the sales person? Please provide a recommendation. The sales person is in the managed IT services space.
+
+        \(summary)
+        """
+
+        guard let apiKey = UserDefaults.standard.string(forKey: "openAIKey"), !apiKey.isEmpty else {
+            completion("⚠️ OpenAI API key is not set.")
+            return
+        }
+
+        let model = UserDefaults.standard.string(forKey: "openAISelectedModel") ?? "gpt-4"
+
+        let body: [String: Any] = [
+            "model": model,
+            "messages": [
+                ["role": "system", "content": "You are a helpful assistant for sales strategy in the managed IT services space."],
+                ["role": "user", "content": prompt]
+            ],
+            "temperature": 0.7,
+            "max_tokens": 400
+        ]
+
+        var request = URLRequest(url: URL(string: "https://api.openai.com/v1/chat/completions")!)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body, options: [])
+
+        URLSession.shared.dataTask(with: request) { data, _, error in
+            DispatchQueue.main.async {
+                if let data = data,
+                   let result = try? JSONDecoder().decode(OpenAIResponse.self, from: data),
+                   let message = result.choices.first?.message.content {
+                    completion(message.trimmingCharacters(in: .whitespacesAndNewlines))
+                } else if let error = error {
+                    completion("❌ Request failed: \(error.localizedDescription)")
+                } else {
+                    completion("⚠️ Failed to retrieve recommendation from OpenAI.")
+                }
+            }
+        }.resume()
+    }
 }
 
 struct OpenAIResponse: Codable {

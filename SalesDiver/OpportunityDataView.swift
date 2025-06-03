@@ -31,6 +31,55 @@ enum OpportunitySortOption: String, CaseIterable {
     case closeDate = "Close Date"
 }
 
+struct OpportunitySummaryView: View {
+    let opportunity: OpportunityWrapper
+
+    var body: some View {
+        VStack(alignment: .leading) {
+            Text("Company: \(opportunity.companyName)")
+                .foregroundColor(.gray)
+
+            Text("Close Date: \(opportunity.closeDate, style: .date)")
+
+            if let serviceText = serviceNameText {
+                Text("Service: \(serviceText)")
+                    .foregroundColor(.gray)
+            }
+
+            Text("Probability: \(opportunity.probability)%")
+            Text("Monthly Revenue: $\(opportunity.monthlyRevenue, specifier: "%.2f")")
+            Text("One-Time Revenue: $\(opportunity.onetimeRevenue, specifier: "%.2f")")
+            Text("Estimated Value: $\(opportunity.estimatedValue, specifier: "%.2f")")
+
+            Text("Status: \(statusText)")
+                .foregroundColor(statusColor)
+        }
+    }
+
+    private var serviceNameText: String? {
+        let trimmed = opportunity.productName.trimmingCharacters(in: .whitespacesAndNewlines)
+        return (!trimmed.isEmpty && trimmed.lowercased() != "unknown product") ? trimmed : nil
+    }
+
+    private var statusText: String {
+        switch opportunity.status {
+        case 1: return "Active"
+        case 2: return "Lost"
+        case 3: return "Closed"
+        default: return "Unknown"
+        }
+    }
+
+    private var statusColor: Color {
+        switch opportunity.status {
+        case 1: return .blue
+        case 2: return .red
+        case 3: return .green
+        default: return .gray
+        }
+    }
+}
+
 struct OpportunityDataView: View {
     @ObservedObject var viewModel = OpportunityViewModel()
     
@@ -45,6 +94,7 @@ struct OpportunityDataView: View {
     @State private var isPresentingAddOpportunity = false  // ✅ Added state for modal
     @State private var isPresentingEditOpportunity = false // ✅ Added state for editing
     @State private var isPresentingAIGuidance = false
+    @State private var aiGuidanceText: String = ""
 
     var filteredOpportunities: [OpportunityWrapper] {
         print("Rebuilding filtered opportunities: \(viewModel.opportunities.map { $0.id })")
@@ -97,80 +147,16 @@ struct OpportunityDataView: View {
 
                 // 📋 List of Opportunities
                 List(filteredOpportunities, id: \.id) { opportunity in
-                    HStack {
-                        VStack(alignment: .leading) {
-                            Button(action: {
-                                editingOpportunity = opportunity
-                                isPresentingEditOpportunity = true
-                            }) {
-                                Text("Opportunity: \(opportunity.name)")
-                                    .font(.headline)
-                                    .foregroundColor(.blue)
-                            }
-
-                            Text("Company: \(opportunity.companyName)")
-                                .foregroundColor(.gray)
-
-                            Text("Close Date: \(opportunity.closeDate, style: .date)")
-
-                            let trimmedProduct = opportunity.productName.trimmingCharacters(in: .whitespacesAndNewlines)
-                            if !trimmedProduct.isEmpty && trimmedProduct.lowercased() != "unknown product" {
-                                Text("Service: \(trimmedProduct)")
-                                    .foregroundColor(.gray)
-                            }
-
-                            Text("Probability: \(opportunity.probability)%")
-                            Text("Monthly Revenue: $\(opportunity.monthlyRevenue, specifier: "%.2f")")
-                            Text("One-Time Revenue: $\(opportunity.onetimeRevenue, specifier: "%.2f")")
-                            Text("Estimated Value: $\(opportunity.estimatedValue, specifier: "%.2f")")
-
-                            let (statusText, statusColor): (String, Color) = {
-                                switch opportunity.status {
-                                case 1: return ("Active", .blue)
-                                case 2: return ("Lost", .red)
-                                case 3: return ("Closed", .green)
-                                default: return ("Unknown", .gray)
-                                }
-                            }()
-
-                            Text("Status: \(statusText)")
-                                .foregroundColor(statusColor)
-                        }
-
-                        Spacer()
-
-                        Group {
-                            if currentMethodology == "BANT" {
-                                BANTIndicatorView(opportunity: opportunity) { bantType in
-                                    print("BANT icon pressed: \(bantType)")
-                                    selectedBANTItem = SelectedBANTItem(opportunity: opportunity, bantType: bantType)
-                                }
-                            } else if currentMethodology == "MEDDIC" {
-                                MEDDICIndicatorView(opportunity: opportunity) { meddicType in
-                                    print("MEDDIC icon pressed: \(meddicType.rawValue)")
-                                    selectedQualificationItem = SelectedQualificationItem(opportunity: opportunity, qualificationType: meddicType.rawValue)
-                                }
-                            } else if currentMethodology == "SCUBATANK" {
-                                SCUBATANKIndicatorView(opportunity: opportunity) { scubatankType in
-                                    print("SCUBATANK icon pressed: \(scubatankType.rawValue)")
-                                    selectedQualificationItem = SelectedQualificationItem(opportunity: opportunity, qualificationType: scubatankType.rawValue)
-                                }
-                            }
-                        }
-                    }
-                    .contentShape(Rectangle())
-                    .simultaneousGesture(
-                        TapGesture()
-                            .onEnded {
-                                editingOpportunity = opportunity
-                                isPresentingEditOpportunity = true
-                            }
-                    )
-                    .gesture(
-                        LongPressGesture(minimumDuration: 0.6)
-                            .onEnded { _ in
-                                isPresentingAIGuidance = true
-                            }
+                    OpportunityRowView(
+                        opportunity: opportunity,
+                        currentMethodology: currentMethodology,
+                        viewModel: viewModel,
+                        selectedBANTItem: $selectedBANTItem,
+                        selectedQualificationItem: $selectedQualificationItem,
+                        editingOpportunity: $editingOpportunity,
+                        isPresentingEditOpportunity: $isPresentingEditOpportunity,
+                        isPresentingAIGuidance: $isPresentingAIGuidance,
+                        setAIGuidanceText: { aiGuidanceText = $0 }
                     )
                 }
             }
@@ -207,19 +193,111 @@ struct OpportunityDataView: View {
                 EditOpportunityView(viewModel: viewModel, opportunity: opportunity)
             }
             .sheet(isPresented: $isPresentingAIGuidance) {
-                AIGuidancePlaceholderView()
+                AIGuidancePlaceholderView(aiText: aiGuidanceText)
             }
         }
     }
 }
 
 struct AIGuidancePlaceholderView: View {
+    var aiText: String
+
     var body: some View {
-        VStack {
+        VStack(alignment: .leading) {
             Text("AI Guidance")
                 .font(.largeTitle)
-                .padding()
+                .padding(.bottom)
+
+            ScrollView {
+                Text(aiText)
+                    .padding()
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
             Spacer()
         }
+        .padding()
+    }
+}
+
+// Helper view for displaying qualification icon depending on methodology
+struct QualificationIconView: View {
+    let opportunity: OpportunityWrapper
+    let currentMethodology: String
+    let onSelect: (SelectedQualificationItem?) -> Void
+    let onSelectBANT: (SelectedBANTItem?) -> Void
+
+    var body: some View {
+        Group {
+            if currentMethodology == "BANT" {
+                BANTIndicatorView(opportunity: opportunity) { bantType in
+                    onSelectBANT(SelectedBANTItem(opportunity: opportunity, bantType: bantType))
+                }
+            } else if currentMethodology == "MEDDIC" {
+                MEDDICIndicatorView(opportunity: opportunity) { meddicType in
+                    onSelect(SelectedQualificationItem(opportunity: opportunity, qualificationType: meddicType.rawValue))
+                }
+            } else if currentMethodology == "SCUBATANK" {
+                SCUBATANKIndicatorView(opportunity: opportunity) { scubatankType in
+                    onSelect(SelectedQualificationItem(opportunity: opportunity, qualificationType: scubatankType.rawValue))
+                }
+            }
+        }
+    }
+}
+
+struct OpportunityRowView: View {
+    let opportunity: OpportunityWrapper
+    let currentMethodology: String
+    @ObservedObject var viewModel: OpportunityViewModel
+    @Binding var selectedBANTItem: SelectedBANTItem?
+    @Binding var selectedQualificationItem: SelectedQualificationItem?
+    @Binding var editingOpportunity: OpportunityWrapper?
+    @Binding var isPresentingEditOpportunity: Bool
+    @Binding var isPresentingAIGuidance: Bool
+    let setAIGuidanceText: (String) -> Void
+
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading) {
+                Button(action: {
+                    editingOpportunity = opportunity
+                    isPresentingEditOpportunity = true
+                }) {
+                    Text("Opportunity: \(opportunity.name)")
+                        .font(.headline)
+                        .foregroundColor(.blue)
+                }
+
+                OpportunitySummaryView(opportunity: opportunity)
+            }
+
+            Spacer()
+
+            QualificationIconView(
+                opportunity: opportunity,
+                currentMethodology: currentMethodology,
+                onSelect: { selectedQualificationItem = $0 },
+                onSelectBANT: { selectedBANTItem = $0 }
+            )
+        }
+        .contentShape(Rectangle())
+        .simultaneousGesture(
+            TapGesture()
+                .onEnded {
+                    editingOpportunity = opportunity
+                    isPresentingEditOpportunity = true
+                }
+        )
+        .gesture(
+            LongPressGesture(minimumDuration: 0.6)
+                .onEnded { _ in
+                    AIRecommendationManager.generateOpportunityGuidance(for: opportunity) { result in
+                        setAIGuidanceText(result)
+                        isPresentingAIGuidance = true
+                    }
+                }
+        )
     }
 }
