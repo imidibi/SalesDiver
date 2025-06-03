@@ -203,21 +203,27 @@ struct AIGuidancePlaceholderView: View {
     var aiText: String
 
     var body: some View {
-        VStack(alignment: .leading) {
-            Text("AI Guidance")
-                .font(.largeTitle)
-                .padding(.bottom)
-
-            ScrollView {
-                Text(aiText)
-                    .padding()
-                    .multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+        NavigationStack {
+            VStack(alignment: .leading) {
+                ScrollView {
+                    Text(aiText)
+                        .padding()
+                        .multilineTextAlignment(.leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                Spacer()
             }
-
-            Spacer()
+            .navigationTitle("AI Guidance")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") {
+                        // This will dismiss the sheet
+                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                    }
+                }
+            }
+            .padding()
         }
-        .padding()
     }
 }
 
@@ -283,19 +289,13 @@ struct OpportunityRowView: View {
             )
         }
         .contentShape(Rectangle())
-        .simultaneousGesture(
-            TapGesture()
-                .onEnded {
-                    editingOpportunity = opportunity
-                    isPresentingEditOpportunity = true
-                }
-        )
         .gesture(
             LongPressGesture(minimumDuration: 0.6)
                 .onEnded { _ in
+                    setAIGuidanceText("Generating AI Guidance...")
+                    isPresentingAIGuidance = true
                     AIRecommendationManager.generateOpportunityGuidance(for: opportunity) { result in
                         setAIGuidanceText(result)
-                        isPresentingAIGuidance = true
                     }
                 }
         )
