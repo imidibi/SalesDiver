@@ -238,6 +238,11 @@ struct AIGuidancePlaceholderView: View {
                         presentationMode.wrappedValue.dismiss()
                     }
                 }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    ShareLink(item: aiText) {
+                        Image(systemName: "square.and.arrow.up")
+                    }
+                }
             }
             .padding()
         }
