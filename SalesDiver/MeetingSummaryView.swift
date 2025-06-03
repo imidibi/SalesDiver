@@ -164,107 +164,12 @@ struct MeetingSummaryView: View {
         }
     }
     private func generateAIRecommendation() {
-        var summary = ""
-
-        if let questions = meeting.questions as? Set<MeetingQuestionEntity> {
-            let answered = questions
-                .filter { ($0.answer ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false }
-                .map { "Q: \($0.questionText ?? "")\nA: \($0.answer ?? "")" }
-                .joined(separator: "\n\n")
-            summary += "Meeting Q&A:\n" + answered + "\n\n"
-        }
-
-        if let opportunity = meeting.opportunity {
-            let wrapper = OpportunityWrapper(managedObject: opportunity)
-            summary += "Qualification Summary:\n"
-
-            switch currentMethodology {
-            case "BANT":
-                summary += "BANT Qualification:\n"
-                summary += "• Budget: \(wrapper.budgetStatus) — \(wrapper.budgetCommentary)\n"
-                summary += "• Authority: \(wrapper.authorityStatus) — \(wrapper.authorityCommentary)\n"
-                summary += "• Need: \(wrapper.needStatus) — \(wrapper.needCommentary)\n"
-                summary += "• Timing: \(wrapper.timingStatus) — \(wrapper.timingCommentary)\n"
-            case "MEDDIC":
-                summary += "MEDDIC Qualification:\n"
-                summary += "• Metrics: \(wrapper.metricsStatus) — \(wrapper.metricsCommentary)\n"
-                summary += "• Economic Buyer: \(wrapper.authorityStatus) — \(wrapper.authorityCommentary)\n"
-                summary += "• Decision Criteria: \(wrapper.decisionCriteriaStatus) — \(wrapper.decisionCriteriaCommentary)\n"
-                summary += "• Decision Process: \(wrapper.timingStatus) — \(wrapper.timingCommentary)\n"
-                summary += "• Identify Pain: \(wrapper.needStatus) — \(wrapper.needCommentary)\n"
-                summary += "• Champion: \(wrapper.championStatus) — \(wrapper.championCommentary)\n"
-            case "SCUBATANK":
-                summary += "SCUBATANK Qualification:\n"
-                summary += "• Solution: \(wrapper.solutionStatus) — \(wrapper.solutionCommentary)\n"
-                summary += "• Competition: \(wrapper.competitionStatus) — \(wrapper.competitionCommentary)\n"
-                summary += "• Uniques: \(wrapper.uniquesStatus) — \(wrapper.uniquesCommentary)\n"
-                summary += "• Benefits: \(wrapper.benefitsStatus) — \(wrapper.benefitsCommentary)\n"
-                summary += "• Authority: \(wrapper.authorityStatus) — \(wrapper.authorityCommentary)\n"
-                summary += "• Timescale: \(wrapper.timingStatus) — \(wrapper.timingCommentary)\n"
-                summary += "• Action Plan: \(wrapper.actionPlanStatus) — \(wrapper.actionPlanCommentary)\n"
-                summary += "• Need: \(wrapper.needStatus) — \(wrapper.needCommentary)\n"
-                summary += "• Kash: \(wrapper.budgetStatus) — \(wrapper.budgetCommentary)\n"
-            default:
-                summary += "Unknown methodology.\n"
-            }
-        }
-
-        let prompt = """
-This data represents the latest sales meeting between a Managed service provider sales person and their prospect, as well as the sales person's latest qualification assessment. Given this, what would be the logical next step for the sales person to do? Please create a recommendation for the sales person for logical next steps. This can include qualifying out of the deal if the qualification status is poor and little progress is being made.
-
-\(summary)
-"""
-
-        guard let apiKey = UserDefaults.standard.string(forKey: "openAIKey"), !apiKey.isEmpty else {
-            aiRecommendation = "⚠️ OpenAI API key is not set."
-            return
-        }
-
-        let model = UserDefaults.standard.string(forKey: "openAISelectedModel") ?? ""
-        let chosenModel = model.isEmpty ? "gpt-4" : model
-
-        let body: [String: Any] = [
-            "model": chosenModel,
-            "messages": [
-                ["role": "system", "content": "You are a helpful assistant for sales strategy in the managed IT services space."],
-                ["role": "user", "content": prompt]
-            ],
-            "temperature": 0.7,
-            "max_tokens": 400
-        ]
-
-        var request = URLRequest(url: URL(string: "https://api.openai.com/v1/chat/completions")!)
-        request.httpMethod = "POST"
-        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try? JSONSerialization.data(withJSONObject: body, options: [])
-
         aiRecommendation = "Generating recommendation..."
-
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            DispatchQueue.main.async {
-                if let data = data,
-                   let result = try? JSONDecoder().decode(OpenAIResponse.self, from: data),
-                   let message = result.choices.first?.message.content {
-                    aiRecommendation = message.trimmingCharacters(in: .whitespacesAndNewlines)
-                    meeting.aiRecommendation = aiRecommendation
-                    try? meeting.managedObjectContext?.save()
-                } else {
-                    if let data = data,
-                       let debug = String(data: data, encoding: .utf8) {
-                        if debug.contains("insufficient_quota") {
-                            aiRecommendation = "⚠️ Your OpenAI account has no available quota. Please visit https://platform.openai.com/account/billing to update your plan."
-                        } else {
-                            aiRecommendation = "❌ OpenAI error: \(debug)"
-                        }
-                    } else if let error = error {
-                        aiRecommendation = "❌ Request failed: \(error.localizedDescription)"
-                    } else {
-                        aiRecommendation = "⚠️ Failed to retrieve recommendation from OpenAI."
-                    }
-                }
-            }
-        }.resume()
+        AIRecommendationManager.generateSalesRecommendation(for: meeting, methodology: currentMethodology) { result in
+            aiRecommendation = result
+            meeting.aiRecommendation = result
+            try? meeting.managedObjectContext?.save()
+        }
     }
 }
 
@@ -306,15 +211,7 @@ struct QualificationEditorRouter: View {
     }
 }
 
-struct OpenAIResponse: Codable {
-    let choices: [Choice]
-    struct Choice: Codable {
-        let message: Message
-    }
-    struct Message: Codable {
-        let content: String
-    }
-}
+
 
 // If not available globally, define SelectedSCUBATANKItem here:
 struct SelectedSCUBATANKItem: Identifiable {
