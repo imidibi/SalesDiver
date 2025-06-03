@@ -198,7 +198,7 @@ struct HelpView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
 
-                GroupBox(label: Text("🏁 Welcome to SalesDiver").font(.title2).bold()) {
+                GroupBox(label: Text("🤿 Welcome to SalesDiver").font(.title2).bold()) {
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Our goal is to help you dive into your sales pipeline and to help you qualify and close the treasure therein!")
 
