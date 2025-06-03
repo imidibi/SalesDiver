@@ -201,15 +201,22 @@ struct OpportunityDataView: View {
 
 struct AIGuidancePlaceholderView: View {
     var aiText: String
+    @Environment(\.presentationMode) var presentationMode
 
     var body: some View {
         NavigationStack {
             VStack(alignment: .leading) {
                 ScrollView {
-                    Text(aiText)
-                        .padding()
-                        .multilineTextAlignment(.leading)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    if aiText.isEmpty || aiText == "Generating AI Guidance..." {
+                        ProgressView("Generating AI Guidance...")
+                            .padding()
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    } else {
+                        Text(aiText)
+                            .padding()
+                            .multilineTextAlignment(.leading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
                 }
                 Spacer()
             }
@@ -217,8 +224,7 @@ struct AIGuidancePlaceholderView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Done") {
-                        // This will dismiss the sheet
-                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                        presentationMode.wrappedValue.dismiss()
                     }
                 }
             }
