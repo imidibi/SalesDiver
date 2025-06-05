@@ -320,10 +320,22 @@ private struct CompanyPickerSheetView: View {
     @Binding var selectedOpportunity: OpportunityEntity?
     @Binding var isPresented: Bool
 
+    @State private var searchText: String = ""
+
+    private var filteredCompanies: [CompanyEntity] {
+        if searchText.isEmpty {
+            return Array(companies)
+        } else {
+            return companies.filter {
+                $0.name?.localizedCaseInsensitiveContains(searchText) ?? false
+            }
+        }
+    }
+
     var body: some View {
         NavigationView {
             List {
-                ForEach(companies, id: \.self) { company in
+                ForEach(filteredCompanies, id: \.self) { company in
                     Button(action: {
                         selectedCompany = company
                         selectedOpportunity = nil
@@ -333,6 +345,7 @@ private struct CompanyPickerSheetView: View {
                     }
                 }
             }
+            .searchable(text: $searchText)
             .navigationTitle("Select Company")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
