@@ -125,7 +125,7 @@ struct NewFollowUpView: View {
             try viewContext.save()
             dismiss()
         } catch {
-            print("Failed to save follow-up: \(error.localizedDescription)")
+            // print("Failed to save follow-up: \(error.localizedDescription)")
         }
     }
 }

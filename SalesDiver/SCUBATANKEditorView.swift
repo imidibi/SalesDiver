@@ -72,7 +72,7 @@ struct SCUBATANKEditorView: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Save") {
-                        print("Saving SCUBATANK - Element: \(elementType), Status: \(selectedStatus), Commentary: \(commentary)")
+                        // print("Saving SCUBATANK - Element: \(elementType), Status: \(selectedStatus), Commentary: \(commentary)")
                         viewModel.updateSCUBATANKStatus(for: opportunity, elementType: elementType, status: selectedStatus, commentary: commentary)
                         dismiss()
                     }
@@ -80,7 +80,7 @@ struct SCUBATANKEditorView: View {
             }
             .onAppear {
                 let statusInfo = viewModel.getSCUBATANKStatus(for: opportunity, elementType: elementType)
-                print("Loaded SCUBATANK - Element: \(elementType), Status (Type: \(type(of: statusInfo.status))) = \(statusInfo.status), Commentary: \(statusInfo.commentary)")
+                // print("Loaded SCUBATANK - Element: \(elementType), Status (Type: \(type(of: statusInfo.status))) = \(statusInfo.status), Commentary: \(statusInfo.commentary)")
                 selectedStatus = Int("\(statusInfo.status)") ?? 0
                 commentary = statusInfo.commentary
             }

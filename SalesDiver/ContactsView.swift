@@ -123,7 +123,7 @@ struct ContactsView: View {
         do {
             try viewContext.save()
         } catch {
-            print("Failed to delete contact: \(error.localizedDescription)")
+            // print("Failed to delete contact: \(error.localizedDescription)")
         }
     }
 }
@@ -243,7 +243,7 @@ struct AddContactView: View {
             try viewContext.save()
             presentationMode.wrappedValue.dismiss()
         } catch {
-            print("Error saving contact: \(error.localizedDescription)")
+            // print("Error saving contact: \(error.localizedDescription)")
         }
     }
 }
@@ -346,7 +346,7 @@ struct EditContactView: View {
             try viewContext.save()
             presentationMode.wrappedValue.dismiss()
         } catch {
-            print("Error updating contact: \(error.localizedDescription)")
+            // print("Error updating contact: \(error.localizedDescription)")
         }
     }
 }

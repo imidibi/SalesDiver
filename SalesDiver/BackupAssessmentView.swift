@@ -95,17 +95,17 @@ struct BackupAssessmentView: View {
         }
         .navigationTitle("Backup Assessment")
         .onAppear {
-            print("Loading Backup assessment for company: \(companyName)")
+            // print("Loading Backup assessment for company: \(companyName)")
             loadBackupAssessment()
         }
         .onDisappear {
-            print("Auto-saving Backup assessment for company: \(companyName)")
+            // print("Auto-saving Backup assessment for company: \(companyName)")
             saveBackupAssessment()
         }
     }
 
     func saveBackupAssessment() {
-        print("💾 Calling saveBackupAssessment for \(companyName)")
+        // print("💾 Calling saveBackupAssessment for \(companyName)")
         let fields: [(String, String?, Bool?)] = [
             ("backupEndpoints", nil, backupEndpoints),
             ("backupEndpointsHow", backupEndpointsHow.isEmpty ? nil : backupEndpointsHow, nil),
@@ -130,7 +130,7 @@ struct BackupAssessmentView: View {
     func loadBackupAssessment() {
         currentAssessment = coreDataManager.getOrCreateAssessment(for: companyName)
         let fields = coreDataManager.loadAssessmentFields(for: companyName, category: "Backup")
-        print("Loaded fields: \(fields)")
+        // print("Loaded fields: \(fields)")
 
         for field in fields {
             switch field.fieldName {

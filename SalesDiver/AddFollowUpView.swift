@@ -139,7 +139,7 @@ struct AddFollowUpView: View {
             // Explicitly use a Button row for "Assigned To" and force SwiftUI to treat as button, not TextField
             Section {
                 Button(action: {
-                    print("Tapped Assigned To")
+                    // print("Tapped Assigned To")
                     isShowingContactPicker = true
                 }) {
                     HStack {
@@ -166,12 +166,12 @@ struct AddFollowUpView: View {
                 saveFollowUp(dismissAfterSave: true)
             }
             Button("Save and Email") {
-                print("DEBUG — Save and Email:")
-                print("Assigned To: \(assignedTo)")
-                print("Email: \(assignedEmail)")
-                print("Company: \(selectedCompany?.name ?? "nil")")
-                print("Opportunity: \(selectedOpportunity?.name ?? "nil")")
-                print("Follow-Up Name: \(name)")
+                // print("DEBUG — Save and Email:")
+                // print("Assigned To: \(assignedTo)")
+                // print("Email: \(assignedEmail)")
+                // print("Company: \(selectedCompany?.name ?? "nil")")
+                // print("Opportunity: \(selectedOpportunity?.name ?? "nil")")
+                // print("Follow-Up Name: \(name)")
                 
                 saveFollowUp(dismissAfterSave: false)
                 emailBodyText = "" // Clear email body before presenting draft
@@ -198,7 +198,7 @@ struct AddFollowUpView: View {
                 dismiss()
             }
         } catch {
-            print("Save failed: \(error.localizedDescription)")
+            // print("Save failed: \(error.localizedDescription)")
         }
     }
 

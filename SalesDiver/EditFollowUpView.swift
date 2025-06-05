@@ -62,7 +62,7 @@ struct EditFollowUpView: View {
                         try viewContext.save()
                         dismiss()
                     } catch {
-                        print("Failed to save follow-up: \(error.localizedDescription)")
+                        // print("Failed to save follow-up: \(error.localizedDescription)")
                     }
                 }
 
@@ -74,7 +74,7 @@ struct EditFollowUpView: View {
                         try viewContext.save()
                         isShowingEmailDraft = true
                     } catch {
-                        print("Failed to save follow-up: \(error.localizedDescription)")
+                        // print("Failed to save follow-up: \(error.localizedDescription)")
                     }
                 }
                 .disabled((followUp.assignedTo ?? "").isEmpty)

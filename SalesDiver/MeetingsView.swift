@@ -1,7 +1,6 @@
 //import SwiftUI
 //
 //
-//
 //struct MeetingsView: View {
 //    @State private var selectedMeeting: MeetingsEntity? = nil
 //    

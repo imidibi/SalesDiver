@@ -59,7 +59,7 @@ struct HandwritingCaptureView: View {
             do {
                 try requestHandler.perform([request])
             } catch {
-                print("Error recognizing text: \(error)")
+                
             }
         }
     }

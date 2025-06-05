@@ -92,7 +92,7 @@ struct RecordMeetingView: View {
                             do {
                                 try viewContext.save()
                             } catch {
-                                print("Error saving flagged insight: \(error.localizedDescription)")
+                                // print("Error saving flagged insight: \(error.localizedDescription)")
                             }
                         }) {
                             Label("Pin Insight", systemImage: "star.fill")
@@ -140,7 +140,7 @@ struct RecordMeetingView: View {
                                 do {
                                     try viewContext.save()
                                 } catch {
-                                    print("Error saving answer: \(error.localizedDescription)")
+                                    // print("Error saving answer: \(error.localizedDescription)")
                                 }
                                 speechManager.stopTranscribing()
                                 if currentQuestionIndex > 0 {
@@ -161,7 +161,7 @@ struct RecordMeetingView: View {
                                 do {
                                     try viewContext.save()
                                 } catch {
-                                    print("Error saving answer: \(error.localizedDescription)")
+                                    // print("Error saving answer: \(error.localizedDescription)")
                                 }
                                 speechManager.stopTranscribing()
                                 currentQuestionIndex += 1

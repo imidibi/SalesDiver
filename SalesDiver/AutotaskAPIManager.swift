@@ -26,13 +26,13 @@ class AutotaskAPIManager {
     
     func searchCompanies(query: String, completion: @escaping ([(Int, String)]) -> Void) {
         guard UserDefaults.standard.bool(forKey: "autotaskEnabled") else {
-            print("🔴 Autotask integration is disabled.")
+            // print("🔴 Autotask integration is disabled.")
             completion([])
             return
         }
         
         guard let (apiUsername, apiSecret, apiTrackingID) = getAutotaskCredentials() else {
-            print("🔴 Authentication failed: API credentials missing")
+            // print("🔴 Authentication failed: API credentials missing")
             completion([])
             return
         }
@@ -62,29 +62,27 @@ class AutotaskAPIManager {
         do {
             let jsonData = try JSONSerialization.data(withJSONObject: requestBody, options: [])
             request.httpBody = jsonData
-            print("📤 Sending Company Search Request: \(apiBaseURL)")
-            print("📄 Request Body: \(String(data: jsonData, encoding: .utf8) ?? "Invalid JSON")")
+            // print("📤 Sending Company Search Request: \(apiBaseURL)")
+            // print("📄 Request Body: \(String(data: jsonData, encoding: .utf8) ?? "Invalid JSON")")
         } catch {
-            print("🔴 Failed to encode request body: \(error.localizedDescription)")
+            // print("🔴 Failed to encode request body: \(error.localizedDescription)")
             completion([])
             return
         }
         
         apiSemaphore.wait()
         session.dataTask(with: request) { data, response, error in
-            if let error = error {
-                print("🔴 API Request Error: \(error.localizedDescription)")
+            if error != nil {
+                // print("🔴 API Request Error: \(error?.localizedDescription ?? "")")
                 self.apiSemaphore.signal()
                 completion([])
                 return
             }
             
-            if let httpResponse = response as? HTTPURLResponse {
-                print("📡 API Response Status Code: \(httpResponse.statusCode)")
-            }
+            _ = response as? HTTPURLResponse
             
             guard let data = data else {
-                print("🔴 No data received from API")
+                // print("🔴 No data received from API")
                 self.apiSemaphore.signal()
                 completion([])
                 return
@@ -92,7 +90,7 @@ class AutotaskAPIManager {
             
             do {
                 let jsonResponse = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any]
-                print("📥 Raw API Response: \(jsonResponse ?? [:])")
+                // print("📥 Raw API Response: \(jsonResponse ?? [:])")
                 
                 if let companies = jsonResponse?["items"] as? [[String: Any]] {
                     let companyData = companies.compactMap { company -> (Int, String)? in
@@ -102,16 +100,16 @@ class AutotaskAPIManager {
                         }
                         return nil
                     }
-                    print("✅ Parsed Companies: \(companyData)")
+                    // print("✅ Parsed Companies: \(companyData)")
                     self.apiSemaphore.signal()
                     completion(companyData)
                 } else {
-                    print("⚠️ No companies found in response")
+                    // print("⚠️ No companies found in response")
                     self.apiSemaphore.signal()
                     completion([])
                 }
             } catch {
-                print("🔴 JSON Parsing Error: \(error.localizedDescription)")
+                // print("🔴 JSON Parsing Error: \(error.localizedDescription)")
                 self.apiSemaphore.signal()
                 completion([])
             }
@@ -146,22 +144,21 @@ class AutotaskAPIManager {
             let jsonData = try JSONSerialization.data(withJSONObject: requestBody, options: [])
             request.httpBody = jsonData
         } catch {
-            print("JSON encoding error: \(error.localizedDescription)")
+            // print("JSON encoding error: \(error.localizedDescription)")
             completion([])
             return
         }
         
         apiSemaphore.wait()
         session.dataTask(with: request) { data, response, error in
-            if let error = error {
-                print("API error: \(error.localizedDescription)")
+            if error != nil {
                 self.apiSemaphore.signal()
                 completion([])
                 return
             }
             
             guard let data = data else {
-                print("No data received from API")
+                // print("No data received from API")
                 self.apiSemaphore.signal()
                 completion([])
                 return
@@ -170,7 +167,7 @@ class AutotaskAPIManager {
             do {
                 let jsonResponse = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any]
                 guard let contactsArray = jsonResponse?["items"] as? [[String: Any]] else {
-                    print("No 'items' in response")
+                    // print("No 'items' in response")
                     self.apiSemaphore.signal()
                     completion([])
                     return
@@ -188,7 +185,7 @@ class AutotaskAPIManager {
                 self.apiSemaphore.signal()
                 completion(contacts)
             } catch {
-                print("JSON parsing error: \(error.localizedDescription)")
+                // print("JSON parsing error: \(error.localizedDescription)")
                 self.apiSemaphore.signal()
                 completion([])
             }
@@ -197,13 +194,13 @@ class AutotaskAPIManager {
     
     func searchContactsGET(companyID: Int, completion: @escaping ([(Int, String)]) -> Void) {
         guard UserDefaults.standard.bool(forKey: "autotaskEnabled") else {
-            print("Autotask integration is disabled.")
+            // print("Autotask integration is disabled.")
             completion([])
             return
         }
         
         guard let (apiUsername, apiSecret, apiTrackingID) = getAutotaskCredentials() else {
-            print("Authentication failed: API credentials missing")
+            // print("Authentication failed: API credentials missing")
             completion([])
             return
         }
@@ -220,14 +217,14 @@ class AutotaskAPIManager {
         guard let jsonData = try? JSONSerialization.data(withJSONObject: queryJson, options: []),
               let jsonString = String(data: jsonData, encoding: .utf8),
               let encodedQuery = jsonString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
-            print("Error encoding query JSON")
+            // print("Error encoding query JSON")
             completion([])
             return
         }
         
         let urlString = "https://webservices24.autotask.net/atservicesrest/v1.0/Contacts/query?search=\(encodedQuery)"
         guard let url = URL(string: urlString) else {
-            print("Invalid URL: \(urlString)")
+            // print("Invalid URL: \(urlString)")
             completion([])
             return
         }
@@ -239,30 +236,27 @@ class AutotaskAPIManager {
         request.setValue(apiSecret, forHTTPHeaderField: "Secret")
         request.setValue(apiTrackingID, forHTTPHeaderField: "ApiIntegrationCode")
         
-        print("Performing GET request: \(urlString)")
+        // print("Performing GET request: \(urlString)")
         
         apiSemaphore.wait()
         session.dataTask(with: request) { data, response, error in
-            if let error = error {
-                print("API Request Error: \(error.localizedDescription)")
+            if error != nil {
+                // print("API Request Error: \(error?.localizedDescription ?? "")")
                 self.apiSemaphore.signal()
                 completion([])
                 return
             }
             
-            if let httpResponse = response as? HTTPURLResponse {
-                print("API Response Status Code: \(httpResponse.statusCode)")
-            }
+            _ = response as? HTTPURLResponse
             
             guard let data = data else {
-                print("No data received from API")
+                // print("No data received from API")
                 self.apiSemaphore.signal()
                 completion([])
                 return
             }
             
-            let fallback = "Invalid JSON"
-            print("Full Raw Response: \(String(data: data, encoding: .utf8) ?? fallback)")
+            // print("Full Raw Response: \(String(data: data, encoding: .utf8) ?? \"Invalid JSON\")")
             
             do {
                 if let jsonResponse = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
@@ -279,16 +273,16 @@ class AutotaskAPIManager {
                         }
                         return (id, "\(firstName) \(lastName)")
                     }
-                    print("Filtered Contacts: \(contactData)")
+                    // print("Filtered Contacts: \(contactData)")
                     self.apiSemaphore.signal()
                     completion(contactData)
                 } else {
-                    print("No contacts found in response")
+                    // print("No contacts found in response")
                     self.apiSemaphore.signal()
                     completion([])
                 }
             } catch {
-                print("JSON Parsing Error: \(error.localizedDescription)")
+                // print("JSON Parsing Error: \(error.localizedDescription)")
                 self.apiSemaphore.signal()
                 completion([])
             }
@@ -296,20 +290,20 @@ class AutotaskAPIManager {
     }
     func getAllCompanies(completion: @escaping ([(Int, String)]) -> Void) {
         guard UserDefaults.standard.bool(forKey: "autotaskEnabled") else {
-            print("Autotask integration is disabled.")
+            // print("Autotask integration is disabled.")
             completion([])
             return
         }
         
         guard let (apiUsername, apiSecret, apiTrackingID) = getAutotaskCredentials() else {
-            print("Authentication failed: API credentials missing")
+            // print("Authentication failed: API credentials missing")
             completion([])
             return
         }
         
         let urlString = "https://webservices24.autotask.net/atservicesrest/v1.0/Companies/query?search=%7B%22filter%22:[%7B%22op%22:%22exist%22,%22field%22:%22id%22%7D]%7D"
         guard let url = URL(string: urlString) else {
-            print("Invalid URL")
+            // print("Invalid URL")
             completion([])
             return
         }
@@ -323,15 +317,15 @@ class AutotaskAPIManager {
         
         apiSemaphore.wait()
         session.dataTask(with: request) { data, response, error in
-            if let error = error {
-                print("API Request Error: \(error.localizedDescription)")
+            if error != nil {
+                // print("API Request Error: \(error?.localizedDescription ?? "")")
                 self.apiSemaphore.signal()
                 completion([])
                 return
             }
             
             guard let data = data else {
-                print("No data received from API")
+                // print("No data received from API")
                 self.apiSemaphore.signal()
                 completion([])
                 return
@@ -354,7 +348,7 @@ class AutotaskAPIManager {
                     completion([])
                 }
             } catch {
-                print("JSON Parsing Error: \(error.localizedDescription)")
+                // print("JSON Parsing Error: \(error.localizedDescription)")
                 self.apiSemaphore.signal()
                 completion([])
             }
@@ -363,7 +357,7 @@ class AutotaskAPIManager {
     
     func searchContactsFromBody(_ requestBody: [String: Any], completion: @escaping ([(Int, String, String)]) -> Void) {
         guard let url = URL(string: "https://webservices24.autotask.net/ATServicesRest/V1.0/Contacts/query") else {
-            print("Invalid URL")
+            // print("Invalid URL")
             return
         }
         
@@ -371,7 +365,7 @@ class AutotaskAPIManager {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "accept")
         guard let (apiUsername, apiSecret, apiTrackingID) = getAutotaskCredentials() else {
-            print("❌ Missing Autotask credentials")
+            // print("❌ Missing Autotask credentials")
             completion([])
             return
         }
@@ -385,36 +379,34 @@ class AutotaskAPIManager {
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: modifiedRequestBody, options: [])
         } catch {
-            print("❌ Failed to encode request body: \(error.localizedDescription)")
+            // print("❌ Failed to encode request body: \(error.localizedDescription)")
             completion([])
             return
         }
         
         apiSemaphore.wait()
         session.dataTask(with: request) { data, response, error in
-            if let error = error {
-                print("❌ Network error: \(error)")
+            if error != nil {
                 self.apiSemaphore.signal()
                 completion([])
                 return
             }
-            
+
             guard let data = data,
                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                   let items = json["items"] as? [[String: Any]] else {
-                print("❌ Failed to parse contact response")
                 self.apiSemaphore.signal()
                 completion([])
                 return
             }
-            
+
             let contacts: [(Int, String, String)] = items.compactMap {
                 guard let id = $0["id"] as? Int,
                       let firstName = $0["firstName"] as? String,
                       let lastName = $0["lastName"] as? String else { return nil }
                 return (id, firstName, lastName)
             }
-            
+
             self.apiSemaphore.signal()
             completion(contacts)
         }.resume()
@@ -422,7 +414,7 @@ class AutotaskAPIManager {
     func searchFullContactDetail(_ requestBody: [String: Any], completion: @escaping ([(firstName: String, lastName: String, email: String, phone: String, title: String)]) -> Void) {
         guard let url = URL(string: "https://webservices24.autotask.net/ATServicesRest/V1.0/Contacts/query"),
               let (apiUsername, apiSecret, apiTrackingID) = getAutotaskCredentials() else {
-            print("❌ Invalid URL or missing credentials")
+            // print("❌ Invalid URL or missing credentials")
             completion([])
             return
         }
@@ -438,17 +430,21 @@ class AutotaskAPIManager {
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: requestBody, options: [])
         } catch {
-            print("❌ Failed to encode request body: \(error)")
+            // print("❌ Failed to encode request body: \(error)")
             completion([])
             return
         }
 
         apiSemaphore.wait()
         session.dataTask(with: request) { data, response, error in
+            if error != nil {
+                self.apiSemaphore.signal()
+                completion([])
+                return
+            }
             guard let data = data,
                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                   let items = json["items"] as? [[String: Any]] else {
-                print("❌ Failed to fetch or decode contact details")
                 self.apiSemaphore.signal()
                 completion([])
                 return
@@ -471,12 +467,12 @@ class AutotaskAPIManager {
     }
     func searchOpportunitiesFromBody(_ requestBody: [String: Any], completion: @escaping ([(Int, String, Int?, Double?, Double?, Int?, Date?)]) -> Void) {
         guard let url = URL(string: "https://webservices24.autotask.net/ATServicesRest/V1.0/Opportunities/query") else {
-            print("❌ Invalid URL for Opportunities API")
+            // print("❌ Invalid URL for Opportunities API")
             return
         }
 
-        print("📡 Sending Opportunities API Request to URL: \(url)")
-        print("📄 Request Body: \(requestBody)")
+        // print("📡 Sending Opportunities API Request to URL: \(url)")
+        // print("📄 Request Body: \(requestBody)")
         
         var modifiedRequestBody = requestBody
         modifiedRequestBody["IncludeFields"] = ["id", "title", "amount", "probability", "monthlyRevenue", "onetimeRevenue", "status", "projectedCloseDate"]
@@ -487,7 +483,7 @@ class AutotaskAPIManager {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
         guard let (apiUsername, apiSecret, apiTrackingID) = getAutotaskCredentials() else {
-            print("❌ Missing Autotask credentials")
+            // print("❌ Missing Autotask credentials")
             completion([])
             return
         }
@@ -499,33 +495,29 @@ class AutotaskAPIManager {
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: modifiedRequestBody, options: [])
         } catch {
-            print("❌ Failed to encode request body: \(error.localizedDescription)")
+            // print("❌ Failed to encode request body: \(error.localizedDescription)")
             completion([])
             return
         }
         
         apiSemaphore.wait()
         URLSession.shared.dataTask(with: request) { data, response, error in
-            if let error = error {
-                print("❌ Request failed: \(error.localizedDescription)")
+            if error != nil {
                 self.apiSemaphore.signal()
                 completion([])
                 return
             }
-            
+
             guard let data = data else {
-                print("❌ No data returned")
                 self.apiSemaphore.signal()
                 completion([])
                 return
             }
-            
-            print("📥 Raw API Response: \(String(data: data, encoding: .utf8) ?? "Unable to decode response")")
 
             do {
                 if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
                    let items = json["items"] as? [[String: Any]] {
-                    
+
                     let opportunities = items.compactMap { item -> (Int, String, Int?, Double?, Double?, Int?, Date?)? in
                         if let id = item["id"] as? Int,
                            let title = item["title"] as? String,
@@ -541,16 +533,13 @@ class AutotaskAPIManager {
                         }
                         return nil
                     }
-                    print("✅ Parsed Opportunities: \(opportunities)")
                     self.apiSemaphore.signal()
                     completion(opportunities)
                 } else {
-                    print("❌ Invalid JSON structure.")
                     self.apiSemaphore.signal()
                     completion([])
                 }
             } catch {
-                print("❌ Failed to parse JSON: \(error.localizedDescription)")
                 self.apiSemaphore.signal()
                 completion([])
             }
@@ -558,7 +547,7 @@ class AutotaskAPIManager {
     }
     func searchProductsFromBody(_ requestBody: [String: Any], completion: @escaping ([(Int, String, String, String, String, Double, Double, String, Date?, Date?)]) -> Void) {
         guard let url = URL(string: "https://webservices24.autotask.net/ATServicesRest/V1.0/Products/query") else {
-            print("❌ Invalid Autotask URL for products.")
+            // print("❌ Invalid Autotask URL for products.")
             completion([])
             return
         }
@@ -574,14 +563,13 @@ class AutotaskAPIManager {
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: requestBody, options: [])
         } catch {
-            print("❌ Failed to serialize request body.")
+            // print("❌ Failed to serialize request body.")
             completion([])
             return
         }
 
         let task = URLSession.shared.dataTask(with: request) { data, response, error in
-            guard error == nil else {
-                print("❌ Error in product query: \(error!.localizedDescription)")
+            if error != nil {
                 completion([])
                 return
             }
@@ -589,7 +577,6 @@ class AutotaskAPIManager {
             guard let data = data,
                   let responseObject = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
                   let items = responseObject["items"] as? [[String: Any]] else {
-                print("❌ Invalid or empty response from product query.")
                 completion([])
                 return
             }
@@ -631,38 +618,30 @@ class AutotaskAPIManager {
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: requestBody, options: [])
             // Print API URL and request body
-            print("📡 Sending Service API Request to URL: \(url)")
-            if let bodyData = try? JSONSerialization.data(withJSONObject: requestBody, options: .prettyPrinted),
-               let bodyString = String(data: bodyData, encoding: .utf8) {
-                print("📤 Request Body:\n\(bodyString)")
-            }
+            // print("📡 Sending Service API Request to URL: \(url)")
+            // if let bodyData = try? JSONSerialization.data(withJSONObject: requestBody, options: .prettyPrinted),
+            //    let bodyString = String(data: bodyData, encoding: .utf8) {
+            //     print("📤 Request Body:\n\(bodyString)")
+            // }
         } catch {
-            print("❌ Failed to encode request body: \(error.localizedDescription)")
+            // print("❌ Failed to encode request body: \(error.localizedDescription)")
             completion([])
             return
         }
 
         URLSession.shared.dataTask(with: request) { data, response, error in
-            if let error = error {
-                print("❌ Error fetching services: \(error.localizedDescription)")
+            if error != nil {
                 completion([])
                 return
             }
 
             guard let data = data else {
-                print("❌ Invalid or empty response from service query.")
                 completion([])
                 return
             }
 
-            // Print raw response string before parsing
-            if let responseString = String(data: data, encoding: .utf8) {
-                print("📥 Raw Response:\n\(responseString)")
-            }
-
             guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                   let items = json["items"] as? [[String: Any]] else {
-                print("❌ Invalid or empty response from service query.")
                 completion([])
                 return
             }
@@ -694,7 +673,7 @@ class AutotaskAPIManager {
     func fetchFullCompanyDetails(companyID: Int, completion: @escaping ([(Int, String?, String?, String?, String?, String?, String?, Int?)]) -> Void) {
         guard let url = URL(string: "https://webservices24.autotask.net/ATServicesRest/V1.0/Companies/query"),
               let (apiUsername, apiSecret, apiTrackingID) = getAutotaskCredentials() else {
-            print("❌ Invalid URL or missing credentials")
+            // print("❌ Invalid URL or missing credentials")
             completion([])
             return
         }
@@ -722,19 +701,23 @@ class AutotaskAPIManager {
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: requestBody, options: [])
         } catch {
-            print("❌ Failed to encode request body: \(error)")
+            // print("❌ Failed to encode request body: \(error)")
             completion([])
             return
         }
 
         apiSemaphore.wait()
         session.dataTask(with: request) { data, response, error in
+            if error != nil {
+                self.apiSemaphore.signal()
+                completion([])
+                return
+            }
             guard let data = data,
                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                   let items = json["items"] as? [[String: Any]],
                   let item = items.first,
                   let id = item["id"] as? Int else {
-                print("❌ Failed to fetch or decode company details")
                 self.apiSemaphore.signal()
                 completion([])
                 return

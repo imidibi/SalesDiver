@@ -474,7 +474,7 @@ struct AssessmentView: View {
                         let idx2 = preferredOrder.firstIndex(where: { stripNumericPrefix($0) == name2 }) ?? Int.max
                         return idx1 < idx2
                     }
-                print("Loaded \(fields.count) fields for \(categoryKey)")
+                // print("Loaded \(fields.count) fields for \(categoryKey)")
 
                 var yPosition = CGFloat(100)
                 let lineSpacing: CGFloat = 8
@@ -487,7 +487,7 @@ struct AssessmentView: View {
                     if let mappedQuestion = questionTextMapping[fieldName] {
                         fullQuestion = mappedQuestion
                     } else {
-                        print("Missing mapping for field: \(fieldName)")
+                        // print("Missing mapping for field: \(fieldName)")
                         fullQuestion = fieldName
                     }
                     let label = "Q: \(fullQuestion)"
@@ -515,18 +515,18 @@ struct AssessmentView: View {
                 }
             }
         }
-        print("PDF generated with \(data.count) bytes.")
+        // print("PDF generated with \(data.count) bytes.")
 
         let safeCompany = selectedCompany.replacingOccurrences(of: " ", with: "_")
         let fileName = "\(safeCompany)-Assessment.pdf"
         let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
-        print("Saving PDF to:", tempURL.path)
+        // print("Saving PDF to:", tempURL.path)
         do {
             try data.write(to: tempURL)
-            print("PDF successfully saved.")
+            // print("PDF successfully saved.")
             presentShareSheet(url: tempURL)
         } catch {
-            print("Failed to write PDF: \(error.localizedDescription)")
+            // print("Failed to write PDF: \(error.localizedDescription)")
         }
     }
 

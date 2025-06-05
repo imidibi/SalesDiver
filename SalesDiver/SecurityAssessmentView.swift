@@ -71,20 +71,20 @@ struct SecurityAssessmentView: View {
                 }
                 .onChange(of: selectedCustomer) { oldValue, newValue in
                     guard let companyName = selectedCustomer, !companyName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-                    // print("❌ No company selected or empty name. Skipping fetch.")
+// print("❌ No company selected or empty name. Skipping fetch.")
                         return
                     }
  
-                    // print("📢 Selected Customer Updated: \(companyName)")
+// print("📢 Selected Customer Updated: \(companyName)")
  
                     if let companyEntity = CoreDataManager.shared.fetchCompanyByName(name: companyName) {
-                        // print("✅ Company Entity Found: \(companyEntity.name ?? "Unknown")")
+// print("✅ Company Entity Found: \(companyEntity.name ?? "Unknown")")
  
                         let assessments = CoreDataManager.shared.fetchSecurityAssessments(for: companyEntity)
-                        // print("📊 Security Assessments Fetched: \(assessments.count) for \(companyEntity.name ?? "Unknown")")
+// print("📊 Security Assessments Fetched: \(assessments.count) for \(companyEntity.name ?? "Unknown")")
  
                         if let latestAssessment = assessments.first {
-                            // print("✅ Latest Assessment Retrieved: \(latestAssessment.assessDate ?? Date())")
+// print("✅ Latest Assessment Retrieved: \(latestAssessment.assessDate ?? Date())")
                             
                             DispatchQueue.main.async {
                                 assessmentDate = latestAssessment.assessDate

@@ -97,20 +97,19 @@ struct BANTEditorView: View {
     }
 
     private func saveQualification() {
-        // Debug logging to help trace the issue
-        print("Debug: Saving qualification for bantType: \(bantType)")
-        print("Debug: Selected status: \(selectedStatus)")
-        print("Debug: Commentary: \(commentary)")
+        // print("Debug: Saving qualification for bantType: \(bantType)")
+        // print("Debug: Selected status: \(selectedStatus)")
+        // print("Debug: Commentary: \(commentary)")
         
         switch bantType {
         case .budget:
-            print("Debug: Opportunity budgetStatus before update: \(opportunity.budgetStatus)")
+            break
         case .authority:
-            print("Debug: Opportunity authorityStatus before update: \(opportunity.authorityStatus)")
+            break
         case .need:
-            print("Debug: Opportunity needStatus before update: \(opportunity.needStatus)")
+            break
         case .timing:
-            print("Debug: Opportunity timingStatus before update: \(opportunity.timingStatus)")
+            break
         }
         
         viewModel.updateBANT(opportunity: opportunity, bantType: bantType, status: selectedStatus, commentary: commentary)

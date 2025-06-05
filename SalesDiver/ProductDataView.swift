@@ -43,7 +43,7 @@ struct ProductDataView: View {
                 }
                 .pickerStyle(SegmentedPickerStyle())
                 .padding()
-                .onChange(of: viewModel.searchText) {
+                .onChange(of: viewModel.sortOption) {
                     viewModel.fetchProducts()
                 }
 

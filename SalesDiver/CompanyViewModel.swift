@@ -25,7 +25,7 @@ class CompanyViewModel: ObservableObject {
             let fetchedCompanies = try context.fetch(request)
             self.companies = fetchedCompanies.map { CompanyWrapper(managedObject: $0) }
         } catch {
-            print("Error fetching companies: \(error)")
+            // print("Error fetching companies: \(error)")
         }
     }
 
@@ -77,7 +77,7 @@ class CompanyViewModel: ObservableObject {
             let linkedContacts = try context.fetch(contactRequest)
             
             if !linkedOpportunities.isEmpty || !linkedMeetings.isEmpty || !linkedContacts.isEmpty {
-                print("Linked data - cannot delete")
+                // print("Linked data - cannot delete")
                 deletionErrorMessage = "Linked data exists - Company cannot be deleted."
                 return // Prevent deletion if linked data exists
             }
@@ -85,7 +85,7 @@ class CompanyViewModel: ObservableObject {
             context.delete(company.managedObject) // Proceed with deletion if no linked data found
             saveData()
         } catch {
-            print("Error checking for linked data: \(error)")
+            // print("Error checking for linked data: \(error)")
             deletionErrorMessage = "Error checking for linked data: \(error.localizedDescription)"
         }
     }
@@ -95,7 +95,7 @@ class CompanyViewModel: ObservableObject {
             try context.save()
             fetchCompanies()
         } catch {
-            print("Error saving company data: \(error)")
+            // print("Error saving company data: \(error)")
         }
     }
 }

@@ -99,7 +99,7 @@ struct OpportunityDataView: View {
     @State private var isPresentingHelp = false
 
     var filteredOpportunities: [OpportunityWrapper] {
-        print("Rebuilding filtered opportunities: \(viewModel.opportunities.map { $0.id })")
+        // print("Rebuilding filtered opportunities: \(viewModel.opportunities.map { $0.id })")
         var opportunities = viewModel.opportunities
 
         // 🔍 Filter by search text

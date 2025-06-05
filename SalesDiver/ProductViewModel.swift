@@ -62,7 +62,7 @@ class ProductViewModel: ObservableObject {
 
             self.products = wrappedProducts
         } catch {
-            print("Error fetching products: \(error)")
+            // print("Error fetching products: \(error)")
         }
     }
 
@@ -103,7 +103,7 @@ class ProductViewModel: ObservableObject {
             try context.save()
             fetchProducts()
         } catch {
-            print("Error saving product data: \(error)")
+            // print("Error saving product data: \(error)")
         }
     }
 }

@@ -69,9 +69,9 @@ struct EmailDraftView: View {
                     Spacer()
 
                     Button("Send Email") {
-                        print("Composing email to: \(contactEmail)")
-                        print("Subject: \(subject)")
-                        print("Body: \(emailText)")
+                        // print("Composing email to: \(contactEmail)")
+                        // print("Subject: \(subject)")
+                        // print("Body: \(emailText)")
                         if let emailUrl = createEmailUrl(to: contactEmail, subject: subject, body: emailText) {
                             if UIApplication.shared.canOpenURL(emailUrl) {
                                 UIApplication.shared.open(emailUrl)

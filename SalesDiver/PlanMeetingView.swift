@@ -22,7 +22,7 @@ struct PlanMeetingView: View {
     private func getRelevantQuestions(for category: String) -> [BANTQuestion] {
         // Trim whitespace and lower-case the category for a robust comparison
         let normalizedCategory = category.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        print("DEBUG: Fetching questions for category '\(category)' (normalized: '\(normalizedCategory)')")
+        // print("DEBUG: Fetching questions for category '\(category)' (normalized: '\(normalizedCategory)')")
 
         let fetchedQuestions = allQuestions.filter { question in
             if let questionCategory = question.category?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
@@ -34,7 +34,7 @@ struct PlanMeetingView: View {
                 return false
             }
         }
-        print("DEBUG: Fetched \(fetchedQuestions.count) questions for category '\(category)'")
+        // print("DEBUG: Fetched \(fetchedQuestions.count) questions for category '\(category)'")
         return fetchedQuestions
     }
 
@@ -181,7 +181,7 @@ struct PlanMeetingView: View {
  
         // Check if the question is already associated with the meeting
         if meeting.questions?.contains(where: { ($0 as? MeetingQuestionEntity)?.questionID == question.id }) == true {
-            print("Question already exists for this meeting.")
+            // print("Question already exists for this meeting.")
             return
         }
  
@@ -197,9 +197,9 @@ struct PlanMeetingView: View {
         // Save the context
         do {
             try context.save()
-            print("Question successfully saved to the meeting.")
+            // print("Question successfully saved to the meeting.")
         } catch {
-            print("Failed to save question: \(error.localizedDescription)")
+            // print("Failed to save question: \(error.localizedDescription)")
         }
     }
 
@@ -569,14 +569,14 @@ struct PlanMeetingView: View {
         
         do {
             try viewContext.save()
-            print("Meeting successfully saved!")
+            // print("Meeting successfully saved!")
             
             // Clear the newMeeting state after saving to prevent future updates from modifying this record.
             newMeeting = nil
             
             presentationMode.wrappedValue.dismiss()
         } catch {
-            print("Failed to save meeting: \(error.localizedDescription)")
+            // print("Failed to save meeting: \(error.localizedDescription)")
         }
     }
     

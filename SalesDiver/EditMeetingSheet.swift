@@ -164,7 +164,7 @@ class EditMeetingViewModel: ObservableObject {
         do {
             try context.save()
         } catch {
-            print("Error saving meeting changes: \(error.localizedDescription)")
+            // print("Error saving meeting changes: \(error.localizedDescription)")
         }
     }
 

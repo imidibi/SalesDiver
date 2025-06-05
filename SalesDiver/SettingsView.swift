@@ -83,10 +83,9 @@ struct ProductSelection: Hashable {
     }
 
     private func fetchAllOpportunitiesForSelectedCompany() {
-        print("📡 Triggering Opportunities API Call...")  // Confirm function is called
 
         guard let companyID = selectedCompanyID else {
-            print("❌ No company selected.")
+            // No company selected.
             return
         }
 
@@ -109,7 +108,7 @@ struct ProductSelection: Hashable {
             DispatchQueue.main.async {
                 searchResults = results.map { ($0.0, $0.1, "") }
                 opportunityImportCache = results.map { ($0.0, $0.1, $0.2, $0.3, $0.4, $0.5, $0.6) }
-                print("✅ Opportunities Fetched: \(searchResults.count)")
+                // Opportunities fetched.
             }
         }
     }
@@ -139,7 +138,7 @@ struct ProductSelection: Hashable {
 
     private func importSelectedOpportunities() {
         guard let companyID = selectedCompanyID else {
-            print("❌ No company selected.")
+            // No company selected.
             return
         }
 
@@ -167,7 +166,7 @@ struct ProductSelection: Hashable {
             CoreDataManager.shared.saveContext()
 
             DispatchQueue.main.async {
-                print("✅ Imported \(selectedOpportunities.count) opportunities for company \(companyName)")
+                // Imported opportunities for company.
                 autotaskResult = "✅ Imported \(selectedOpportunities.count) opportunities successfully for company \(companyName)."
                 resetImportState()
             }
@@ -630,7 +629,7 @@ struct ProductSelection: Hashable {
             ]
         ]
         
-        print("API Request Payload: \(requestBody)")
+        // API Request Payload: \(requestBody)
         
         do {
             let jsonData = try JSONSerialization.data(withJSONObject: requestBody, options: [])
@@ -641,8 +640,7 @@ struct ProductSelection: Hashable {
             return
         }
         
-        print("Sending API Request for Companies: \(selectedCompanies)")
-        print("Formatted API Request Body: \(requestBody)")
+        // Sending API Request for Companies and formatted API Request Body.
         
         let session = URLSession.shared
         session.dataTask(with: request) { data, response, error in
@@ -651,9 +649,7 @@ struct ProductSelection: Hashable {
                 if let error = error {
                     autotaskResult = "Sync Failed: \(error.localizedDescription)"
                 } else if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200, let data = data {
-                    if let dataString = String(data: data, encoding: .utf8) {
-                        print("Full API Response: \(dataString)")
-                    }
+                    // Optionally inspect full API response here.
                     processFetchedCompanies(data)
                 } else {
                     autotaskResult = "Failed to authenticate (Unknown status)"
@@ -666,10 +662,10 @@ struct ProductSelection: Hashable {
         do {
             let jsonResponse = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any]
             
-            print("Selected Companies for Sync: \(selectedCompanies)")
+            // Selected Companies for Sync.
 
             if let companies = jsonResponse?["items"] as? [[String: Any]] {
-                print("Fetched Companies from API: \(companies.compactMap { $0["companyName"] as? String })")
+                // Fetched Companies from API.
                 
                 var companiesToSync: [(name: String, address1: String?, address2: String?, city: String?, state: String?, zipCode: String?, webAddress: String?, companyType: Int?)] = []
                 
@@ -692,9 +688,7 @@ struct ProductSelection: Hashable {
                 }
                 
                 if !companiesToSync.isEmpty {
-                    // Updated to pass tuple with zipCode, webAddress, companyType to the Core Data manager method
                     CoreDataManager.shared.syncCompaniesFromAutotask(companies: companiesToSync)
-                    // Manual refresh to update in-memory view model with newly saved companies
                     companyViewModel.fetchCompanies()
                     autotaskResult = "Synced \(companiesToSync.count) companies successfully."
                     resetImportState()
@@ -718,7 +712,7 @@ struct ProductSelection: Hashable {
         AutotaskAPIManager.shared.getAllCompanies { results in
             DispatchQueue.main.async {
                 searchResults = results.map { ($0.0, $0.1, "") }
-                print("Imported all companies: \(results)")
+                // Imported all companies.
             }
         }
     } else {
@@ -743,13 +737,13 @@ struct ProductSelection: Hashable {
 
 private func searchContactsForCompany() {
     guard let companyID = selectedCompanyID else {
-        print("❌ No company selected.")
+        // No company selected.
         return
     }
 
     let trimmedContactName = contactName.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !trimmedContactName.isEmpty else {
-        print("❌ Contact name is empty.")
+        // Contact name is empty.
         return
     }
 
@@ -792,17 +786,14 @@ private func searchContactsForCompany() {
         "Filter": [filterGroup]
     ]
 
-    print("🔍 Searching contact with CompanyID: \(companyID), FirstName: \(firstName), LastName: \(lastName)")
-    print("📤 Contact Query Request Body: \(requestBody)")
+    // Searching contact with CompanyID, FirstName, LastName.
+    // Contact Query Request Body.
     AutotaskAPIManager.shared.searchContactsFromBody(requestBody) { results in
         DispatchQueue.main.async {
             if results.isEmpty {
-                print("⚠️ No contacts found for company ID: \(companyID), name: \(firstName) \(lastName)")
+                // No contacts found for company ID and name.
             } else {
-                print("✅ Found \(results.count) matching contacts:")
-                for contact in results {
-                    print("➡️ ID: \(contact.0), Name: \(contact.1) \(contact.2)")
-                }
+                // Found matching contacts.
                 searchResults = results
             }
             showContactSearch = true
@@ -916,7 +907,7 @@ private func importSelectedContacts() {
                 if let details = contactDetails.first {
                     fetchedContacts.append(details)
                 } else {
-                    print("❌ No contact details found for \(contact.firstName) \(contact.lastName).")
+                    // No contact details found for contact.
                 }
             }
         }
@@ -939,7 +930,7 @@ private func importSelectedContacts() {
             }
             
         CoreDataManager.shared.saveContext()
-        print("✅ Imported \(fetchedContacts.count) contacts successfully.")
+        // Imported contacts successfully.
         selectedContacts.removeAll()
         // Show user confirmation and hide sync button
         autotaskResult = "✅ Imported \(fetchedContacts.count) contacts successfully for company \(companyName)."
@@ -958,7 +949,7 @@ private func importSelectedContacts() {
     }
     
     private func handleTap(for result: (Int, String, String)) {
-        print("handleTap(for:) invoked with result: \(result)")
+        // handleTap(for:) invoked with result.
         let tappedID = result.0
         let name1 = result.1
 
@@ -972,7 +963,7 @@ private func importSelectedContacts() {
                 selectedCompanies.insert(company)
             }
             selectedCompanyID = tappedID
-            print("Attempting to fetch contacts. Current selectedCompanyID: \(selectedCompanyID ?? -1)")
+            // Attempting to fetch contacts. Current selectedCompanyID.
 
         case "Contact":
             selectedCompanyID = tappedID
@@ -1114,13 +1105,13 @@ private func importSelectedContacts() {
     }
 
     private func fetchAllContactsForSelectedCompany() {
-        print("Attempting to fetch contacts. Current selectedCompanyID: \(selectedCompanyID ?? -1)")
+        // Attempting to fetch contacts. Current selectedCompanyID.
         guard let companyID = selectedCompanyID else {
-            print("❌ No company selected.")
+        // No company selected.
             return
         }
         
-        print("Fetching contacts for companyID: \(companyID)")
+        // Fetching contacts for companyID.
 
         let requestBody: [String: Any] = [
             "MaxRecords": 100,
@@ -1135,14 +1126,14 @@ private func importSelectedContacts() {
             ]
         ]
         
-        print("Contact Query Request Body: \(requestBody)")
+        // Contact Query Request Body.
 
         AutotaskAPIManager.shared.searchContactsFromBody(requestBody) { results in
             DispatchQueue.main.async {
                 if results.isEmpty {
-                    print("⚠️ No contacts found for companyID: \(companyID)")
+                    // No contacts found for companyID.
                 } else {
-                    print("✅ Fetched \(results.count) contacts for companyID: \(companyID)")
+                    // Fetched contacts for companyID.
                 }
                 searchResults = results.map { ($0.0, $0.1, $0.2) }
             }
@@ -1192,7 +1183,7 @@ private func importSelectedContacts() {
             ]
         }
 
-        print("🔍 Product search filter: \(filterGroup)")
+        // Product search filter.
 
         let requestBody: [String: Any] = [
             "MaxRecords": 100,
@@ -1205,20 +1196,6 @@ private func importSelectedContacts() {
 
         let completionBlock: ([(Int, String, String, Double, Double, String, String, Date?)]) -> Void = { results in
             DispatchQueue.main.async {
-                // Debug: Print all product fields for each result
-//                for result in results {
-//                    print("""
-//                    📝 SearchProductsByName Debug:
-//                    ID: \(result.0)
-//                    Name: \(result.1)
-//                    Description: \(result.2)
-//                    Unit Cost: \(result.3)
-//                    Unit Price: \(result.4)
-//                    Invoice Description: \(result.5)
-//                    Catalog/Part Number: \(result.6)
-//                    Last Modified Date: \(String(describing: result.7))
-//                    """)
-//                }
                 // Use $0.2 for description so both product name and description are available/displayed.
                 productSearchResults = results.map { ($0.0, $0.1, $0.2) }
                 productImportCache = results.map { tuple in
@@ -1321,7 +1298,7 @@ private func importSelectedContacts() {
                     } else {
                         // Create new product
                         guard !cached.1.isEmpty else {
-                            print("⚠️ Skipping product with missing name.")
+                            // Skipping product with missing name.
                             DispatchQueue.main.async {
                                 semaphore.signal()
                                 group.leave()
@@ -1340,7 +1317,7 @@ private func importSelectedContacts() {
                         newProduct.lastModified = cached.6
                     }
                 } else {
-                    print("⚠️ Skipping product with missing or unmatched cache entry.")
+                    // Skipping product with missing or unmatched cache entry.
                     DispatchQueue.main.async {
                         semaphore.signal()
                         group.leave()
@@ -1379,23 +1356,9 @@ private func importSelectedContacts() {
         let completionBlock: ([(Int, String, String, Double, Double, String, String, Date?)]) -> Void = { results in
             DispatchQueue.main.async {
                 if results.isEmpty {
-                    print("⚠️ No products/services found.")
+                    // No products/services found.
                 } else {
-                    print("✅ Retrieved \(results.count) products/services.")
-                    // Debug: Print all product fields for each result
-//                    for product in results {
-//                        print("""
-//                        📝 Product Debug Info:
-//                        ID: \(product.0)
-//                        Name: \(product.1)
-//                        Description: \(product.2)
-//                        Unit Cost: \(product.3)
-//                        Unit Price: \(product.4)
-//                        Invoice Description: \(product.5)
-//                        Catalog Number / Part Number: \(product.6)
-//                        Last Modified Date: \(String(describing: product.7))
-//                        """)
-//                    }
+                    // Retrieved products/services.
                 }
                 productSearchResults = results.map { ($0.0, $0.1, $0.2) }
                 productImportCache = results.map { tuple in

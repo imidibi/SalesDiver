@@ -156,7 +156,7 @@ struct QuestionsView: View {
         do {
             try CoreDataManager.shared.context.save()
         } catch {
-            print("Failed to save Core Data: \(error.localizedDescription)")
+            // print("Failed to save Core Data: \(error.localizedDescription)")
         }
         resetForm()
         loadQuestions()
@@ -197,7 +197,7 @@ struct QuestionsView: View {
         do {
             try CoreDataManager.shared.context.save()
         } catch {
-            print("Failed to save Core Data: \(error.localizedDescription)")
+            // print("Failed to save Core Data: \(error.localizedDescription)")
         }
         loadQuestions()
     }
@@ -329,7 +329,7 @@ struct QuestionsView: View {
         do {
             try CoreDataManager.shared.context.save()
         } catch {
-            print("Failed to save default questions: \(error.localizedDescription)")
+            // print("Failed to save default questions: \(error.localizedDescription)")
         }
     }
 }

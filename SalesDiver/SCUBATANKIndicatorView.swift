@@ -25,31 +25,31 @@ struct SCUBATANKIndicatorView: View {
 
     var body: some View {
         let solutionStatus = opportunity.solutionStatus
-        print("Rendering Solution - Status: \(solutionStatus)")
+        // print("Rendering Solution - Status: \(solutionStatus)")
 
         let competitionStatus = opportunity.competitionStatus
-        print("Rendering Competition - Status: \(competitionStatus)")
+        // print("Rendering Competition - Status: \(competitionStatus)")
 
         let uniquesStatus = opportunity.uniquesStatus
-        print("Rendering Uniques - Status: \(uniquesStatus)")
+        // print("Rendering Uniques - Status: \(uniquesStatus)")
 
         let benefitsStatus = opportunity.benefitsStatus
-        print("Rendering Benefits - Status: \(benefitsStatus)")
+        // print("Rendering Benefits - Status: \(benefitsStatus)")
 
         let authorityStatus = opportunity.authorityStatus
-        print("Rendering Authority - Status: \(authorityStatus)")
+        // print("Rendering Authority - Status: \(authorityStatus)")
 
         let timescaleStatus = opportunity.timingStatus
-        print("Rendering Timescale - Status: \(timescaleStatus)")
+        // print("Rendering Timescale - Status: \(timescaleStatus)")
 
         let actionPlanStatus = opportunity.actionPlanStatus
-        print("Rendering Action Plan - Status: \(actionPlanStatus)")
+        // print("Rendering Action Plan - Status: \(actionPlanStatus)")
 
         let needStatus = opportunity.needStatus
-        print("Rendering Need - Status: \(needStatus)")
+        // print("Rendering Need - Status: \(needStatus)")
 
         let kashStatus = opportunity.budgetStatus
-        print("Rendering Kash - Status: \(kashStatus)")
+        // print("Rendering Kash - Status: \(kashStatus)")
 
         return HStack(spacing: 15) {
             QualificationIcon(iconName: "lightbulb.fill", status: solutionStatus)

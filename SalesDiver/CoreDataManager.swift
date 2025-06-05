@@ -7,10 +7,8 @@ let persistentContainer: NSPersistentContainer
 
 private init() {
     persistentContainer = NSPersistentContainer(name: "CompanyDataModel")
-    persistentContainer.loadPersistentStores { (_, error) in
-        if let error = error as NSError? {
-            print("❌ Failed to load Core Data: \(error), \(error.userInfo)")
-        }
+    persistentContainer.loadPersistentStores { (_, _) in
+        // Persistent store loaded. Add error handling if needed.
     }
     fetchEntityDescriptions()
 }
@@ -25,7 +23,7 @@ func saveContext() {
         do {
             try context.save()
         } catch {
-            print("Unresolved error \(error)")
+            // print("Unresolved error \(error)")
         }
     }
 }
@@ -73,7 +71,7 @@ func syncCompaniesFromAutotask(companies: [(name: String, address1: String?, add
             companyEntity.companyType = Int16(company.companyType ?? 0)
 
         } catch {
-            print("Error fetching company: \(error)")
+            // print("Error fetching company: \(error)")
         }
     }
 
@@ -87,7 +85,7 @@ func fetchCompanies() -> [CompanyEntity] {
     do {
         return try context.fetch(request)
     } catch {
-        print("Failed to fetch companies: \(error)")
+        // print("Failed to fetch companies: \(error)")
         return []
     }
 }
@@ -96,7 +94,7 @@ func fetchSecurityAssessments(for company: CompanyEntity) -> [SecAssessEntity] {
     let request: NSFetchRequest<SecAssessEntity> = SecAssessEntity.fetchRequest()
 
     guard let companyName = company.name, !companyName.isEmpty else {
-        print("❌ Error: Company Name is nil or invalid")
+        // print("❌ Error: Company Name is nil or invalid")
         return []
     }
     
@@ -107,7 +105,7 @@ func fetchSecurityAssessments(for company: CompanyEntity) -> [SecAssessEntity] {
         let assessments = try context.fetch(request)
         return assessments
     } catch {
-        print("❌ Fetch Error: \(error.localizedDescription)")
+        // print("❌ Fetch Error: \(error.localizedDescription)")
         return []
     }
 }
@@ -139,7 +137,7 @@ func saveSecurityAssessment(for company: CompanyEntity, assessmentData: [Securit
     do {
         try context.save()
     } catch {
-        print("❌ Failed to save security assessment: \(error.localizedDescription)")
+        // print("❌ Failed to save security assessment: \(error.localizedDescription)")
     }
 }
 
@@ -147,9 +145,9 @@ func deleteSecurityAssessment(_ assessment: SecAssessEntity) {
     context.delete(assessment)
     do {
         try context.save()
-        print("Security assessment deleted successfully.")
+        // print("Security assessment deleted successfully.")
     } catch {
-        print("Failed to delete security assessment: \(error)")
+        // print("Failed to delete security assessment: \(error)")
     }
 }
 
@@ -160,7 +158,7 @@ func fetchCompanyByName(name: String) -> CompanyEntity? {
     do {
         return try context.fetch(request).first
     } catch {
-        print("Failed to fetch company: \(error)")
+        // print("Failed to fetch company: \(error)")
         return nil
     }
 }
@@ -171,7 +169,7 @@ func debugFetchAllAssessments() {
     do {
         _ = try context.fetch(request)
     } catch {
-        print("❌ Fetch All Assessments Error: \(error.localizedDescription)")
+        // print("❌ Fetch All Assessments Error: \(error.localizedDescription)")
     }
 }
 
@@ -195,7 +193,7 @@ func importContacts(contacts: [String], company: CompanyEntity) {
                 newContact.company = company  // Link the contact to the existing company
             }
         } catch {
-            print("Error fetching contact: \(error)")
+            // print("Error fetching contact: \(error)")
         }
     }
     saveContext()
@@ -243,7 +241,7 @@ func fetchEntityDescriptions() {
             // print("✅ Loaded entity.")
         }
     } else {
-        print("❌ No entities found in the Core Data model.")
+        // print("❌ No entities found in the Core Data model.")
     }
 }
 
@@ -254,7 +252,7 @@ func fetchOpportunities(for company: CompanyEntity) -> [OpportunityEntity] {
     do {
         return try context.fetch(request)
     } catch {
-        print("❌ Error fetching opportunities: \(error)")
+        // print("❌ Error fetching opportunities: \(error)")
         return []
     }
 }
@@ -266,7 +264,7 @@ func fetchContacts(for company: CompanyEntity) -> [ContactsEntity] {
     do {
         return try context.fetch(request)
     } catch {
-        print("❌ Error fetching contacts: \(error)")
+        // print("❌ Error fetching contacts: \(error)")
         return []
     }
 }
@@ -278,7 +276,7 @@ func fetchMeetings(for company: CompanyEntity) -> [MeetingsEntity] {
     do {
         return try context.fetch(request)
     } catch {
-        print("❌ Error fetching meetings: \(error)")
+        // print("❌ Error fetching meetings: \(error)")
         return []
     }
 }
@@ -289,21 +287,21 @@ func deleteCompany(company: CompanyEntity) {
     let contacts = fetchContacts(for: company)
 
     if !opportunities.isEmpty || !meetings.isEmpty || !contacts.isEmpty {
-        print("❌ Linked data - cannot delete company")
+        // print("❌ Linked data - cannot delete company")
         return
     }
     
     context.delete(company)
     saveContext()
-    print("✅ Company deleted successfully.")
+    // print("✅ Company deleted successfully.")
 }
 
 func saveMeeting(meeting: MeetingsEntity) {
     do {
         try context.save()
-        print("✅ Meeting successfully saved!")
+        // print("✅ Meeting successfully saved!")
     } catch {
-        print("❌ Failed to save meeting: \(error)")
+        // print("❌ Failed to save meeting: \(error)")
     }
 }
 
@@ -320,7 +318,7 @@ func saveAssessmentFields(for company: String, category: String, fields: [(Strin
         assessment.id = UUID()
         assessment.date = Date()
         guard let companyEntity = fetchCompanyByName(name: normalizedCompanyName) else {
-            print("❌ Could not find company entity for: \(normalizedCompanyName)")
+            // print("❌ Could not find company entity for: \(normalizedCompanyName)")
             return
         }
         assessment.company = companyEntity

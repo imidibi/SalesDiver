@@ -28,12 +28,12 @@ class SpeechManager: NSObject, ObservableObject {
         SFSpeechRecognizer.requestAuthorization { authStatus in
             switch authStatus {
             case .authorized:
-                print("Speech recognition authorized.")
+                // print("Speech recognition authorized.")
                 DispatchQueue.main.async {
                     self.isTranscribingAvailable = true
                 }
             default:
-                print("Speech recognition not authorized.")
+                // print("Speech recognition not authorized.")
                 DispatchQueue.main.async {
                     self.isTranscribingAvailable = false
                 }
