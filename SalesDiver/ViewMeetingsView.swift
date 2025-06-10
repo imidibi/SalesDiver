@@ -81,7 +81,8 @@ struct ViewMeetingsView: View {
                         Button(action: {
                             navigateToAddMeeting = true
                         }) {
-                            Image(systemName: "plus")
+                            Image(systemName: "plus.circle.fill")
+                                .font(.title)
                         }
                     }
                     ToolbarItem(placement: .navigationBarLeading) {

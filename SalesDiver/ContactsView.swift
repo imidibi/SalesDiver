@@ -104,7 +104,8 @@ struct ContactsView: View {
             .navigationBarItems(trailing: Button(action: {
                 showingAddContact = true
             }) {
-                Image(systemName: "plus")
+                Image(systemName: "plus.circle.fill")
+                    .font(.title)
             })
             .sheet(isPresented: $showingAddContact) {
                 AddContactView()

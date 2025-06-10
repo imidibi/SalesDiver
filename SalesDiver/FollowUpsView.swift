@@ -184,7 +184,8 @@ struct FollowUpsView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(action: { showingNewFollowUp.toggle() }) {
-                    Image(systemName: "plus")
+                    Image(systemName: "plus.circle.fill")
+                        .font(.title)
                 }
             }
         }

@@ -167,12 +167,14 @@ struct OpportunityDataView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { isPresentingHelp = true }) {
                         Image(systemName: "questionmark.circle")
+                            .font(.title)
                     }
                 }
 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { isPresentingAddOpportunity = true }) {
-                        Image(systemName: "plus")
+                        Image(systemName: "plus.circle.fill")
+                            .font(.title)
                     }
                 }
             }
