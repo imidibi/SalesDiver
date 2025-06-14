@@ -85,36 +85,49 @@ struct ViewMeetingsView: View {
                                 .font(.title)
                         }
                     }
-                    ToolbarItem(placement: .navigationBarLeading) {
-                        EditButton()
-                    }
                 }
                 .navigationDestination(isPresented: $navigateToAddMeeting) {
                     PlanMeetingView().environment(\.managedObjectContext, viewContext)
                 }
 
-                if let meetingToStart = selectedMeeting {
-                    NavigationLink(
-                        destination: RecordMeetingView(meeting: meetingToStart)
-                    ) {
-                        Text("Record Meeting")
-                    }
-                } else {
-                    Text("Record Meeting")
-                        .foregroundColor(.gray)
-                }
+                HStack(spacing: 16) {
+                    if let meetingToStart = selectedMeeting {
+                        NavigationLink(destination: RecordMeetingView(meeting: meetingToStart)) {
+                            Text("Record Meeting")
+                                .padding()
+                                .background(Color.gray.opacity(0.2))
+                                .cornerRadius(8)
+                        }
 
-                // Add Review Meeting Summary button
-                if let meetingToReview = selectedMeeting {
-                    NavigationLink(
-                        destination: MeetingSummaryView(meeting: meetingToReview)
-                    ) {
-                        Text("Review Meeting Summary")
+                        NavigationLink(destination: MeetingSummaryView(meeting: meetingToStart)) {
+                            Text("Review Meeting Summary")
+                                .padding()
+                                .background(Color.gray.opacity(0.2))
+                                .cornerRadius(8)
+                        }
+
+                        Button(action: {
+                            if let index = meetings.firstIndex(of: meetingToStart) {
+                                deleteMeeting(at: IndexSet(integer: index))
+                                selectedMeeting = nil
+                            }
+                        }) {
+                            Text("Delete Meeting")
+                                .padding()
+                                .background(Color.gray.opacity(0.2))
+                                .cornerRadius(8)
+                        }
+                    } else {
+                        ForEach(["Record Meeting", "Review Meeting Summary", "Delete Meeting"], id: \.self) { title in
+                            Text(title)
+                                .foregroundColor(.gray)
+                                .padding()
+                                .background(Color.gray.opacity(0.1))
+                                .cornerRadius(8)
+                        }
                     }
-                } else {
-                    Text("Review Meeting Summary")
-                        .foregroundColor(.gray)
                 }
+                .padding(.bottom)
             }
         }
         .navigationViewStyle(.stack)
