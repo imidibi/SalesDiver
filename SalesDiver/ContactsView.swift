@@ -177,6 +177,9 @@ struct AddContactView: View {
     @State private var selectedCompany: CompanyEntity?
     @State private var showingCompanyPicker = false
     
+    @State private var showAlert = false
+    @State private var alertMessage = ""
+    
     @FetchRequest(entity: CompanyEntity.entity(), sortDescriptors: [NSSortDescriptor(keyPath: \CompanyEntity.name, ascending: true)])
     private var companies: FetchedResults<CompanyEntity>
     
@@ -221,8 +224,16 @@ struct AddContactView: View {
             .navigationBarItems(leading: Button("Cancel") {
                 presentationMode.wrappedValue.dismiss()
             }, trailing: Button("Save") {
+                guard selectedCompany != nil else {
+                    alertMessage = "Please select a company before saving the contact."
+                    showAlert = true
+                    return
+                }
                 addContact()
             })
+        }
+        .alert(isPresented: $showAlert) {
+            Alert(title: Text("Missing Company"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
         }
     }
     
