@@ -100,26 +100,29 @@ struct RecordMeetingView: View {
                         }
                         .padding(.top, 4)
 
-                        HStack {
-                            Button(action: {
-                                try? speechManager.startTranscribing()
-                            }) {
-                                Image(systemName: "record.circle.fill")
-                                    .resizable()
-                                    .frame(width: 40, height: 40)
-                                    .foregroundColor(.red)
-                            }
-                            .disabled(!speechManager.isTranscribingAvailable)
+                        if (UIDevice.current.userInterfaceIdiom == .pad || UIDevice.current.userInterfaceIdiom == .phone),
+                           !ProcessInfo.processInfo.isiOSAppOnMac {
+                            HStack {
+                                Button(action: {
+                                    try? speechManager.startTranscribing()
+                                }) {
+                                    Image(systemName: "record.circle.fill")
+                                        .resizable()
+                                        .frame(width: 40, height: 40)
+                                        .foregroundColor(.red)
+                                }
+                                .disabled(!speechManager.isTranscribingAvailable)
 
-                            Button(action: {
-                                speechManager.stopTranscribing()
-                            }) {
-                                Image(systemName: "stop.circle.fill")
-                                    .resizable()
-                                    .frame(width: 40, height: 40)
-                                    .foregroundColor(.gray)
+                                Button(action: {
+                                    speechManager.stopTranscribing()
+                                }) {
+                                    Image(systemName: "stop.circle.fill")
+                                        .resizable()
+                                        .frame(width: 40, height: 40)
+                                        .foregroundColor(.gray)
+                                }
+                                .disabled(!speechManager.isRecording)
                             }
-                            .disabled(!speechManager.isRecording)
                         }
 
                         // Optional Handwriting Area
