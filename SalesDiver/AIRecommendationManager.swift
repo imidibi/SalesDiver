@@ -187,6 +187,67 @@ struct AIRecommendationManager {
             }
         }.resume()
     }
+
+    static func generateCompanyProfile(for company: CompanyWrapper, completion: @escaping (String) -> Void) {
+        var companyInfo = """
+Please analyze the following company using publicly available information and insights from its website (if known). Organize your findings in these sections:
+• Company Summary: What the company does and produces
+• Estimated Revenue
+• Number of Employees
+• Number of Locations
+• Potential Challenges (industry trends, economic conditions, competition, etc.)
+• Business Opportunities (growth, diversification, efficiency)
+• Opportunities for IT to enhance the business
+
+Company Name: \(company.name)
+"""
+
+        let website = company.webAddress
+        if !website.isEmpty {
+            companyInfo += "\nWebsite: \(website)"
+        }
+        let address = company.address
+        if !address.isEmpty {
+            companyInfo += "\nLocation: \(address)"
+        }
+
+        guard let apiKey = UserDefaults.standard.string(forKey: "openAIKey"), !apiKey.isEmpty else {
+            completion("⚠️ OpenAI API key is not set.")
+            return
+        }
+
+        let model = UserDefaults.standard.string(forKey: "openAISelectedModel") ?? "gpt-4"
+
+        let body: [String: Any] = [
+            "model": model,
+            "messages": [
+                ["role": "system", "content": "You are a research assistant helping a Managed Service Provider learn about their client company."],
+                ["role": "user", "content": companyInfo]
+            ],
+            "temperature": 0.7,
+            "max_tokens": 500
+        ]
+
+        var request = URLRequest(url: URL(string: "https://api.openai.com/v1/chat/completions")!)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body, options: [])
+
+        URLSession.shared.dataTask(with: request) { data, _, error in
+            DispatchQueue.main.async {
+                if let data = data,
+                   let result = try? JSONDecoder().decode(OpenAIResponse.self, from: data),
+                   let message = result.choices.first?.message.content {
+                    completion(message.trimmingCharacters(in: .whitespacesAndNewlines))
+                } else if let error = error {
+                    completion("❌ Request failed: \(error.localizedDescription)")
+                } else {
+                    completion("⚠️ Failed to retrieve company profile from OpenAI.")
+                }
+            }
+        }.resume()
+    }
 }
 
 struct OpenAIResponse: Codable {

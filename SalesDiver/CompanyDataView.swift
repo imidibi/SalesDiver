@@ -5,9 +5,17 @@
 //  Created by Ian Miller on 2/15/25.
 //
 
+
 import SwiftUI
 import CoreData
 import MapKit
+
+// Codable wrapper for AI profile cache
+struct CodableAIProfileCacheItem: Codable {
+    let text: String
+    let date: Date
+}
+
 
 struct CompanyDataView: View {
     @ObservedObject var viewModel: CompanyViewModel
@@ -15,22 +23,16 @@ struct CompanyDataView: View {
     @State private var selectedCompany: CompanyWrapper?
     @State private var searchText: String = ""  // ✅ Search state
     @State private var showAlert = false // Add state to trigger the alert
+    @State private var isShowingAIProfile = false
+    @State private var aiProfileText: String = ""
+    @AppStorage("aiProfileCache") private var aiProfileCacheData: Data = Data()
+    @State private var aiProfileCache: [String: (text: String, date: Date)] = [:]
 
     // 🔍 Filtered Companies
     var filteredCompanies: [CompanyWrapper] {
-        if searchText.isEmpty {
-            return viewModel.companies
-        } else {
-            let searchQuery = searchText.lowercased()
-            var filtered: [CompanyWrapper] = []
-            
-            for company in viewModel.companies {
-                if company.name.lowercased().contains(searchQuery) {
-                    filtered.append(company)
-                }
-            }
-            
-            return filtered
+        let query = searchText.lowercased()
+        return viewModel.companies.filter { company in
+            query.isEmpty || company.name.lowercased().contains(query)
         }
     }
 
@@ -113,6 +115,15 @@ struct CompanyDataView: View {
                                 }
                                 .buttonStyle(PlainButtonStyle())
                             }
+                            
+                            // 🧠 AI Company Profile Button
+                            Button(action: {
+                                fetchAIProfile(for: company)
+                            }) {
+                                Image(systemName: "person.crop.rectangle")
+                                    .foregroundColor(.purple)
+                            }
+                            .buttonStyle(PlainButtonStyle())
                         }
                         .contextMenu {
                             Button(role: .destructive) {
@@ -156,6 +167,51 @@ struct CompanyDataView: View {
                     showAlert = true
                 }
             }
+            .sheet(isPresented: $isShowingAIProfile) {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("AI Company Profile")
+                            .font(.title)
+                            .bold()
+                        if let cached = aiProfileCache.first(where: { $0.value.text == aiProfileText }) {
+                            Button("Update Profile") {
+                                if let company = filteredCompanies.first(where: { $0.name == cached.key }) {
+                                    aiProfileText = "Loading..."
+                                    AIRecommendationManager.generateCompanyProfile(for: company) { result in
+                                        Task {
+                                            await MainActor.run {
+                                                aiProfileCache[company.name] = (result, Date())
+                                                let codableCache = aiProfileCache.mapValues { CodableAIProfileCacheItem(text: $0.text, date: $0.date) }
+                                                if let encoded = try? JSONEncoder().encode(codableCache) {
+                                                    aiProfileCacheData = encoded
+                                                }
+                                                aiProfileText = result
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            .padding()
+
+                            let date = cached.value.date
+                            Text("Last updated: \(date.formatted(date: .abbreviated, time: .shortened))")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                                .padding(.bottom, 4)
+                        }
+                        Text(aiProfileText)
+                            .font(.body)
+                            .padding()
+                        Spacer()
+                    }
+                    .padding()
+                }
+            }
+            .onAppear {
+                if let decoded = try? JSONDecoder().decode([String: CodableAIProfileCacheItem].self, from: aiProfileCacheData) {
+                    aiProfileCache = decoded.mapValues { ($0.text, $0.date) }
+                }
+            }
         }
     }
 
@@ -189,6 +245,31 @@ struct CompanyDataView: View {
         
         if let url = URL(string: "http://maps.apple.com/?q=\(addressString)") {
             UIApplication.shared.open(url)
+        }
+    }
+    
+    private func fetchAIProfile(for company: CompanyWrapper) {
+        let cacheKey = company.name
+        if let cached = aiProfileCache[cacheKey] {
+            aiProfileText = cached.text
+            isShowingAIProfile = true
+            return
+        }
+
+        aiProfileText = "Loading..."
+        isShowingAIProfile = true
+
+        AIRecommendationManager.generateCompanyProfile(for: company) { result in
+            Task {
+                await MainActor.run {
+                    aiProfileCache[cacheKey] = (result, Date())
+                    let codableCache = aiProfileCache.mapValues { CodableAIProfileCacheItem(text: $0.text, date: $0.date) }
+                    if let encoded = try? JSONEncoder().encode(codableCache) {
+                        aiProfileCacheData = encoded
+                    }
+                    aiProfileText = result
+                }
+            }
         }
     }
 }
