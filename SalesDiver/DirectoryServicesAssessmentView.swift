@@ -15,6 +15,7 @@ struct DirectoryServicesAssessmentView: View {
     let companyName: String
     @State private var assessment = DirectoryServicesAssessment()
     @EnvironmentObject var coreDataManager: CoreDataManager
+    @State private var isSaving = false
     
     let authenticationOptions = ["Active Directory", "Entra ID", "JumpCloud", "Other"]
     
@@ -64,6 +65,11 @@ struct DirectoryServicesAssessmentView: View {
             
             Section {
                 Button("Save") {
+                    isSaving = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        isSaving = false
+                    }
+
                     coreDataManager.saveAssessmentFields(
                         for: companyName,
                         category: "Directory Services",
@@ -81,9 +87,11 @@ struct DirectoryServicesAssessmentView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding()
-                .background(Color.blue)
+                .background(isSaving ? Color.gray : Color.blue)
                 .foregroundColor(.white)
                 .cornerRadius(10)
+                .scaleEffect(isSaving ? 0.97 : 1.0)
+                .animation(.easeInOut(duration: 0.2), value: isSaving)
             }
         }
         .onAppear {

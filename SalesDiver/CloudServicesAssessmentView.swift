@@ -25,6 +25,7 @@ struct CloudServicesAssessmentView: View {
     @State private var otherDetails = ""
     @State private var usesCloudManagementTool = false
     @State private var cloudManagementToolName = ""
+    @State private var isSaving = false
 
     let cloudProviders = ["Azure", "AWS", "Google Cloud", "Other"]
 
@@ -91,9 +92,11 @@ struct CloudServicesAssessmentView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding()
-                .background(Color.blue)
+                .background(isSaving ? Color.gray : Color.blue)
                 .foregroundColor(.white)
                 .cornerRadius(10)
+                .scaleEffect(isSaving ? 0.97 : 1.0)
+                .animation(.easeInOut(duration: 0.2), value: isSaving)
             }
         }
         .navigationTitle("Cloud Services Assessment")
@@ -103,6 +106,10 @@ struct CloudServicesAssessmentView: View {
     }
 
     func saveCloudServicesAssessment() {
+        isSaving = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            isSaving = false
+        }
         let fields: [(String, String?, Bool?)] = [
             ("emailAndFileSharingCloud", nil, emailAndFileSharingCloud),
             ("cloudServiceUsed", cloudServiceUsed, nil),

@@ -22,6 +22,7 @@ struct InfrastructureAssessmentView: View {
     @State private var protectsAssets = false
     @State private var hadBreakIn = false
     @State private var breakInDetails = ""
+    @State private var isSaving = false
     
     var body: some View {
         Form {
@@ -101,15 +102,21 @@ struct InfrastructureAssessmentView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding()
-                .background(Color.blue)
+                .background(isSaving ? Color.gray : Color.blue)
                 .foregroundColor(.white)
                 .cornerRadius(10)
+                .scaleEffect(isSaving ? 0.97 : 1.0)
+                .animation(.easeInOut(duration: 0.2), value: isSaving)
             }
         }
         
 
     }
     func saveInfrastructureAssessment() {
+        isSaving = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            isSaving = false
+        }
         let fields: [(String, String?, Bool?)] = [
             ("numberOfOffices", numberOfOffices, nil),
             ("hasFirewall", nil, hasFirewall),
