@@ -201,33 +201,62 @@ func importContacts(contacts: [String], company: CompanyEntity) {
 
     func fetchOrCreateCompany(companyID: Int, companyName: String, completion: @escaping (CompanyEntity) -> Void) {
         let context = persistentContainer.viewContext
-        let fetchRequest: NSFetchRequest<CompanyEntity> = CompanyEntity.fetchRequest()
-        fetchRequest.predicate = NSPredicate(format: "autotaskID == %d", companyID)
-
-        if let existing = try? context.fetch(fetchRequest).first {
-            completion(existing)
-        } else {
-            // Not found, fetch from Autotask
-            AutotaskAPIManager.shared.fetchFullCompanyDetails(companyID: companyID) { results in
-                DispatchQueue.main.async {
-                    let newCompany = CompanyEntity(context: context)
-                    newCompany.autotaskID = Int64(companyID)
-                    newCompany.name = companyName
-
-                    if let fullCompany = results.first {
-                        // fullCompany = (id, address1, address2, city, state, zip, web, companyType)
-                        newCompany.address = fullCompany.1
-                        newCompany.address2 = fullCompany.2
-                        newCompany.city = fullCompany.3
-                        newCompany.state = fullCompany.4
-                        newCompany.zipCode = fullCompany.5
-                        newCompany.webAddress = fullCompany.6
-                        newCompany.companyType = Int16(fullCompany.7 ?? 0)
+        let normalizedName = companyName.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        let nameRequest: NSFetchRequest<CompanyEntity> = CompanyEntity.fetchRequest()
+        nameRequest.predicate = NSPredicate(format: "name ==[c] %@", normalizedName)
+        if let byName = try? context.fetch(nameRequest).first {
+            if byName.autotaskID == 0 {
+                byName.autotaskID = Int64(companyID)
+            }
+            self.saveContext()
+            completion(byName)
+            return
+        }
+        
+        let idRequest: NSFetchRequest<CompanyEntity> = CompanyEntity.fetchRequest()
+        idRequest.predicate = NSPredicate(format: "autotaskID == %d", companyID)
+        if let byID = try? context.fetch(idRequest).first {
+            if (byID.name ?? "").isEmpty {
+                byID.name = normalizedName
+                self.saveContext()
+            }
+            completion(byID)
+            return
+        }
+        
+        // Not found by name or ID, fetch from Autotask
+        AutotaskAPIManager.shared.fetchFullCompanyDetails(companyID: companyID) { results in
+            DispatchQueue.main.async {
+                // Recheck by name to avoid duplication in race condition
+                let recheckRequest: NSFetchRequest<CompanyEntity> = CompanyEntity.fetchRequest()
+                recheckRequest.predicate = NSPredicate(format: "name ==[c] %@", normalizedName)
+                if let existing = try? context.fetch(recheckRequest).first {
+                    if existing.autotaskID == 0 {
+                        existing.autotaskID = Int64(companyID)
+                        self.saveContext()
                     }
-
-                    self.saveContext()
-                    completion(newCompany)
+                    completion(existing)
+                    return
                 }
+                
+                let newCompany = CompanyEntity(context: context)
+                newCompany.autotaskID = Int64(companyID)
+                newCompany.name = normalizedName
+
+                if let fullCompany = results.first {
+                    // fullCompany = (id, address1, address2, city, state, zip, web, companyType)
+                    newCompany.address = fullCompany.1
+                    newCompany.address2 = fullCompany.2
+                    newCompany.city = fullCompany.3
+                    newCompany.state = fullCompany.4
+                    newCompany.zipCode = fullCompany.5
+                    newCompany.webAddress = fullCompany.6
+                    newCompany.companyType = Int16(fullCompany.7 ?? 0)
+                }
+
+                self.saveContext()
+                completion(newCompany)
             }
         }
     }
