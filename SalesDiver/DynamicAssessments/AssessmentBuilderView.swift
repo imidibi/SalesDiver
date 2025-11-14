@@ -28,6 +28,9 @@ struct AssessmentBuilderView: View {
     @State private var title: String
     @State private var sections: [AssessmentSectionDefinition]
     @State private var saveMessage: String
+    @State private var fieldIconPickerPresented: Bool = false
+    @State private var editingSectionIndex: Int? = nil
+    @State private var editingFieldIndex: Int? = nil
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
@@ -48,10 +51,27 @@ struct AssessmentBuilderView: View {
                                 }
                             }
                             if field.kind == .icon {
-                                TextField("SF Symbol (e.g., desktopcomputer)", text: Binding(
-                                    get: { field.iconSystemName ?? "" },
-                                    set: { field.iconSystemName = $0 }
-                                ))
+                                HStack {
+                                    if let name = field.iconSystemName, !name.isEmpty {
+                                        Image(systemName: name)
+                                            .frame(width: 24, height: 24)
+                                            .padding(.trailing, 4)
+                                    }
+                                    Button(action: {
+                                        // Capture the indices for the current icon field
+                                        if let sIndex = sections.firstIndex(where: { $0.id == section.id }) {
+                                            if let fIndex = sections[sIndex].fields.firstIndex(where: { $0.id == field.id }) {
+                                                editingSectionIndex = sIndex
+                                                editingFieldIndex = fIndex
+                                            }
+                                        }
+                                        fieldIconPickerPresented = true
+                                    }) {
+                                        Text(field.iconSystemName?.isEmpty == false ? field.iconSystemName! : "Choose SF Symbol")
+                                            .foregroundStyle(.blue)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
                             }
                             if field.kind == .multipleChoice {
                                 MultipleChoiceEditor(options: Binding(
@@ -79,6 +99,16 @@ struct AssessmentBuilderView: View {
             }
         }
         .navigationTitle("Assessment Builder")
+        .sheet(isPresented: $fieldIconPickerPresented) {
+            NavigationStack {
+                SymbolPickerView { selected in
+                    if let s = editingSectionIndex, let f = editingFieldIndex, sections.indices.contains(s), sections[s].fields.indices.contains(f) {
+                        sections[s].fields[f].iconSystemName = selected
+                    }
+                    fieldIconPickerPresented = false
+                }
+            }
+        }
     }
     
     private func saveAssessment() {
@@ -125,5 +155,46 @@ private struct MultipleChoiceEditor: View {
                 }
             }
         }
+    }
+}
+
+private struct SymbolPickerView: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var query: String = ""
+    let onPick: (String) -> Void
+
+    // A curated list of common SF Symbols; extend as needed
+    private let symbols: [String] = [
+        "star", "star.fill", "heart", "heart.fill", "bolt", "bolt.fill", "flag", "flag.fill",
+        "person", "person.fill", "person.2", "person.3", "building.2", "house", "house.fill",
+        "desktopcomputer", "laptopcomputer", "iphone", "ipad", "globe", "lock", "lock.fill",
+        "key", "folder", "folder.fill", "doc", "doc.fill", "tray", "tray.fill",
+        "chart.bar", "chart.pie", "chart.line.uptrend.xyaxis", "checkmark.seal", "exclamationmark.triangle",
+        "gear", "gearshape", "wrench", "hammer", "calendar", "clock", "bookmark", "bookmark.fill"
+    ]
+
+    var filtered: [String] {
+        let q = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !q.isEmpty else { return symbols }
+        return symbols.filter { $0.contains(q) }
+    }
+
+    var body: some View {
+        List {
+            ForEach(filtered, id: \.self) { name in
+                Button {
+                    onPick(name)
+                    dismiss()
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: name)
+                            .frame(width: 24)
+                        Text(name)
+                    }
+                }
+            }
+        }
+        .navigationTitle("SF Symbols")
+        .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always))
     }
 }
