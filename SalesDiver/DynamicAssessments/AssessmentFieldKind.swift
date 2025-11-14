@@ -16,8 +16,9 @@ enum AssessmentFieldKind: String, Codable, CaseIterable, Identifiable {
     case icon
     case number
     case text
-    case yesNo
+    case yesno
     case multipleChoice
+    case date
     
     var id: String { rawValue }
 }
@@ -35,7 +36,9 @@ struct AssessmentFieldDefinition: Codable, Identifiable, Hashable {
     var iconSystemName: String? = nil
     var iconFileName: String? = nil
     // Multiple choice options
-    var options: [AssessmentFieldOption]? = nil
+    var options: [AssessmentFieldOption] = []
+    // Date field value (for default/template purposes)
+    var dateValue: Date? = nil
 }
 
 struct AssessmentSectionDefinition: Codable, Identifiable, Hashable {
@@ -93,6 +96,7 @@ struct AssessmentResponseFieldValue: Codable, Hashable {
     var text: String? = nil
     var number: Double? = nil
     var yesNo: Bool? = nil
+    var date: Date? = nil
     var choiceID: UUID? = nil
 }
 
@@ -131,3 +135,4 @@ enum AssessmentResponseStorage {
         return try? JSONDecoder().decode(AssessmentResponse.self, from: data)
     }
 }
+

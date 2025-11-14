@@ -6,6 +6,7 @@ struct DynamicAssessmentView: View {
     @State private var numberValues: [UUID: Double] = [:]
     @State private var yesNoValues: [UUID: Bool] = [:]
     @State private var choiceValues: [UUID: UUID] = [:]
+    @State private var dateValues: [UUID: Date] = [:]
     @State private var saveStatus: String = ""
     
     var body: some View {
@@ -68,7 +69,7 @@ struct DynamicAssessmentView: View {
                 ), format: .number)
                 .keyboardType(.decimalPad)
                 .textFieldStyle(.roundedBorder)
-            case .yesNo:
+            case .yesno:
                 Toggle("", isOn: Binding(
                     get: { yesNoValues[field.id] ?? false },
                     set: { yesNoValues[field.id] = $0 }
@@ -76,15 +77,26 @@ struct DynamicAssessmentView: View {
                 .labelsHidden()
             case .multipleChoice:
                 let opts = field.options ?? []
-                Picker("", selection: Binding(
-                    get: { choiceValues[field.id] ?? opts.first?.id },
-                    set: { choiceValues[field.id] = $0 }
-                )) {
-                    ForEach(opts) { opt in
-                        Text(opt.title).tag(opt.id as UUID?)
+                if opts.isEmpty {
+                    Text("No options configured")
+                        .foregroundStyle(.secondary)
+                } else {
+                    Picker("Select", selection: Binding(
+                        get: { choiceValues[field.id] ?? opts.first?.id },
+                        set: { choiceValues[field.id] = $0 }
+                    )) {
+                        ForEach(opts) { opt in
+                            Text(opt.title).tag(opt.id as UUID?)
+                        }
                     }
+                    .pickerStyle(.menu)
                 }
-                .pickerStyle(.segmented)
+            case .date:
+                DatePicker("", selection: Binding(
+                    get: { dateValues[field.id] ?? field.dateValue ?? Date() },
+                    set: { dateValues[field.id] = $0 }
+                ), displayedComponents: .date)
+                .labelsHidden()
             }
         }
     }
@@ -99,12 +111,14 @@ struct DynamicAssessmentView: View {
                     v.text = textValues[field.id]
                 case .number:
                     v.number = numberValues[field.id]
-                case .yesNo:
+                case .yesno:
                     v.yesNo = yesNoValues[field.id]
                 case .multipleChoice:
                     v.choiceID = choiceValues[field.id]
                 case .icon:
                     break
+                case .date:
+                    v.date = dateValues[field.id]
                 }
                 values[field.id] = v
             }
@@ -131,15 +145,18 @@ struct DynamicAssessmentView: View {
                     textValues[field.id] = v?.text ?? ""
                 case .number:
                     numberValues[field.id] = v?.number ?? 0
-                case .yesNo:
+                case .yesno:
                     yesNoValues[field.id] = v?.yesNo ?? false
                 case .multipleChoice:
                     if let id = v?.choiceID { choiceValues[field.id] = id }
                 case .icon:
                     break
+                case .date:
+                    if let d = v?.date { dateValues[field.id] = d }
                 }
             }
         }
         saveStatus = "Loaded last saved"
     }
 }
+
