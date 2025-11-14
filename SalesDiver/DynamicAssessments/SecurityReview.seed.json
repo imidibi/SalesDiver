@@ -1,0 +1,25 @@
+{
+  "id": "00000000-0000-0000-0000-000000000001",
+  "title": "Security Review",
+  "sections": [
+    {
+      "id": "00000000-0000-0000-0000-000000000101",
+      "title": "Security Assessment",
+      "fields": [
+        {"id":"00000000-0000-0000-0000-000000000201","title":"Security Awareness Training","kind":"yesNo","iconSystemName":"person.crop.circle.badge.questionmark"},
+        {"id":"00000000-0000-0000-0000-000000000202","title":"Dark Web Monitoring","kind":"yesNo","iconSystemName":"eye"},
+        {"id":"00000000-0000-0000-0000-000000000203","title":"Backups Implemented","kind":"yesNo","iconSystemName":"externaldrive"},
+        {"id":"00000000-0000-0000-0000-000000000204","title":"Email Protection","kind":"yesNo","iconSystemName":"envelope.badge.shield.half.filled"},
+        {"id":"00000000-0000-0000-0000-000000000205","title":"Advanced EDR","kind":"yesNo","iconSystemName":"shield.lefthalf.filled"},
+        {"id":"00000000-0000-0000-0000-000000000206","title":"Mobile Device Management","kind":"yesNo","iconSystemName":"iphone"},
+        {"id":"00000000-0000-0000-0000-000000000207","title":"Physical Security","kind":"yesNo","iconSystemName":"lock"},
+        {"id":"00000000-0000-0000-0000-000000000208","title":"Password Policy","kind":"multipleChoice","options":[{"title":"Weak"},{"title":"Moderate"},{"title":"Strong"}]},
+        {"id":"00000000-0000-0000-0000-000000000209","title":"SIEM/SOC","kind":"yesNo","iconSystemName":"antenna.radiowaves.left.and-right"},
+        {"id":"00000000-0000-0000-0000-000000000210","title":"Firewall","kind":"yesNo","iconSystemName":"flame"},
+        {"id":"00000000-0000-0000-0000-000000000211","title":"DNS Protection","kind":"yesNo","iconSystemName":"globe"},
+        {"id":"00000000-0000-0000-0000-000000000212","title":"MFA Enabled","kind":"yesNo","iconSystemName":"key.horizontal"},
+        {"id":"00000000-0000-0000-0000-000000000213","title":"Compliance Notes","kind":"text","iconSystemName":"doc.text"}
+      ]
+    }
+  ]
+}
