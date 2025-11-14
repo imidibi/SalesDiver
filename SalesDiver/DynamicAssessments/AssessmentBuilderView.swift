@@ -9,11 +9,26 @@
 import SwiftUI
 
 struct AssessmentBuilderView: View {
-    @State private var title: String = "New Assessment"
-    @State private var sections: [AssessmentSectionDefinition] = [
-        AssessmentSectionDefinition(title: "Section 1", fields: [])
-    ]
-    @State private var saveMessage: String = ""
+    // If provided, we will load the builder with this saved definition for editing
+    private let existingDefinition: AssessmentDefinition?
+
+    init(existingDefinition: AssessmentDefinition? = nil) {
+        self.existingDefinition = existingDefinition
+        // Initialize backing state from existing definition if present
+        if let def = existingDefinition {
+            _title = State(initialValue: def.title)
+            _sections = State(initialValue: def.sections)
+        } else {
+            _title = State(initialValue: "New Assessment")
+            _sections = State(initialValue: [AssessmentSectionDefinition(title: "Section 1", fields: [])])
+        }
+        _saveMessage = State(initialValue: "")
+    }
+    
+    @State private var title: String
+    @State private var sections: [AssessmentSectionDefinition]
+    @State private var saveMessage: String
+    @Environment(\.dismiss) private var dismiss
     
     var body: some View {
         Form {
@@ -67,10 +82,23 @@ struct AssessmentBuilderView: View {
     }
     
     private func saveAssessment() {
-        let def = AssessmentDefinition(title: title, sections: sections)
+        var def = AssessmentDefinition(title: title, sections: sections)
+        if let existing = existingDefinition {
+            // Preserve ID so the logical assessment stays the same
+            def.id = existing.id
+            // If the title changed, remove the old file that used the previous title-based name
+            let oldTitle = existing.title
+            if oldTitle != title {
+                let oldName = AssessmentStorage.sanitized(oldTitle) + ".json"
+                let oldURL = AssessmentStorage.assessmentsDirectory().appendingPathComponent(oldName)
+                try? FileManager.default.removeItem(at: oldURL)
+            }
+        }
         do {
             try AssessmentStorage.save(def)
             saveMessage = "Saved to Documents/Assessments as \(AssessmentStorage.sanitized(title)).json"
+            // Return to the assessments list after a successful save
+            dismiss()
         } catch {
             saveMessage = "Failed to save: \(error.localizedDescription)"
         }
@@ -99,4 +127,3 @@ private struct MultipleChoiceEditor: View {
         }
     }
 }
-

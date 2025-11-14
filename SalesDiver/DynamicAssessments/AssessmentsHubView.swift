@@ -5,7 +5,6 @@
 //  Created by Ian Miller on 11/11/25.
 //
 
-
 import SwiftUI
 
 struct AssessmentsHubView: View {
@@ -17,10 +16,11 @@ struct AssessmentsHubView: View {
             List {
                 Section(header: Text("Saved Assessments")) {
                     ForEach(assessments) { def in
-                        NavigationLink(destination: DynamicAssessmentView(definition: def)) {
+                        NavigationLink(destination: AssessmentBuilderView(existingDefinition: def)) {
                             Text(def.title)
                         }
                     }
+                    .onDelete(perform: deleteAssessments)
                 }
             }
             .navigationTitle("Assessments")
@@ -43,6 +43,16 @@ struct AssessmentsHubView: View {
     private func refresh() {
         assessments = AssessmentStorage.loadAll()
     }
+
+    private func deleteAssessments(at offsets: IndexSet) {
+        let items = offsets.map { assessments[$0] }
+        for def in items {
+            let fileName = AssessmentStorage.sanitized(def.title) + ".json"
+            let url = AssessmentStorage.assessmentsDirectory().appendingPathComponent(fileName)
+            try? FileManager.default.removeItem(at: url)
+        }
+        refresh()
+    }
 }
 
 extension AssessmentsHubView {
@@ -56,4 +66,3 @@ extension AssessmentsHubView {
         }
     }
 }
-
