@@ -76,7 +76,7 @@ struct DynamicAssessmentView: View {
                 ))
                 .labelsHidden()
             case .multipleChoice:
-                let opts = field.options ?? []
+                let opts = field.options
                 if opts.isEmpty {
                     Text("No options configured")
                         .foregroundStyle(.secondary)

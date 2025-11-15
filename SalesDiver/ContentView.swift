@@ -97,9 +97,9 @@ struct GridView: View {
             ("Contacts", "person.2.fill", AnyView(ContactsView())),
             ("Meetings", "calendar.badge.clock", AnyView(ViewMeetingsView())),
             ("Follow Ups", "checkmark.circle.fill", AnyView(FollowUpsView())),
-            ("Security Review", "shield.fill", AnyView(AssessmentsHubView())),
+            ("Assessment Builder", "square.and.pencil", AnyView(AssessmentsHubView())),
             ("Questions", "questionmark.circle.fill", AnyView(QuestionsView())),
-            ("Assessments", "doc.text.magnifyingglass", AnyView(AssessmentView().environmentObject(CoreDataManager.shared)))
+            ("Client Assessments", "checklist", AnyView(AssessmentView().environmentObject(CoreDataManager.shared)))
         ]
         LazyVGrid(columns: columns, spacing: 40) {
             ForEach(menuItems, id: \.name) { item in
@@ -248,3 +248,4 @@ struct HelpView: View {
         .navigationTitle("Help")
     }
 }
+

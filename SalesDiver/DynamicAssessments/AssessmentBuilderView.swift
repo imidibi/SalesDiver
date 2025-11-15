@@ -5,7 +5,6 @@
 //  Created by Ian Miller on 11/11/25.
 //
 
-
 import SwiftUI
 
 struct AssessmentBuilderView: View {
@@ -159,9 +158,8 @@ struct AssessmentBuilderView: View {
 
 private struct MultipleChoiceEditor: View {
     @Binding var options: [AssessmentFieldOption]
-    @State private var focusedIndex: Int? = nil
-    private let maxOptions = 5
     @FocusState private var focusedField: Int?
+    private let maxOptions = 5
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -177,13 +175,13 @@ private struct MultipleChoiceEditor: View {
                 // Start with a single empty row
                 Button("Start adding options") {
                     options.append(AssessmentFieldOption(title: ""))
-                    focusedIndex = 0
                     focusedField = 0
                 }
                 .buttonStyle(.bordered)
             } else {
-                ForEach(options.indices, id: \.self) { idx in
+                ForEach(options) { opt in
                     HStack(alignment: .center, spacing: 8) {
+                        let idx = options.firstIndex(where: { $0.id == opt.id }) ?? 0
                         TextField("Option \(idx + 1)", text: Binding(
                             get: { options[idx].title },
                             set: { options[idx].title = $0 }
@@ -214,9 +212,8 @@ private struct MultipleChoiceEditor: View {
                 }
             }
         }
-        .onChange(of: options) { _ in
-            // Keep focus on the last row if a new one was added
-            if let i = focusedIndex { focusedField = i }
+        .onChange(of: options) {
+            if let i = focusedField { focusedField = i }
         }
     }
 
@@ -238,8 +235,7 @@ private struct MultipleChoiceEditor: View {
         // Only add if last row has text
         if options.last?.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false {
             options.append(AssessmentFieldOption(title: ""))
-            focusedIndex = options.count - 1
-            focusedField = focusedIndex
+            focusedField = options.count - 1
         }
     }
 
@@ -249,13 +245,10 @@ private struct MultipleChoiceEditor: View {
         if options.isEmpty {
             // Keep at least one empty row to continue input easily
             options.append(AssessmentFieldOption(title: ""))
-            focusedIndex = 0
             focusedField = 0
         } else if index > 0 {
-            focusedIndex = index - 1
-            focusedField = focusedIndex
+            focusedField = index - 1
         } else {
-            focusedIndex = 0
             focusedField = 0
         }
     }
@@ -303,4 +296,3 @@ private struct SymbolPickerView: View {
         .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always))
     }
 }
-
