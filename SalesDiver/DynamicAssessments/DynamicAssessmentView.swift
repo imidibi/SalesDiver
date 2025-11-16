@@ -2,6 +2,15 @@ import SwiftUI
 
 struct DynamicAssessmentView: View {
     let definition: AssessmentDefinition
+    let companyID: String?
+    let existingResponse: AssessmentResponse?
+    
+    init(definition: AssessmentDefinition, companyID: String? = nil, existingResponse: AssessmentResponse? = nil) {
+        self.definition = definition
+        self.companyID = companyID
+        self.existingResponse = existingResponse
+    }
+    
     @State private var textValues: [UUID: String] = [:]
     @State private var numberValues: [UUID: Double] = [:]
     @State private var yesNoValues: [UUID: Bool] = [:]
@@ -38,7 +47,13 @@ struct DynamicAssessmentView: View {
             }
             .padding()
         }
-        .onAppear { loadLatest() }
+        .onAppear {
+            if let existing = existingResponse {
+                preload(from: existing)
+            } else {
+                loadLatest()
+            }
+        }
     }
     
     @ViewBuilder
@@ -123,7 +138,7 @@ struct DynamicAssessmentView: View {
                 values[field.id] = v
             }
         }
-        let response = AssessmentResponse(assessmentID: definition.id, assessmentTitle: definition.title, values: values)
+        let response = AssessmentResponse(assessmentID: definition.id, assessmentTitle: definition.title, companyID: companyID, values: values)
         do {
             try AssessmentResponseStorage.save(response, for: definition)
             saveStatus = "Saved at \(Date().formatted(date: .numeric, time: .standard))"
@@ -158,5 +173,27 @@ struct DynamicAssessmentView: View {
         }
         saveStatus = "Loaded last saved"
     }
+    
+    private func preload(from response: AssessmentResponse) {
+        for section in definition.sections {
+            for field in section.fields {
+                let v = response.values[field.id]
+                switch field.kind {
+                case .text:
+                    textValues[field.id] = v?.text ?? ""
+                case .number:
+                    numberValues[field.id] = v?.number ?? 0
+                case .yesno:
+                    yesNoValues[field.id] = v?.yesNo ?? false
+                case .multipleChoice:
+                    if let id = v?.choiceID { choiceValues[field.id] = id }
+                case .icon:
+                    break
+                case .date:
+                    if let d = v?.date { dateValues[field.id] = d }
+                }
+            }
+        }
+        saveStatus = "Loaded saved assessment"
+    }
 }
-

@@ -83,6 +83,27 @@ struct WaveShape: Shape {
 struct GridView: View {
     let companyViewModel: CompanyViewModel
 
+    struct MenuItem: Identifiable {
+        let id = UUID()
+        let name: String
+        let icon: String
+        let destination: () -> AnyView
+    }
+
+    private func makeMenuItems() -> [MenuItem] {
+        [
+            MenuItem(name: "Companies", icon: "building.2.fill") { AnyView(CompanyDataView(viewModel: companyViewModel)) },
+            MenuItem(name: "Services", icon: "desktopcomputer") { AnyView(ProductDataView()) },
+            MenuItem(name: "Opportunities", icon: "chart.bar.fill") { AnyView(OpportunityDataView()) },
+            MenuItem(name: "Contacts", icon: "person.2.fill") { AnyView(ContactsView()) },
+            MenuItem(name: "Meetings", icon: "calendar.badge.clock") { AnyView(ViewMeetingsView()) },
+            MenuItem(name: "Follow Ups", icon: "checkmark.circle.fill") { AnyView(FollowUpsView()) },
+            MenuItem(name: "Assessment Builder", icon: "square.and.pencil") { AnyView(AssessmentsHubView()) },
+            MenuItem(name: "Questions", icon: "questionmark.circle.fill") { AnyView(QuestionsView()) },
+            MenuItem(name: "Client Assessments", icon: "checklist") { AnyView(ClientAssessmentsHubView()) }
+        ]
+    }
+
     let columns = [
         GridItem(.flexible(), spacing: 20),
         GridItem(.flexible(), spacing: 20),
@@ -90,20 +111,10 @@ struct GridView: View {
     ]
 
     var body: some View {
-        let menuItems: [(name: String, icon: String, destination: AnyView)] = [
-            ("Companies", "building.2.fill", AnyView(CompanyDataView(viewModel: companyViewModel))),
-            ("Services", "desktopcomputer", AnyView(ProductDataView())),
-            ("Opportunities", "chart.bar.fill", AnyView(OpportunityDataView())),
-            ("Contacts", "person.2.fill", AnyView(ContactsView())),
-            ("Meetings", "calendar.badge.clock", AnyView(ViewMeetingsView())),
-            ("Follow Ups", "checkmark.circle.fill", AnyView(FollowUpsView())),
-            ("Assessment Builder", "square.and.pencil", AnyView(AssessmentsHubView())),
-            ("Questions", "questionmark.circle.fill", AnyView(QuestionsView())),
-            ("Client Assessments", "checklist", AnyView(AssessmentView().environmentObject(CoreDataManager.shared)))
-        ]
+        let items = makeMenuItems()
         LazyVGrid(columns: columns, spacing: 40) {
-            ForEach(menuItems, id: \.name) { item in
-                NavigationLink(destination: item.destination) {
+            ForEach(items) { item in
+                NavigationLink(destination: item.destination()) {
                     VStack {
                         Image(systemName: item.icon)
                             .resizable()
