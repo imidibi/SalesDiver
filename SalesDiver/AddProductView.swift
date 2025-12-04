@@ -20,7 +20,7 @@ struct AddProductView: View {
     @State private var units = "Per Device"
 
     let productTypes = ["Hardware", "Software", "Service", "Labor", "Bundle"]
-    let unitTypes = ["Per Device", "Per User", "Per Email User", "Per Site"]
+    let unitTypes = ["Per Device", "Per User", "Per Email User", "Per Site", "Per Hour"]
 
     var body: some View {
         NavigationStack {

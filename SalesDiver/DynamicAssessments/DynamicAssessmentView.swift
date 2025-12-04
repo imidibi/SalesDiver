@@ -15,6 +15,7 @@ struct DynamicAssessmentView: View {
     @State private var numberValues: [UUID: Double] = [:]
     @State private var yesNoValues: [UUID: Bool] = [:]
     @State private var choiceValues: [UUID: UUID] = [:]
+    @State private var multiChoiceToggles: [UUID: [UUID: Bool]] = [:]
     @State private var dateValues: [UUID: Date] = [:]
     @State private var saveStatus: String = ""
     
@@ -70,7 +71,8 @@ struct DynamicAssessmentView: View {
             }
             switch field.kind {
             case .icon:
-                Text("Icon field").foregroundColor(.secondary)
+                // Removed the Text("Icon field").foregroundColor(.secondary) line as requested
+                EmptyView()
             case .text:
                 TextField("Enter text", text: Binding(
                     get: { textValues[field.id] ?? "" },
@@ -96,15 +98,23 @@ struct DynamicAssessmentView: View {
                     Text("No options configured")
                         .foregroundStyle(.secondary)
                 } else {
-                    Picker("Select", selection: Binding(
-                        get: { choiceValues[field.id] ?? opts.first?.id },
-                        set: { choiceValues[field.id] = $0 }
-                    )) {
+                    VStack(alignment: .leading, spacing: 8) {
                         ForEach(opts) { opt in
-                            Text(opt.title).tag(opt.id as UUID?)
+                            HStack {
+                                Text(opt.title)
+                                Spacer()
+                                Toggle("", isOn: Binding(
+                                    get: { multiChoiceToggles[field.id]?[opt.id] ?? false },
+                                    set: { newVal in
+                                        var map = multiChoiceToggles[field.id] ?? [:]
+                                        map[opt.id] = newVal
+                                        multiChoiceToggles[field.id] = map
+                                    }
+                                ))
+                                .labelsHidden()
+                            }
                         }
                     }
-                    .pickerStyle(.menu)
                 }
             case .date:
                 DatePicker("", selection: Binding(
@@ -129,7 +139,7 @@ struct DynamicAssessmentView: View {
                 case .yesno:
                     v.yesNo = yesNoValues[field.id]
                 case .multipleChoice:
-                    v.choiceID = choiceValues[field.id]
+                    v.choiceSelections = multiChoiceToggles[field.id]
                 case .icon:
                     break
                 case .date:
@@ -163,7 +173,9 @@ struct DynamicAssessmentView: View {
                 case .yesno:
                     yesNoValues[field.id] = v?.yesNo ?? false
                 case .multipleChoice:
-                    if let id = v?.choiceID { choiceValues[field.id] = id }
+                    if let selections = v?.choiceSelections {
+                        multiChoiceToggles[field.id] = selections
+                    }
                 case .icon:
                     break
                 case .date:
@@ -186,7 +198,9 @@ struct DynamicAssessmentView: View {
                 case .yesno:
                     yesNoValues[field.id] = v?.yesNo ?? false
                 case .multipleChoice:
-                    if let id = v?.choiceID { choiceValues[field.id] = id }
+                    if let selections = v?.choiceSelections {
+                        multiChoiceToggles[field.id] = selections
+                    }
                 case .icon:
                     break
                 case .date:

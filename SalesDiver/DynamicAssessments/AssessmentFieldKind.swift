@@ -121,6 +121,7 @@ struct AssessmentResponseFieldValue: Codable, Hashable {
     var yesNo: Bool? = nil
     var date: Date? = nil
     var choiceID: UUID? = nil
+    var choiceSelections: [UUID: Bool]? = nil
 }
 
 struct AssessmentResponse: Codable, Identifiable, Hashable {
@@ -174,4 +175,3 @@ enum AssessmentResponseStorage {
         return results.sorted { $0.createdAt > $1.createdAt }
     }
 }
-

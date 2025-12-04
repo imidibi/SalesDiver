@@ -41,7 +41,7 @@ struct EditProductView: View {
                         ForEach(["Hardware", "Software", "Service", "Labor", "Bundle"], id: \.self) { Text($0) }
                     }
                     Picker("Units", selection: $units) {
-                        ForEach(["Per Device", "Per User", "Per Email User", "Per Site"], id: \.self) { Text($0) }
+                        ForEach(["Per Device", "Per User", "Per Email User", "Per Site", "Per Hour"], id: \.self) { Text($0) }
                     }
                 }
 

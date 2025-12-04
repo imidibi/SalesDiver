@@ -49,6 +49,7 @@ struct AssessmentBuilderView: View {
                                     Text(label(for: kind)).tag(kind)
                                 }
                             }
+                            .pickerStyle(.menu)
                             if field.kind == .icon {
                                 HStack {
                                     if let name = field.iconSystemName, !name.isEmpty {
@@ -179,18 +180,20 @@ private struct MultipleChoiceEditor: View {
                 }
                 .buttonStyle(.bordered)
             } else {
-                ForEach(options) { opt in
+                ForEach(options.indices, id: \.self) { idx in
                     HStack(alignment: .center, spacing: 8) {
-                        let idx = options.firstIndex(where: { $0.id == opt.id }) ?? 0
                         TextField("Option \(idx + 1)", text: Binding(
                             get: { options[idx].title },
                             set: { options[idx].title = $0 }
                         ))
                         .textFieldStyle(.roundedBorder)
-                        .submitLabel(.return)
+                        .submitLabel(.next)
                         .focused($focusedField, equals: idx)
                         .onSubmit {
-                            handleSubmit(at: idx)
+                            let added = addEmptyRowIfPossible()
+                            if added {
+                                focusedField = idx + 1
+                            }
                         }
 
                         Button(role: .destructive) {
@@ -206,7 +209,7 @@ private struct MultipleChoiceEditor: View {
                 if options.count < maxOptions {
                     // Add an empty row automatically if the last one has content and user taps below
                     Button("Add another option") {
-                        addEmptyRowIfPossible()
+                        _ = addEmptyRowIfPossible()
                     }
                     .disabled(!canAddAnotherRow)
                 }
@@ -223,20 +226,20 @@ private struct MultipleChoiceEditor: View {
         return options.last?.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
     }
 
-    private func handleSubmit(at index: Int) {
-        // When Return is pressed on a row with content, add a new row if possible
-        let trimmed = options[index].title.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        addEmptyRowIfPossible()
-    }
-
-    private func addEmptyRowIfPossible() {
-        guard options.count < maxOptions else { return }
+    @discardableResult
+    private func addEmptyRowIfPossible() -> Bool {
+        guard options.count < maxOptions else { return false }
         // Only add if last row has text
         if options.last?.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false {
             options.append(AssessmentFieldOption(title: ""))
             focusedField = options.count - 1
+            return true
         }
+        return false
+    }
+
+    private func handleSubmit(at index: Int) {
+        _ = addEmptyRowIfPossible()
     }
 
     private func removeOption(at index: Int) {
