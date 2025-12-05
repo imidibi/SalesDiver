@@ -45,7 +45,9 @@ enum CSVCodec {
         case missingTemplateTitle
         case missingSectionTitle
         case missingFieldTitle
-        case unexpectedRowType
+        case unexpectedRowType(line: Int, token: String)
+        case missingHeader
+        case headerMismatch
 
         var errorDescription: String? {
             switch self {
@@ -54,32 +56,63 @@ enum CSVCodec {
             case .missingTemplateTitle: return "Missing template title."
             case .missingSectionTitle: return "Missing section title."
             case .missingFieldTitle: return "Missing field title."
-            case .unexpectedRowType: return "Unexpected row type."
+            case let .unexpectedRowType(line, token):
+                return "Unexpected row type at line \(line): '\(token)'. Expected Template, Section, or Field."
+            case .missingHeader:
+                return "Missing header row."
+            case .headerMismatch:
+                return "CSV header does not match expected columns."
             }
         }
     }
 
-    // Encoding a single template to CSV
+    // MARK: - New header-based format
+
+    // Expected header columns (case-insensitive match)
+    private static let headerColumns = [
+        "RowType",
+        "TemplateTitle",
+        "SectionTitle",
+        "FieldTitle",
+        "KindCode",
+        "IconSystemName",
+        "Options",
+        "DateISO8601"
+    ]
+
+    // Encoding a single template to CSV (new format)
     static func encode(definition: AssessmentDefinition) -> Data {
         var rows: [[String]] = []
 
-        // Instructional header as commented lines for human readers
-        rows.append(["# Assessment Template CSV"])
-        rows.append(["# Row formats:"])
-        rows.append(["# TemplateTitle,<Title>"])
-        rows.append(["# Section,<Section Title>"])
-        rows.append(["# Field,<Field Title>,<KindCode>,<IconSystemName>,<OptionsPipeSeparated>,<DateISO8601>"])
-        rows.append(["# Kind codes: 1=icon, 2=number, 3=text, 4=yes/no, 5=multipleChoice, 6=date"])
-        rows.append(["# Notes:"])
-        rows.append(["# - IconSystemName only used when KindCode=1 (icon)"])
-        rows.append(["# - Options only used when KindCode=5 (multipleChoice), e.g. Option A|Option B|Option C"])
-        rows.append(["# - DateISO8601 only used when KindCode=6 (date), e.g. 2025-12-05T00:00:00Z"])
-        rows.append([])
+        // Header row only, no instructional comments
+        rows.append(headerColumns)
 
-        rows.append(["TemplateTitle", definition.title])
+        // Template row
+        rows.append([
+            "Template",
+            definition.title,
+            "", // SectionTitle
+            "", // FieldTitle
+            "", // KindCode
+            "", // IconSystemName
+            "", // Options
+            ""  // DateISO8601
+        ])
 
+        // For each section and field
         for section in definition.sections {
-            rows.append(["Section", section.title])
+            // Section row
+            rows.append([
+                "Section",
+                "",              // TemplateTitle (unused here)
+                section.title,   // SectionTitle
+                "",              // FieldTitle
+                "",              // KindCode
+                "",              // IconSystemName
+                "",              // Options
+                ""               // DateISO8601
+            ])
+
             for field in section.fields {
                 let kindCode = code(for: field.kind)
                 let iconName = field.iconSystemName ?? ""
@@ -90,13 +123,16 @@ enum CSVCodec {
                 } else {
                     dateString = ""
                 }
+
                 rows.append([
                     "Field",
-                    field.title,
-                    String(kindCode),
-                    iconName,
-                    optionsString,
-                    dateString
+                    "",                 // TemplateTitle (unused here)
+                    section.title,      // SectionTitle (explicit to ease editing)
+                    field.title,        // FieldTitle
+                    String(kindCode),   // KindCode
+                    iconName,           // IconSystemName
+                    optionsString,      // Options
+                    dateString          // DateISO8601
                 ])
             }
         }
@@ -107,11 +143,161 @@ enum CSVCodec {
 
     // Decoding a single template from CSV
     static func decode(data: Data) throws -> AssessmentDefinition {
-        guard let text = String(data: data, encoding: .utf8) else {
+        guard var text = String(data: data, encoding: .utf8) else {
             throw CSVError.invalidFormat
         }
-        let lines = text.split(whereSeparator: \.isNewline).map { String($0) }
 
+        // Strip UTF-8 BOM if present
+        if text.hasPrefix("\u{feff}") {
+            text.removeFirst()
+        }
+
+        // Split preserving line order for diagnostics
+        let rawLines = text.components(separatedBy: CharacterSet.newlines)
+
+        // Try the new header-based format first. If it fails due to missing header,
+        // fall back to the legacy format.
+        if looksLikeHeaderBasedFormat(rawLines) {
+            return try decodeHeaderBased(rawLines: rawLines)
+        } else {
+            // Legacy fallback
+            return try decodeLegacy(rawLines: rawLines)
+        }
+    }
+
+    private static func looksLikeHeaderBasedFormat(_ lines: [String]) -> Bool {
+        // Find first non-empty, non-comment line
+        for line in lines {
+            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmed.isEmpty { continue }
+            if trimmed.hasPrefix("#") { continue }
+            let cols = trimTrailingEmpties(parseCSVRow(trimmed))
+            guard cols.count >= 1 else { continue }
+            // Compare first row as header, case-insensitive
+            if cols.count >= headerColumns.count {
+                // Normalize header by case-insensitive compare
+                for (i, expected) in headerColumns.enumerated() {
+                    if i >= cols.count { return false }
+                    if cols[i].caseInsensitiveCompare(expected) != .orderedSame {
+                        return false
+                    }
+                }
+                return true
+            }
+            return false
+        }
+        return false
+    }
+
+    private static func decodeHeaderBased(rawLines: [String]) throws -> AssessmentDefinition {
+        var iterator = rawLines.makeIterator()
+        var lineIndex = 0
+
+        // Find header row
+        var headerCols: [String]? = nil
+        while let raw = iterator.next() {
+            lineIndex += 1
+            let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmed.isEmpty || trimmed.hasPrefix("#") { continue }
+            let cols = trimTrailingEmpties(parseCSVRow(trimmed))
+            if cols.isEmpty { continue }
+            headerCols = cols
+            break
+        }
+
+        guard let header = headerCols else { throw CSVError.missingHeader }
+        guard header.count >= headerColumns.count else { throw CSVError.headerMismatch }
+        for (i, expected) in headerColumns.enumerated() {
+            if header[i].caseInsensitiveCompare(expected) != .orderedSame {
+                throw CSVError.headerMismatch
+            }
+        }
+
+        var title: String?
+        var sections: [AssessmentSectionDefinition] = []
+        var currentSection: AssessmentSectionDefinition?
+
+        func pushCurrentSectionIfNeeded() {
+            if let s = currentSection {
+                sections.append(s)
+                currentSection = nil
+            }
+        }
+
+        // Process data rows
+        while let raw = iterator.next() {
+            lineIndex += 1
+            let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmed.isEmpty || trimmed.hasPrefix("#") { continue }
+            var cols = trimTrailingEmpties(parseCSVRow(trimmed))
+            if cols.isEmpty { continue }
+
+            // Pad to header count to avoid index checks
+            if cols.count < headerColumns.count {
+                cols += Array(repeating: "", count: headerColumns.count - cols.count)
+            }
+
+            let rowType = cols[0].trimmingCharacters(in: .whitespacesAndNewlines)
+            let templateTitle = cols[1].trimmingCharacters(in: .whitespacesAndNewlines)
+            let sectionTitle = cols[2].trimmingCharacters(in: .whitespacesAndNewlines)
+            let fieldTitle = cols[3].trimmingCharacters(in: .whitespacesAndNewlines)
+            let kindCodeString = cols[4].trimmingCharacters(in: .whitespacesAndNewlines)
+            let iconSystemName = cols[5].trimmingCharacters(in: .whitespacesAndNewlines)
+            let optionsString = cols[6].trimmingCharacters(in: .whitespacesAndNewlines)
+            let dateString = cols[7].trimmingCharacters(in: .whitespacesAndNewlines)
+
+            switch rowType.lowercased() {
+            case "template":
+                pushCurrentSectionIfNeeded()
+                guard !templateTitle.isEmpty else { throw CSVError.missingTemplateTitle }
+                title = templateTitle
+
+            case "section":
+                guard !sectionTitle.isEmpty else { throw CSVError.missingSectionTitle }
+                pushCurrentSectionIfNeeded()
+                currentSection = AssessmentSectionDefinition(title: sectionTitle, fields: [])
+
+            case "field":
+                guard !fieldTitle.isEmpty else { throw CSVError.missingFieldTitle }
+                guard let code = Int(kindCodeString) else { throw CSVError.invalidKindCode }
+                let kind = try kind(for: code)
+                var field = AssessmentFieldDefinition(title: fieldTitle, kind: kind)
+                if !iconSystemName.isEmpty { field.iconSystemName = iconSystemName }
+                if kind == .multipleChoice, !optionsString.isEmpty {
+                    let titles = optionsString.split(separator: "|").map { String($0) }
+                    field.options = titles.map { AssessmentFieldOption(title: $0) }
+                }
+                if kind == .date, !dateString.isEmpty {
+                    field.dateValue = ISO8601DateFormatter().date(from: dateString)
+                }
+
+                // If no currentSection, create from sectionTitle if provided, else default
+                if currentSection == nil {
+                    let secTitle = sectionTitle.isEmpty ? "Section 1" : sectionTitle
+                    currentSection = AssessmentSectionDefinition(title: secTitle, fields: [])
+                } else if !sectionTitle.isEmpty && currentSection?.title != sectionTitle {
+                    // If explicit SectionTitle differs, close current and start a new one
+                    pushCurrentSectionIfNeeded()
+                    currentSection = AssessmentSectionDefinition(title: sectionTitle, fields: [])
+                }
+                currentSection?.fields.append(field)
+
+            default:
+                throw CSVError.unexpectedRowType(line: lineIndex, token: rowType)
+            }
+        }
+
+        // Finalize last section
+        if let s = currentSection { sections.append(s) }
+
+        guard let finalTitle = title, !finalTitle.isEmpty else {
+            throw CSVError.missingTemplateTitle
+        }
+        return AssessmentDefinition(title: finalTitle, sections: sections)
+    }
+
+    // Decoding legacy format (backward compatibility)
+    private static func decodeLegacy(rawLines: [String]) throws -> AssessmentDefinition {
         var title: String?
         var sections: [AssessmentSectionDefinition] = []
         var currentSection: AssessmentSectionDefinition?
@@ -124,18 +310,20 @@ enum CSVCodec {
             }
         }
 
-        for rawLine in lines {
+        for (idx, rawLine) in rawLines.enumerated() {
+            let lineNumber = idx + 1
             let trimmed = rawLine.trimmingCharacters(in: .whitespacesAndNewlines)
             if trimmed.isEmpty { continue }
             if trimmed.hasPrefix("#") { continue } // ignore comments
 
-            let cols = parseCSVRow(trimmed)
+            var cols = trimTrailingEmpties(parseCSVRow(trimmed))
+            guard !cols.isEmpty else { continue }
 
-            guard let first = cols.first?.trimmingCharacters(in: .whitespacesAndNewlines), !first.isEmpty else {
-                continue
-            }
+            // Normalize first token
+            let firstRaw = cols[0]
+            let first = normalizeToken(firstRaw)
 
-            if first.caseInsensitiveCompare("TemplateTitle") == .orderedSame {
+            if equalsToken(first, "TemplateTitle") || equalsToken(first, "Template Title") {
                 // TemplateTitle,<Title>
                 guard cols.count >= 2 else { throw CSVError.missingTemplateTitle }
                 title = cols[1]
@@ -143,16 +331,15 @@ enum CSVCodec {
                 continue
             }
 
-            if first.caseInsensitiveCompare("Section") == .orderedSame {
+            if equalsToken(first, "Section") {
                 // Section,<Section Title>
                 guard cols.count >= 2 else { throw CSVError.missingSectionTitle }
-                // Close previous section if open
                 pushCurrentSectionIfNeeded()
                 currentSection = AssessmentSectionDefinition(title: cols[1], fields: [])
                 continue
             }
 
-            if first.caseInsensitiveCompare("Field") == .orderedSame {
+            if equalsToken(first, "Field") {
                 // Field,<Field Title>,<KindCode>,<IconSystemName>,<OptionsPipeSeparated>,<DateISO8601>
                 guard cols.count >= 3 else { throw CSVError.missingFieldTitle }
                 let fieldTitle = cols[1]
@@ -161,19 +348,27 @@ enum CSVCodec {
                 let kind = try kind(for: code)
                 var field = AssessmentFieldDefinition(title: fieldTitle, kind: kind)
 
-                if cols.count >= 4, !cols[3].isEmpty {
-                    field.iconSystemName = cols[3]
+                if cols.count >= 4 {
+                    let iconCol = cols[3].trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !iconCol.isEmpty {
+                        field.iconSystemName = iconCol
+                    }
                 }
-                if cols.count >= 5, !cols[4].isEmpty, kind == .multipleChoice {
-                    let titles = cols[4].split(separator: "|").map { String($0) }
-                    field.options = titles.map { AssessmentFieldOption(title: $0) }
+                if cols.count >= 5, kind == .multipleChoice {
+                    let optionsCol = cols[4].trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !optionsCol.isEmpty {
+                        let titles = optionsCol.split(separator: "|").map { String($0) }
+                        field.options = titles.map { AssessmentFieldOption(title: $0) }
+                    }
                 }
-                if cols.count >= 6, !cols[5].isEmpty, kind == .date {
-                    field.dateValue = ISO8601DateFormatter().date(from: cols[5])
+                if cols.count >= 6, kind == .date {
+                    let dateCol = cols[5].trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !dateCol.isEmpty {
+                        field.dateValue = ISO8601DateFormatter().date(from: dateCol)
+                    }
                 }
 
                 if currentSection == nil {
-                    // If a field appears before any section, create a default section
                     currentSection = AssessmentSectionDefinition(title: "Section 1", fields: [])
                 }
                 currentSection?.fields.append(field)
@@ -181,7 +376,7 @@ enum CSVCodec {
             }
 
             // If we get here, it’s an unknown row type
-            throw CSVError.unexpectedRowType
+            throw CSVError.unexpectedRowType(line: lineNumber, token: firstRaw)
         }
 
         // Finalize last section
@@ -194,35 +389,19 @@ enum CSVCodec {
         return AssessmentDefinition(title: finalTitle, sections: sections)
     }
 
-    // Blank instructional CSV for users to fill in
+    // Blank template CSV in new header format with explicit field types
     static func blankTemplateCSV() -> Data {
         var rows: [[String]] = []
-        rows.append(["# Assessment Template CSV - Blank"])
-        rows.append(["# Fill this in and import it back into the app."])
-        rows.append(["# Row formats:"])
-        rows.append(["# TemplateTitle,<Title>"])
-        rows.append(["# Section,<Section Title>"])
-        rows.append(["# Field,<Field Title>,<KindCode>,<IconSystemName>,<OptionsPipeSeparated>,<DateISO8601>"])
-        rows.append(["# Kind codes: 1=icon, 2=number, 3=text, 4=yes/no, 5=multipleChoice, 6=date"])
-        rows.append(["# Notes:"])
-        rows.append(["# - Put exactly one TemplateTitle row at the top."])
-        rows.append(["# - Add as many Section rows as you need."])
-        rows.append(["# - Add Field rows under each Section."])
-        rows.append(["# - IconSystemName is an SF Symbol name when KindCode=1 (e.g. \"lock.fill\")."])
-        rows.append(["# - For multipleChoice, list options separated by | (pipe), e.g. \"Basic|Standard|Premium\"."])
-        rows.append(["# - DateISO8601 example: 2025-12-05T00:00:00Z"])
-        rows.append([])
-
-        // Minimal sample skeleton the user can overwrite
-        rows.append(["TemplateTitle", "New Assessment"])
-        rows.append(["Section", "Section 1"])
-        rows.append(["Field", "Intro Icon", "1", "lock.fill", "", ""])
-        rows.append(["Field", "Your Name", "3", "", "", ""])
-        rows.append(["Field", "Your Budget", "2", "", "", ""])
-        rows.append(["Field", "Approved?", "4", "", "", ""])
-        rows.append(["Field", "Plan Tier", "5", "", "Basic|Standard|Premium", ""])
-        rows.append(["Field", "Review Date", "6", "", "", "2025-12-05T00:00:00Z"])
-
+        rows.append(headerColumns)
+        rows.append(["Template", "New Assessment", "", "", "", "", "", ""])
+        rows.append(["Section", "", "Section 1", "", "", "", "", ""])
+        // Six field kinds with clear examples
+        rows.append(["Field", "", "Section 1", "Icon Example", "1", "lock.fill", "", ""])
+        rows.append(["Field", "", "Section 1", "Text Example", "3", "", "", ""])
+        rows.append(["Field", "", "Section 1", "Number Example", "2", "", "", ""])
+        rows.append(["Field", "", "Section 1", "Yes/No Example", "4", "", "", ""])
+        rows.append(["Field", "", "Section 1", "Multiple Choice Example", "5", "", "Basic|Standard|Premium", ""])
+        rows.append(["Field", "", "Section 1", "Date Example", "6", "", "", "2025-12-05T00:00:00Z"])
         let csv = makeCSV(from: rows)
         return Data(csv.utf8)
     }
@@ -251,7 +430,7 @@ enum CSVCodec {
         var result: [String] = []
         var current = ""
         var inQuotes = false
-        var chars = Array(line)
+        let chars = Array(line)
         var i = 0
 
         while i < chars.count {
@@ -281,6 +460,29 @@ enum CSVCodec {
         }
         result.append(current)
         return result
+    }
+
+    // Trim trailing empty columns
+    private static func trimTrailingEmpties(_ cols: [String]) -> [String] {
+        var c = cols
+        while let last = c.last, last.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            c.removeLast()
+        }
+        return c
+    }
+
+    // Normalize token (legacy first column), trimming Unicode whitespaces and collapsing internal spaces
+    private static func normalizeToken(_ s: String) -> String {
+        let trimmed = s.trimmingCharacters(in: .whitespacesAndNewlines)
+        // Replace non-breaking spaces and multiple spaces with a single space
+        let replacedNBSP = trimmed.replacingOccurrences(of: "\u{00A0}", with: " ")
+        let collapsed = replacedNBSP.replacingOccurrences(of: #" {2,}"#, with: " ", options: .regularExpression)
+        return collapsed
+    }
+
+    // Case-insensitive equality for tokens
+    private static func equalsToken(_ a: String, _ b: String) -> Bool {
+        return a.caseInsensitiveCompare(b) == .orderedSame
     }
 }
 
@@ -335,4 +537,3 @@ extension View {
         }
     }
 }
-

@@ -31,7 +31,7 @@ struct AssessmentBuilderView: View {
     @State private var editingSectionIndex: Int? = nil
     @State private var editingFieldIndex: Int? = nil
     @Environment(\.dismiss) private var dismiss
-    
+
     var body: some View {
         Form {
             Section(header: Text("Assessment Title")) {
