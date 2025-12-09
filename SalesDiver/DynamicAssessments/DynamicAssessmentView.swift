@@ -1,4 +1,6 @@
 import SwiftUI
+import CoreData
+import UIKit
 
 struct DynamicAssessmentView: View {
     let definition: AssessmentDefinition
@@ -18,6 +20,20 @@ struct DynamicAssessmentView: View {
     @State private var multiChoiceToggles: [UUID: [UUID: Bool]] = [:]
     @State private var dateValues: [UUID: Date] = [:]
     @State private var saveStatus: String = ""
+    @AppStorage("myCompanyName") private var myCompanyName = ""
+    
+    private var resolvedCompanyName: String {
+        guard let companyID, let url = URL(string: companyID) else { return "Client" }
+        // Try to resolve via the first connected scene's persistent container
+        // We assume CoreDataManager.shared is available as in other files
+        let context = CoreDataManager.shared.persistentContainer.viewContext
+        if let objectID = context.persistentStoreCoordinator?.managedObjectID(forURIRepresentation: url) {
+            if let company = try? context.existingObject(with: objectID) as? CompanyEntity {
+                return (company.name ?? "Client").trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+        }
+        return "Client"
+    }
     
     var body: some View {
         ScrollView {
@@ -53,6 +69,29 @@ struct DynamicAssessmentView: View {
                 preload(from: existing)
             } else {
                 loadLatest()
+            }
+        }
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    Button {
+                        exportAssessmentAsPDF()
+                    } label: {
+                        Label("Export PDF", systemImage: "doc.richtext")
+                    }
+                    Button {
+                        exportAssessmentAsRTF()
+                    } label: {
+                        Label("Export Word (RTF)", systemImage: "doc.text")
+                    }
+                    Button {
+                        exportAssessmentAsCSV()
+                    } label: {
+                        Label("Export Excel (CSV)", systemImage: "tablecells")
+                    }
+                } label: {
+                    Label("Export", systemImage: "square.and.arrow.up")
+                }
             }
         }
     }
@@ -209,5 +248,144 @@ struct DynamicAssessmentView: View {
             }
         }
         saveStatus = "Loaded saved assessment"
+    }
+    
+    private func presentShareSheet(url: URL) {
+        guard let scene = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .first(where: { $0.activationState == .foregroundActive }),
+            let root = scene.keyWindow?.rootViewController ?? scene.windows.first?.rootViewController else { return }
+        let vc = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+        if let pop = vc.popoverPresentationController {
+            pop.sourceView = root.view
+            pop.sourceRect = CGRect(x: root.view.bounds.midX, y: root.view.bounds.midY, width: 0, height: 0)
+            pop.permittedArrowDirections = []
+        }
+        root.present(vc, animated: true)
+    }
+
+    private func exportAssessmentAsRTF() {
+        let client = resolvedCompanyName
+        let title = "IT Assessment for \(client)"
+        let subtitle = "Performed by \(myCompanyName.isEmpty ? "Your Company Name" : myCompanyName)\nDate: \(Date().formatted(date: .abbreviated, time: .omitted))"
+
+        let attr = NSMutableAttributedString()
+        let h1 = [NSAttributedString.Key.font: UIFont.boldSystemFont(ofSize: 22)]
+        let h2 = [NSAttributedString.Key.font: UIFont.systemFont(ofSize: 16)]
+        let hSection = [NSAttributedString.Key.font: UIFont.boldSystemFont(ofSize: 18)]
+        let body = [NSAttributedString.Key.font: UIFont.systemFont(ofSize: 14)]
+
+        attr.append(NSAttributedString(string: title + "\n", attributes: h1))
+        attr.append(NSAttributedString(string: subtitle + "\n\n", attributes: h2))
+        attr.append(NSAttributedString(string: definition.title + "\n\n", attributes: hSection))
+
+        for section in definition.sections {
+            attr.append(NSAttributedString(string: section.title + "\n", attributes: hSection))
+            for field in section.fields {
+                let name = field.title
+                let value = renderedValue(for: field)
+                attr.append(NSAttributedString(string: "• \(name): \(value)\n", attributes: body))
+            }
+            attr.append(NSAttributedString(string: "\n", attributes: body))
+        }
+
+        if let rtf = try? attr.data(from: NSRange(location: 0, length: attr.length), documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf]) {
+            let safeClient = client.replacingOccurrences(of: " ", with: "_")
+            let fileName = "\(safeClient)-\(definition.title.replacingOccurrences(of: " ", with: "_"))_Assessment.rtf"
+            let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+            do {
+                try rtf.write(to: tempURL)
+                presentShareSheet(url: tempURL)
+            } catch { }
+        }
+    }
+
+    private func exportAssessmentAsCSV() {
+        let client = resolvedCompanyName
+        var rows: [[String]] = [["Section", "Field", "Value"]]
+        for section in definition.sections {
+            for field in section.fields {
+                rows.append([section.title, field.title, renderedValue(for: field)])
+            }
+        }
+        func escape(_ s: String) -> String {
+            if s.contains(",") || s.contains("\n") || s.contains("\"") {
+                return "\"" + s.replacingOccurrences(of: "\"", with: "\"\"") + "\""
+            } else { return s }
+        }
+        let csv = rows.map { $0.map(escape).joined(separator: ",") }.joined(separator: "\n") + "\n"
+        let safeClient = client.replacingOccurrences(of: " ", with: "_")
+        let fileName = "\(safeClient)-\(definition.title.replacingOccurrences(of: " ", with: "_"))_Assessment.csv"
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+        do {
+            try csv.data(using: .utf8)?.write(to: url, options: .atomic)
+            presentShareSheet(url: url)
+        } catch { }
+    }
+
+    private func exportAssessmentAsPDF() {
+        let client = resolvedCompanyName
+        let pageWidth = 612.0
+        let pageHeight = 792.0
+        let pageRect = CGRect(x: 0, y: 0, width: pageWidth, height: pageHeight)
+        let format = UIGraphicsPDFRendererFormat()
+        let renderer = UIGraphicsPDFRenderer(bounds: pageRect, format: format)
+
+        let data = renderer.pdfData { context in
+            context.beginPage()
+            let titleFont = UIFont.boldSystemFont(ofSize: 22)
+            let bodyFont = UIFont.systemFont(ofSize: 14)
+            let titleAttrs: [NSAttributedString.Key: Any] = [.font: titleFont]
+            let bodyAttrs: [NSAttributedString.Key: Any] = [.font: bodyFont]
+
+            let header = "IT Assessment for \(client)\n\(definition.title)\nPerformed by \(myCompanyName.isEmpty ? "Your Company Name" : myCompanyName) — \(Date().formatted(date: .abbreviated, time: .omitted))\n\n"
+            (header as NSString).draw(at: CGPoint(x: 50, y: 50), withAttributes: titleAttrs)
+
+            var y = CGFloat(120)
+            let maxY = pageHeight - 50
+            let textWidth = pageWidth - 100
+
+            for section in definition.sections {
+                let sectionTitle = "\n\(section.title)\n"
+                (sectionTitle as NSString).draw(at: CGPoint(x: 50, y: y), withAttributes: titleAttrs)
+                y += 28
+                for field in section.fields {
+                    let line = "• \(field.title): \(renderedValue(for: field))\n"
+                    let bounding = (line as NSString).boundingRect(with: CGSize(width: textWidth, height: .greatestFiniteMagnitude), options: .usesLineFragmentOrigin, attributes: bodyAttrs, context: nil)
+                    (line as NSString).draw(with: CGRect(x: 50, y: y, width: textWidth, height: bounding.height), options: .usesLineFragmentOrigin, attributes: bodyAttrs, context: nil)
+                    y += bounding.height + 6
+                    if y > maxY { context.beginPage(); y = 50 }
+                }
+            }
+        }
+        let safeClient = client.replacingOccurrences(of: " ", with: "_")
+        let fileName = "\(safeClient)-\(definition.title.replacingOccurrences(of: " ", with: "_"))_Assessment.pdf"
+        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+        do {
+            try data.write(to: tempURL)
+            presentShareSheet(url: tempURL)
+        } catch { }
+    }
+
+    private func renderedValue(for field: AssessmentFieldDefinition) -> String {
+        switch field.kind {
+        case .text:
+            return (textValues[field.id] ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "—" : (textValues[field.id] ?? "")
+        case .number:
+            if let n = numberValues[field.id] { return String(n) } else { return "—" }
+        case .yesno:
+            return (yesNoValues[field.id] ?? false) ? "Yes" : "No"
+        case .multipleChoice:
+            let map = multiChoiceToggles[field.id] ?? [:]
+            if map.isEmpty { return "—" }
+            // Join titles of selected options
+            let selected = field.options.filter { map[$0.id] == true }.map { $0.title }
+            return selected.isEmpty ? "—" : selected.joined(separator: ", ")
+        case .icon:
+            return ""
+        case .date:
+            let d = dateValues[field.id] ?? field.dateValue
+            if let d { return DateFormatter.localizedString(from: d, dateStyle: .medium, timeStyle: .none) } else { return "—" }
+        }
     }
 }

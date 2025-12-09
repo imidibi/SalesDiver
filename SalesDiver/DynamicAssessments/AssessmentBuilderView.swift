@@ -41,6 +41,7 @@ struct AssessmentBuilderView: View {
             ForEach($sections) { $section in
                 Section(header: Text(section.title)) {
                     TextField("Section Title", text: $section.title)
+                    
                     ForEach($section.fields) { $field in
                         VStack(alignment: .leading, spacing: 8) {
                             TextField("Field Title", text: $field.title)
@@ -90,13 +91,32 @@ struct AssessmentBuilderView: View {
                         Divider()
                             .padding(.vertical, 4)
                     }
+                    .onMove { indices, newOffset in
+                        if let sIndex = sections.firstIndex(where: { $0.id == section.id }) {
+                            let from = IndexSet(indices)
+                            sections[sIndex].fields.move(fromOffsets: from, toOffset: newOffset)
+                        }
+                    }
                 }
+                
                 Section {
                     Button("Add Field") {
                         section.fields.append(AssessmentFieldDefinition(title: "New Field", kind: .text))
                     }
                 }
+                
+                Button("Add Section Here") {
+                    if let sIndex = sections.firstIndex(where: { $0.id == section.id }) {
+                        sections.insert(AssessmentSectionDefinition(title: "New Section", fields: []), at: sIndex + 1)
+                    }
+                }
+                .buttonStyle(.bordered)
             }
+            .onMove { indices, newOffset in
+                let from = IndexSet(indices)
+                sections.move(fromOffsets: from, toOffset: newOffset)
+            }
+
             Button("Add Section") {
                 sections.append(AssessmentSectionDefinition(title: "New Section", fields: []))
             }
@@ -110,6 +130,9 @@ struct AssessmentBuilderView: View {
             }
         }
         .navigationTitle("Assessment Builder")
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) { EditButton() }
+        }
         .sheet(isPresented: $fieldIconPickerPresented) {
             NavigationStack {
                 SymbolPickerView { selected in

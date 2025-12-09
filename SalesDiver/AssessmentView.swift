@@ -1,6 +1,7 @@
 import SwiftUI
 import CoreData
 import PDFKit
+import UIKit
 
 struct AssessmentView: View {
     @AppStorage("selectedCompany") private var selectedCompany: String = ""
@@ -530,6 +531,121 @@ struct AssessmentView: View {
         }
     }
 
+    func exportAssessmentAsRTF() {
+        let title = "IT Assessment for \(selectedCompany)"
+        let subtitle = "Performed by \(myCompanyName.isEmpty ? "Your Company Name" : myCompanyName)\nDate: \(formattedDate(assessmentDate))"
+
+        let attr = NSMutableAttributedString()
+        let h1 = [NSAttributedString.Key.font: UIFont.boldSystemFont(ofSize: 22)]
+        let h2 = [NSAttributedString.Key.font: UIFont.systemFont(ofSize: 16)]
+        let hSection = [NSAttributedString.Key.font: UIFont.boldSystemFont(ofSize: 18)]
+        let body = [NSAttributedString.Key.font: UIFont.systemFont(ofSize: 14)]
+
+        attr.append(NSAttributedString(string: title + "\n", attributes: h1))
+        attr.append(NSAttributedString(string: subtitle + "\n\n", attributes: h2))
+
+        let categories: [(String, String)] = [
+            ("🖥️ Endpoint", "Endpoint"),
+            ("🗄️ Servers", "Server"),
+            ("🌐 Network", "Network"),
+            ("📞 Phone System", "Phone"),
+            ("📧 Email", "Email"),
+            ("🛡️ Security & Compliance", "Security & Compliance"),
+            ("📂 Directory Services", "Directory Services"),
+            ("☁️ Infrastructure", "Infrastructure"),
+            ("🧩 Cloud Services", "CloudServices"),
+            ("💾 Backup", "Backup")
+        ]
+
+        for (sectionTitle, categoryKey) in categories {
+            attr.append(NSAttributedString(string: sectionTitle + "\n", attributes: hSection))
+            let fields = coreDataManager
+                .loadAllAssessmentFields(for: selectedCompany, category: categoryKey)
+            if fields.isEmpty {
+                attr.append(NSAttributedString(string: "—\n\n", attributes: body))
+            } else {
+                for field in fields {
+                    let name = (field.fieldName ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+                    let raw = field.valueString?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                    let value: String
+                    if raw == "true" { value = "Yes" }
+                    else if raw == "false" { value = "No" }
+                    else if raw.isEmpty { value = "—" }
+                    else { value = raw }
+                    attr.append(NSAttributedString(string: "• \(name): \(value)\n", attributes: body))
+                }
+                attr.append(NSAttributedString(string: "\n", attributes: body))
+            }
+        }
+
+        if let rtf = try? attr.data(from: NSRange(location: 0, length: attr.length), documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf]) {
+            let safeCompany = selectedCompany.replacingOccurrences(of: " ", with: "_")
+            let fileName = "\(safeCompany)-Assessment.rtf"
+            let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+            do {
+                try rtf.write(to: tempURL)
+                presentShareSheet(url: tempURL)
+            } catch {
+                // Failed to write RTF
+            }
+        }
+    }
+
+    func exportAssessmentAsCSV() {
+        let safeCompany = selectedCompany.replacingOccurrences(of: " ", with: "_")
+        let fileName = "\(safeCompany)-Assessment.csv"
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+
+        // CSV header
+        var rows: [[String]] = [["Section", "Field", "Value"]]
+
+        let categories: [(String, String)] = [
+            ("Endpoint", "Endpoint"),
+            ("Servers", "Server"),
+            ("Network", "Network"),
+            ("Phone System", "Phone"),
+            ("Email", "Email"),
+            ("Security & Compliance", "Security & Compliance"),
+            ("Directory Services", "Directory Services"),
+            ("Infrastructure", "Infrastructure"),
+            ("Cloud Services", "CloudServices"),
+            ("Backup", "Backup")
+        ]
+
+        for (sectionTitle, categoryKey) in categories {
+            let fields = coreDataManager.loadAllAssessmentFields(for: selectedCompany, category: categoryKey)
+            if fields.isEmpty {
+                rows.append([sectionTitle, "—", "—"])
+            } else {
+                for field in fields {
+                    let name = (field.fieldName ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+                    let raw = field.valueString?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                    let value: String
+                    if raw == "true" { value = "Yes" }
+                    else if raw == "false" { value = "No" }
+                    else if raw.isEmpty { value = "—" }
+                    else { value = raw }
+                    rows.append([sectionTitle, name, value])
+                }
+            }
+        }
+
+        func escape(_ s: String) -> String {
+            if s.contains(",") || s.contains("\n") || s.contains("\"") {
+                let escaped = s.replacingOccurrences(of: "\"", with: "\"\"")
+                return "\"\(escaped)\""
+            } else { return s }
+        }
+
+        let csv = rows.map { $0.map(escape).joined(separator: ",") }.joined(separator: "\n") + "\n"
+        do {
+            try csv.data(using: .utf8)?.write(to: url, options: .atomic)
+            presentShareSheet(url: url)
+        } catch {
+            // Failed to write CSV
+        }
+    }
+
     func formattedDate(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
@@ -631,9 +747,23 @@ struct AssessmentView: View {
                 }
                 .toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {
-                        Button(action: {
-                            exportAssessmentAsPDF()
-                        }) {
+                        Menu {
+                            Button {
+                                exportAssessmentAsPDF()
+                            } label: {
+                                Label("Export PDF", systemImage: "doc.richtext")
+                            }
+                            Button {
+                                exportAssessmentAsRTF()
+                            } label: {
+                                Label("Export Word (RTF)", systemImage: "doc.text")
+                            }
+                            Button {
+                                exportAssessmentAsCSV()
+                            } label: {
+                                Label("Export Excel (CSV)", systemImage: "tablecells")
+                            }
+                        } label: {
                             Label("Export", systemImage: "square.and.arrow.up")
                         }
                     }
