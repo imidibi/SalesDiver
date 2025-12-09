@@ -95,7 +95,7 @@ struct AssessmentsHubView: View {
             .alert("Import Error", isPresented: $isShowingErrorAlert, presenting: importErrorMessage) { _ in
                 Button("OK", role: .cancel) {}
             } message: { msg in
-                Text(msg ?? "Unknown error")
+                Text(msg)
             }
         }
         .task {
@@ -265,3 +265,4 @@ private extension UIWindowScene {
         return windows.first(where: { $0.isKeyWindow }) ?? windows.first
     }
 }
+

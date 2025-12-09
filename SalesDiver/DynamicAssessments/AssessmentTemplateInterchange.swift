@@ -229,22 +229,23 @@ enum CSVCodec {
             lineIndex += 1
             let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
             if trimmed.isEmpty || trimmed.hasPrefix("#") { continue }
-            var cols = trimTrailingEmpties(parseCSVRow(trimmed))
+            let cols = trimTrailingEmpties(parseCSVRow(trimmed))
+            
             if cols.isEmpty { continue }
 
-            // Pad to header count to avoid index checks
-            if cols.count < headerColumns.count {
-                cols += Array(repeating: "", count: headerColumns.count - cols.count)
+            var padded = cols
+            if padded.count < headerColumns.count {
+                padded += Array(repeating: "", count: headerColumns.count - padded.count)
             }
 
-            let rowType = cols[0].trimmingCharacters(in: .whitespacesAndNewlines)
-            let templateTitle = cols[1].trimmingCharacters(in: .whitespacesAndNewlines)
-            let sectionTitle = cols[2].trimmingCharacters(in: .whitespacesAndNewlines)
-            let fieldTitle = cols[3].trimmingCharacters(in: .whitespacesAndNewlines)
-            let kindCodeString = cols[4].trimmingCharacters(in: .whitespacesAndNewlines)
-            let iconSystemName = cols[5].trimmingCharacters(in: .whitespacesAndNewlines)
-            let optionsString = cols[6].trimmingCharacters(in: .whitespacesAndNewlines)
-            let dateString = cols[7].trimmingCharacters(in: .whitespacesAndNewlines)
+            let rowType = padded[0].trimmingCharacters(in: .whitespacesAndNewlines)
+            let templateTitle = padded[1].trimmingCharacters(in: .whitespacesAndNewlines)
+            let sectionTitle = padded[2].trimmingCharacters(in: .whitespacesAndNewlines)
+            let fieldTitle = padded[3].trimmingCharacters(in: .whitespacesAndNewlines)
+            let kindCodeString = padded[4].trimmingCharacters(in: .whitespacesAndNewlines)
+            let iconSystemName = padded[5].trimmingCharacters(in: .whitespacesAndNewlines)
+            let optionsString = padded[6].trimmingCharacters(in: .whitespacesAndNewlines)
+            let dateString = padded[7].trimmingCharacters(in: .whitespacesAndNewlines)
 
             switch rowType.lowercased() {
             case "template":
@@ -316,53 +317,54 @@ enum CSVCodec {
             if trimmed.isEmpty { continue }
             if trimmed.hasPrefix("#") { continue } // ignore comments
 
-            var cols = trimTrailingEmpties(parseCSVRow(trimmed))
+            let cols = trimTrailingEmpties(parseCSVRow(trimmed))
+            var padded = cols
             guard !cols.isEmpty else { continue }
 
             // Normalize first token
-            let firstRaw = cols[0]
+            let firstRaw = padded[0]
             let first = normalizeToken(firstRaw)
 
             if equalsToken(first, "TemplateTitle") || equalsToken(first, "Template Title") {
                 // TemplateTitle,<Title>
-                guard cols.count >= 2 else { throw CSVError.missingTemplateTitle }
-                title = cols[1]
+                guard padded.count >= 2 else { throw CSVError.missingTemplateTitle }
+                title = padded[1]
                 seenTemplateTitle = true
                 continue
             }
 
             if equalsToken(first, "Section") {
                 // Section,<Section Title>
-                guard cols.count >= 2 else { throw CSVError.missingSectionTitle }
+                guard padded.count >= 2 else { throw CSVError.missingSectionTitle }
                 pushCurrentSectionIfNeeded()
-                currentSection = AssessmentSectionDefinition(title: cols[1], fields: [])
+                currentSection = AssessmentSectionDefinition(title: padded[1], fields: [])
                 continue
             }
 
             if equalsToken(first, "Field") {
                 // Field,<Field Title>,<KindCode>,<IconSystemName>,<OptionsPipeSeparated>,<DateISO8601>
-                guard cols.count >= 3 else { throw CSVError.missingFieldTitle }
-                let fieldTitle = cols[1]
-                let codeString = cols[2].trimmingCharacters(in: .whitespacesAndNewlines)
+                guard padded.count >= 3 else { throw CSVError.missingFieldTitle }
+                let fieldTitle = padded[1]
+                let codeString = padded[2].trimmingCharacters(in: .whitespacesAndNewlines)
                 guard let code = Int(codeString) else { throw CSVError.invalidKindCode }
                 let kind = try kind(for: code)
                 var field = AssessmentFieldDefinition(title: fieldTitle, kind: kind)
 
-                if cols.count >= 4 {
-                    let iconCol = cols[3].trimmingCharacters(in: .whitespacesAndNewlines)
+                if padded.count >= 4 {
+                    let iconCol = padded[3].trimmingCharacters(in: .whitespacesAndNewlines)
                     if !iconCol.isEmpty {
                         field.iconSystemName = iconCol
                     }
                 }
-                if cols.count >= 5, kind == .multipleChoice {
-                    let optionsCol = cols[4].trimmingCharacters(in: .whitespacesAndNewlines)
+                if padded.count >= 5, kind == .multipleChoice {
+                    let optionsCol = padded[4].trimmingCharacters(in: .whitespacesAndNewlines)
                     if !optionsCol.isEmpty {
                         let titles = optionsCol.split(separator: "|").map { String($0) }
                         field.options = titles.map { AssessmentFieldOption(title: $0) }
                     }
                 }
-                if cols.count >= 6, kind == .date {
-                    let dateCol = cols[5].trimmingCharacters(in: .whitespacesAndNewlines)
+                if padded.count >= 6, kind == .date {
+                    let dateCol = padded[5].trimmingCharacters(in: .whitespacesAndNewlines)
                     if !dateCol.isEmpty {
                         field.dateValue = ISO8601DateFormatter().date(from: dateCol)
                     }
@@ -537,3 +539,4 @@ extension View {
         }
     }
 }
+
