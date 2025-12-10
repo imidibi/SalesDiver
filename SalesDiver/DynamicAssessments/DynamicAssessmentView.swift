@@ -156,10 +156,17 @@ struct DynamicAssessmentView: View {
                     }
                 }
             case .date:
+                // Seed state on first render so the picker reflects a stable value
+                let initialDate = dateValues[field.id] ?? field.dateValue ?? Date()
                 DatePicker("", selection: Binding(
-                    get: { dateValues[field.id] ?? field.dateValue ?? Date() },
+                    get: { dateValues[field.id] ?? initialDate },
                     set: { dateValues[field.id] = $0 }
                 ), displayedComponents: .date)
+                .onAppear {
+                    if dateValues[field.id] == nil {
+                        dateValues[field.id] = initialDate
+                    }
+                }
                 .labelsHidden()
             }
         }
@@ -182,7 +189,8 @@ struct DynamicAssessmentView: View {
                 case .icon:
                     break
                 case .date:
-                    v.date = dateValues[field.id]
+                    // Persist the currently displayed date even if the user didn't adjust the picker
+                    v.date = dateValues[field.id] ?? field.dateValue ?? Date()
                 }
                 values[field.id] = v
             }
@@ -218,7 +226,12 @@ struct DynamicAssessmentView: View {
                 case .icon:
                     break
                 case .date:
-                    if let d = v?.date { dateValues[field.id] = d }
+                    // Initialize state with saved date or field default to avoid defaulting to today
+                    if let d = v?.date {
+                        dateValues[field.id] = d
+                    } else if let defaultDate = field.dateValue {
+                        dateValues[field.id] = defaultDate
+                    }
                 }
             }
         }
@@ -243,7 +256,12 @@ struct DynamicAssessmentView: View {
                 case .icon:
                     break
                 case .date:
-                    if let d = v?.date { dateValues[field.id] = d }
+                    // Initialize state with saved date or field default to avoid defaulting to today
+                    if let d = v?.date {
+                        dateValues[field.id] = d
+                    } else if let defaultDate = field.dateValue {
+                        dateValues[field.id] = defaultDate
+                    }
                 }
             }
         }
@@ -267,7 +285,7 @@ struct DynamicAssessmentView: View {
     private func exportAssessmentAsRTF() {
         let client = resolvedCompanyName
         let title = "IT Assessment for \(client)"
-        let subtitle = "Performed by \(myCompanyName.isEmpty ? "Your Company Name" : myCompanyName)\nDate: \(Date().formatted(date: .abbreviated, time: .omitted))"
+        let subtitle = "Performed by \(myCompanyName)\nAssessment Date: \(Date().formatted(date: .abbreviated, time: .omitted))"
 
         let attr = NSMutableAttributedString()
         let h1 = [NSAttributedString.Key.font: UIFont.boldSystemFont(ofSize: 22)]
@@ -276,7 +294,7 @@ struct DynamicAssessmentView: View {
         let body = [NSAttributedString.Key.font: UIFont.systemFont(ofSize: 14)]
 
         attr.append(NSAttributedString(string: title + "\n", attributes: h1))
-        attr.append(NSAttributedString(string: subtitle + "\n\n", attributes: h2))
+        attr.append(NSAttributedString(string: subtitle + "\n\n\n", attributes: h2))
         attr.append(NSAttributedString(string: definition.title + "\n\n", attributes: hSection))
 
         for section in definition.sections {
@@ -302,7 +320,13 @@ struct DynamicAssessmentView: View {
 
     private func exportAssessmentAsCSV() {
         let client = resolvedCompanyName
-        var rows: [[String]] = [["Section", "Field", "Value"]]
+        var rows: [[String]] = []
+        rows.append(["IT Assessment for \(client)"])
+        rows.append(["\(definition.title)"])
+        rows.append(["Performed by \(myCompanyName)"])
+        rows.append(["Assessment Date: \(Date().formatted(date: .abbreviated, time: .omitted))"])
+        rows.append([""])
+        rows.append(["Section", "Field", "Value"])
         for section in definition.sections {
             for field in section.fields {
                 rows.append([section.title, field.title, renderedValue(for: field)])
@@ -338,23 +362,39 @@ struct DynamicAssessmentView: View {
             let titleAttrs: [NSAttributedString.Key: Any] = [.font: titleFont]
             let bodyAttrs: [NSAttributedString.Key: Any] = [.font: bodyFont]
 
-            let header = "IT Assessment for \(client)\n\(definition.title)\nPerformed by \(myCompanyName.isEmpty ? "Your Company Name" : myCompanyName) — \(Date().formatted(date: .abbreviated, time: .omitted))\n\n"
-            (header as NSString).draw(at: CGPoint(x: 50, y: 50), withAttributes: titleAttrs)
-
-            var y = CGFloat(120)
-            let maxY = pageHeight - 50
             let textWidth = pageWidth - 100
 
+            let header = "IT Assessment for \(client)\n\(definition.title)\nPerformed by \(myCompanyName)\nAssessment Date: \(Date().formatted(date: .abbreviated, time: .omitted))\n" as NSString
+            // Measure and draw header as a block, then add explicit padding below it
+            let headerBounding = header.boundingRect(with: CGSize(width: textWidth, height: .greatestFiniteMagnitude), options: .usesLineFragmentOrigin, attributes: titleAttrs, context: nil)
+            header.draw(with: CGRect(x: 50, y: 50, width: textWidth, height: headerBounding.height), options: .usesLineFragmentOrigin, attributes: titleAttrs, context: nil)
+            // Start content below header with two extra blank lines worth of padding
+            var y = 50 + headerBounding.height + 28
+            let maxY = pageHeight - 50
+
             for section in definition.sections {
-                let sectionTitle = "\n\(section.title)\n"
-                (sectionTitle as NSString).draw(at: CGPoint(x: 50, y: y), withAttributes: titleAttrs)
-                y += 28
+                // Prepare and measure the section title
+                let sectionTitle = "\n\(section.title)\n" as NSString
+                let sectionBounding = sectionTitle.boundingRect(with: CGSize(width: textWidth, height: .greatestFiniteMagnitude), options: .usesLineFragmentOrigin, attributes: titleAttrs, context: nil)
+                // Page break if needed before drawing the title
+                if y + sectionBounding.height > maxY {
+                    context.beginPage()
+                    y = 50
+                }
+                // Draw the title in a rect to respect line height
+                sectionTitle.draw(with: CGRect(x: 50, y: y, width: textWidth, height: sectionBounding.height), options: .usesLineFragmentOrigin, attributes: titleAttrs, context: nil)
+                y += sectionBounding.height // exactly one blank line already included in the string
+
                 for field in section.fields {
-                    let line = "• \(field.title): \(renderedValue(for: field))\n"
-                    let bounding = (line as NSString).boundingRect(with: CGSize(width: textWidth, height: .greatestFiniteMagnitude), options: .usesLineFragmentOrigin, attributes: bodyAttrs, context: nil)
-                    (line as NSString).draw(with: CGRect(x: 50, y: y, width: textWidth, height: bounding.height), options: .usesLineFragmentOrigin, attributes: bodyAttrs, context: nil)
+                    let line = "• \(field.title): \(renderedValue(for: field))\n" as NSString
+                    let bounding = line.boundingRect(with: CGSize(width: textWidth, height: .greatestFiniteMagnitude), options: .usesLineFragmentOrigin, attributes: bodyAttrs, context: nil)
+                    // Page break before drawing the line if needed
+                    if y + bounding.height > maxY {
+                        context.beginPage()
+                        y = 50
+                    }
+                    line.draw(with: CGRect(x: 50, y: y, width: textWidth, height: bounding.height), options: .usesLineFragmentOrigin, attributes: bodyAttrs, context: nil)
                     y += bounding.height + 6
-                    if y > maxY { context.beginPage(); y = 50 }
                 }
             }
         }
@@ -372,7 +412,19 @@ struct DynamicAssessmentView: View {
         case .text:
             return (textValues[field.id] ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "—" : (textValues[field.id] ?? "")
         case .number:
-            if let n = numberValues[field.id] { return String(n) } else { return "—" }
+            if let n = numberValues[field.id] {
+                if n.rounded(.towardZero) == n { // no fractional component
+                    return String(Int(n))
+                } else {
+                    let formatter = NumberFormatter()
+                    formatter.minimumFractionDigits = 0
+                    formatter.maximumFractionDigits = 6
+                    formatter.minimumIntegerDigits = 1
+                    return formatter.string(from: NSNumber(value: n)) ?? String(n)
+                }
+            } else {
+                return "—"
+            }
         case .yesno:
             return (yesNoValues[field.id] ?? false) ? "Yes" : "No"
         case .multipleChoice:
@@ -389,3 +441,4 @@ struct DynamicAssessmentView: View {
         }
     }
 }
+
